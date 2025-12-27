@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Цифровий блокнот контролера якості</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        .link-card {
+            background-color: #ffffff; border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; padding: 2rem; text-decoration: none; color: #1e293b;
+            height: 100%; min-height: 220px; border: 1px solid #e2e8f0;
+        }
+        .link-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            border-color: #10b981;
+        }
+        .link-card svg { width: 3.5rem; height: 3.5rem; margin-bottom: 1rem; color: #059669; }
+        .link-card h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .link-card p { font-size: 0.875rem; color: #64748b; }
+    </style>
+</head>
+<body class="font-sans text-slate-800">
+    <div class="container mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
+        <header class="relative text-center mb-10 pt-8 sm:pt-4">
+             <div id="current-date" class="absolute top-0 left-0 text-slate-500 text-sm sm:text-base font-medium hidden sm:block"></div>
+            <img src="https://foodline-production.com/wp-content/uploads/2021/10/3752781497_3752781497.webp" alt="Foodline Logo" class="w-32 h-auto mx-auto mb-4 rounded-lg bg-white p-2 shadow-sm" onerror="this.src='https://placehold.co/120x60?text=FoodLine'">
+            <h1 class="text-2xl sm:text-4xl font-bold text-slate-800 mb-2">Цифровий блокнот контролера якості</h1>
+            <p class="text-slate-500 text-lg">Контроль якості та безпечності продукції</p>
+            <div id="current-date-mobile" class="text-slate-400 text-sm mt-2 sm:hidden"></div>
+        </header>
+
+        <main>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Чек лист -->
+                <a href="checklist.html?view=start" class="link-card group">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-emerald-500 transition-colors">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h2>Чек-лист</h2>
+                    <p>Загальний контроль зміни (Початок, Процес, Кінець)</p>
+                </a>
+
+                <!-- Варки соусу -->
+                <a href="sauce_boiling.html" class="link-card group">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-orange-500 transition-colors">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1.001A3.75 3.75 0 0012 18z" />
+                    </svg>
+                    <h2>Варки соусу</h2>
+                    <p>Лабораторний контроль, органолептика та фізико-хімія</p>
+                </a>
+
+                <!-- Етикетування -->
+                <a href="labeling.html" class="link-card group">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-blue-500 transition-colors">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a22.53 22.53 0 005.246-5.246c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
+                    </svg>
+                    <h2>Етикетування</h2>
+                    <p>Звірка етикетки, датування, пакування та стікери</p>
+                </a>
+
+                <!-- Фасування -->
+                <a href="checklist.html?view=during" class="link-card group">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-purple-500 transition-colors">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                    </svg>
+                    <h2>Фасування</h2>
+                    <p>Контроль ваги, герметичності та процесу фасування</p>
+                </a>
+
+                <!-- Мийки -->
+                <a href="cleaning.html" class="link-card group">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-cyan-500 transition-colors">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                    </svg>
+                    <h2>Мийки</h2>
+                    <p>Контроль якості миття обладнання та приміщень</p>
+                </a>
+
+                <!-- Довідкова інформація -->
+                <a href="https://sites.google.com/view/forstaf" target="_blank" class="link-card group">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-indigo-500 transition-colors">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                    </svg>
+                    <h2>Довідкова інформація</h2>
+                    <p>Стандарти, специфікації та інструкції</p>
+                </a>
+            </div>
+        </main>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const dateElement = document.getElementById('current-date');
+            const dateElementMobile = document.getElementById('current-date-mobile');
+            const now = new Date();
+            const options = { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' };
+            const formattedDate = new Intl.DateTimeFormat('uk-UA', options).format(now);
+            const capitalizedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+            if (dateElement) dateElement.textContent = capitalizedDate;
+            if (dateElementMobile) dateElementMobile.textContent = capitalizedDate;
+        });
+    </script>
+</body>
+</html>

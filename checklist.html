@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чек-лист | QC Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 700: '#334155', 800: '#1e293b', 900: '#0f172a' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root { --bg-color: #f8fafc; --card-bg: #ffffff; --text: #1e293b; --muted: #64748b; }
+        .dark { --bg-color: #0f172a; --card-bg: #1e293b; --text: #f1f5f9; --muted: #94a3b8; }
+        body { background-color: var(--bg-color); color: var(--text); padding-bottom: 6rem; transition: 0.3s; }
+        .card { background-color: var(--card-bg); transition: 0.3s; }
+        
+        .checklist-item {
+            background-color: var(--card-bg);
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+        .dark .checklist-item { border-color: #334155; }
+        .checklist-item:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        .checklist-item.completed {
+            background-color: rgba(16, 185, 129, 0.1);
+            border-color: #10b981;
+        }
+        .checklist-item.completed .task-text { text-decoration: line-through; opacity: 0.7; }
+        
+        .checkbox-icon {
+            width: 1.5rem; height: 1.5rem;
+            border: 2px solid #cbd5e1;
+            border-radius: 0.25rem; /* Less rounded */
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; background: var(--card-bg);
+        }
+        .dark .checkbox-icon { border-color: #64748b; }
+        
+        .checklist-item.completed .checkbox-icon { background-color: #10b981; border-color: #10b981; }
+        .checklist-item.completed .checkbox-icon::after { content: '✔'; color: white; font-weight: bold; font-size: 14px; }
+
+        .nav-button { background-color: var(--card-bg); color: var(--muted); border: 1px solid #e2e8f0; transition: all 0.2s; }
+        .dark .nav-button { border-color: #334155; }
+        .nav-button.active { background-color: #059669; color: white; border-color: #059669; box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.3); }
+        
+        .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(2px); z-index: 50; }
+        
+        .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #10b981; animation: spin 1s linear infinite; margin: 0 auto; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Custom styles for inputs to be less rounded */
+        select { border-radius: 0.25rem !important; } 
+    </style>
+</head>
+<body class="font-sans antialiased">
+    
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-[2000] flex flex-col gap-2"></div>
+
+    <div class="container mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
+        
+        <!-- Header -->
+        <header class="relative text-center mb-6">
+            <div class="absolute top-0 left-0">
+                <a href="dashboard.html" class="flex items-center gap-2 text-slate-500 hover:text-emerald-600 transition-colors p-2 rounded bg-white dark:bg-slate-800 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+                    <span class="hidden sm:inline font-bold text-sm">Меню</span>
+                </a>
+            </div>
+            
+            <div class="absolute top-0 right-0">
+                <button id="themeToggle" class="p-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                </button>
+            </div>
+
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Чек-лист</h1>
+            <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Щоденний контроль зміни</p>
+        </header>
+
+        <!-- Employee Select -->
+        <div class="mb-6 card p-4 rounded shadow-sm border border-slate-200 dark:border-slate-700">
+            <label class="block text-sm font-bold mb-2 text-slate-500 dark:text-slate-400 uppercase">Контролер якості:</label>
+            <select id="employeeSelect" class="block w-full p-3 border rounded focus:ring-2 focus:ring-emerald-500 outline-none transition-all bg-transparent dark:border-slate-600">
+                <option value="">Оберіть зі списку...</option>
+            </select>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="grid grid-cols-3 gap-2 mb-6 p-1 bg-slate-100 dark:bg-slate-800 rounded">
+            <button data-view="start" class="nav-button active py-2 px-1 rounded text-sm font-bold">Початок</button>
+            <button data-view="during" class="nav-button py-2 px-1 rounded text-sm font-bold">Фасування</button>
+            <button data-view="end" class="nav-button py-2 px-1 rounded text-sm font-bold">Мийки / Кінець</button>
+        </nav>
+
+        <main>
+            <!-- Start Section -->
+            <section id="startShiftSection" class="view-section">
+                <div class="card p-4 sm:p-6 rounded shadow-md border border-slate-200 dark:border-slate-700">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-emerald-700 dark:text-emerald-400">Початок зміни</h2>
+                        <button onclick="resetSection('start')" class="px-3 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 text-xs font-bold rounded hover:bg-orange-200 transition-colors">Скинути</button>
+                    </div>
+                    <ul class="space-y-3" id="list-start"></ul>
+                    
+                    <button onclick="initiateSend('start')" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                        <span>📤 Відправити дані</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- During Section -->
+            <section id="duringShiftSection" class="view-section hidden">
+                <div class="card p-4 sm:p-6 rounded shadow-md border border-slate-200 dark:border-slate-700">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-blue-700 dark:text-blue-400">Фасування (Процес)</h2>
+                        <button onclick="resetSection('during')" class="px-3 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 text-xs font-bold rounded hover:bg-orange-200 transition-colors">Скинути</button>
+                    </div>
+                    <ul class="space-y-3" id="list-during"></ul>
+
+                    <button onclick="initiateSend('during')" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                        <span>📤 Відправити дані</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- End Section -->
+            <section id="endShiftSection" class="view-section hidden">
+                <div class="card p-4 sm:p-6 rounded shadow-md border border-slate-200 dark:border-slate-700">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-sky-700 dark:text-sky-400">Мийки / Кінець</h2>
+                        <button onclick="resetSection('end')" class="px-3 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 text-xs font-bold rounded hover:bg-orange-200 transition-colors">Скинути</button>
+                    </div>
+                    <ul class="space-y-3" id="list-end"></ul>
+
+                    <button onclick="initiateSend('end')" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                        <span>📤 Відправити дані</span>
+                    </button>
+                </div>
+            </section>
+        </main>
+        
+        <!-- Footer Progress -->
+        <div class="fixed bottom-0 left-0 right-0 card p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex items-center justify-between z-40 border-t border-slate-200 dark:border-slate-700">
+             <div class="w-full max-w-3xl mx-auto">
+                <div class="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1 font-bold">
+                    <span>Прогрес</span>
+                    <span id="progressText">0/0</span>
+                </div>
+                <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                    <div id="progressBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" style="width: 0%"></div>
+                </div>
+             </div>
+        </div>
+    </div>
+
+    <!-- Confirm Reset Modal -->
+    <div id="confirmModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
+        <div class="card p-6 rounded shadow-2xl max-w-sm w-full">
+            <h3 class="font-bold text-lg mb-2 text-center">Скидання</h3>
+            <p id="confirmText" class="mb-6 text-sm text-center text-slate-500 dark:text-slate-400"></p>
+            <div class="flex justify-center gap-3">
+                <button id="confirmCancel" class="px-5 py-2.5 bg-slate-100 dark:bg-slate-700 rounded font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">Ні</button>
+                <button id="confirmOk" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded font-bold shadow-lg transition-colors">Так</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sending Modal -->
+    <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
+        <div class="card p-6 rounded shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
+            <h3 class="text-xl font-bold mb-4 text-center">Підтвердження відправки</h3>
+                <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-2 text-2xl">📝</div>
+                <h3 class="text-xl font-bold">Підтвердження відправки</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Перевірте дані перед відправкою</p>
+            </div>
+            
+            <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded overflow-y-auto mb-4 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-60" id="reportPreview"></div>
+            
+            <p id="sendStatus" class="text-center text-sm font-bold mb-3 text-emerald-600 min-h-[1.5em]"></p>
+            
+            <div id="sendActions" class="flex flex-col gap-2">
+                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                    <span>✅ Відправити дані</span>
+                </button>
+                <button onclick="closeSendModal()" class="w-full bg-transparent border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 font-bold py-3.5 rounded transition-colors">
+                    Скасувати
+                </button>
+            </div>
+            <div id="sendSpinner" class="hidden py-4 flex justify-center">
+                <div class="spinner"></div>
+            <div id="sendSpinner" class="hidden py-4 flex justify-center"><div class="spinner"></div></div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyg9z5S63_kl-Yxgnho4f5zjT_cCBFizOBp6eWDWQODEZLD0su5YhKAggmETVXgbPbF/exec";
+        const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
+        const checklistItems = {
+            start: [
+                { id: 'start-1-1', text: 'Перевірити чистоту та справність ваг і лабораторії.' },
+                { id: 'start-1-2', text: 'Перевірити температуру охолодження нічних варок (t ≤ 24°C).' },
+                { id: 'start-1-3', text: 'Перевірити якість попередніх варок (фіз-хім та органолептика).' },
+                { id: 'start-1-4', text: 'Перевірити журнал заміни фільтрів.' },
+                { id: 'start-1-5', text: 'Видати консерванти варникам під підпис.' },
+            ],
+            during: [
+                { id: 'during-1-1', text: 'Перевірити гігієну персоналу (одяг, шапочки, прикраси).' },
+                { id: 'during-1-2', text: 'Перевірити підготовку сировини на відповідність.' },
+                { id: 'during-1-3', text: 'Провести експрес-тест показників водопідготовки (ХВО).' },
+                { id: 'during-1-4', text: 'Провести поточний контроль безпечності процесу.' },
+                { id: 'during-1-5', text: 'Виконати додаткові завдання керівника.' },
+            ],
+            end: [
+                { id: 'end-1-1', text: 'Провести заміри для ВСІХ варок перед охолодженням.' },
+                { id: 'end-1-2', text: 'Повернути залишки консервантів та ТМЦ в лабораторію.' },
+                { id: 'end-1-3', text: 'Перевірити санітарний стан цеху.' },
+                { id: 'end-1-4', text: 'Заповнити звіт про недоліки та результати зміни.' },
+                { id: 'end-1-5', text: 'Перевірити цілісність скла та пластику (відсутність бою).' },
+            ]
+        };
+
+        let confirmCallback = null;
+        let pendingReportData = null;
+        const employeeSelect = document.getElementById('employeeSelect');
+
+        // Theme Toggle Logic
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        function init() {
+            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+
+            employees.forEach(e => employeeSelect.add(new Option(e, e)));
+            
+            const savedState = JSON.parse(localStorage.getItem('qc_checklist_state') || '{}');
+            if(savedState.employee) employeeSelect.value = savedState.employee;
+
+            renderList('start'); renderList('during'); renderList('end');
+            
+            const params = new URLSearchParams(window.location.search);
+            switchView(params.get('view') || 'start');
+            loadState();
+
+            document.querySelectorAll('.nav-button').forEach(btn => {
+                btn.addEventListener('click', () => switchView(btn.dataset.view));
+            });
+            
+            document.getElementById('confirmCancel').onclick = () => document.getElementById('confirmModal').classList.add('hidden');
+            document.getElementById('confirmOk').onclick = () => { if(confirmCallback) confirmCallback(); document.getElementById('confirmModal').classList.add('hidden'); };
+            
+            document.getElementById('doSendBtn').onclick = executeReportSend;
+
+            employeeSelect.addEventListener('change', saveState);
+        }
+
+        function switchView(view) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(view + 'ShiftSection').classList.remove('hidden');
+            document.querySelectorAll('.nav-button').forEach(b => b.classList.remove('active'));
+            document.querySelector(`[data-view="${view}"]`).classList.add('active');
+            updateProgress(view);
+        }
+
+        function renderList(section) {
+            const ul = document.getElementById(`list-${section}`);
+            ul.innerHTML = checklistItems[section].map(item => `
+                <li id="${item.id}" class="checklist-item p-4 rounded flex items-center cursor-pointer select-none" onclick="toggleItem('${item.id}', '${section}')">
+                    <div class="checkbox-icon"></div>
+                    <span class="task-text text-sm sm:text-base font-medium ml-4 text-slate-700 dark:text-slate-200">${item.text}</span>
+                </li>
+            `).join('');
+        }
+
+        function toggleItem(id, section) {
+            if(!employeeSelect.value) { showToast("Оберіть ім'я контролера!", true); return; }
+            const el = document.getElementById(id);
+            el.classList.toggle('completed');
+            saveState();
+            updateProgress(section);
+        }
+
+        function updateProgress(section) {
+            const list = document.getElementById(`list-${section}`);
+            const total = list.children.length;
+            const done = list.querySelectorAll('.completed').length;
+            document.getElementById('progressBar').style.width = `${(done/total)*100}%`;
+            document.getElementById('progressText').innerText = `${done}/${total} завдань`;
+        }
+
+        function resetSection(section) {
+            document.getElementById('confirmText').innerText = "Очистити всі позначки в цьому списку?";
+            document.getElementById('confirmModal').classList.remove('hidden');
+            document.getElementById('confirmModal').classList.add('flex');
+            confirmCallback = () => {
+                document.querySelectorAll(`#list-${section} .checklist-item`).forEach(i => i.classList.remove('completed'));
+                saveState();
+                updateProgress(section);
+            };
+        }
+
+        // --- REPORT SENDING LOGIC ---
+        function initiateSend(section) {
+            if(!employeeSelect.value) { showToast("Оберіть ім'я контролера!", true); return; }
+            
+            const list = document.getElementById(`list-${section}`);
+            let reportText = "";
+            let completedCount = 0;
+            let totalCount = 0;
+
+            list.querySelectorAll('.checklist-item').forEach(item => {
+                totalCount++;
+                const text = item.querySelector('.task-text').innerText;
+                const isDone = item.classList.contains('completed');
+                if(isDone) completedCount++;
+                reportText += `${isDone ? '✅' : '❌'} ${text}\n`;
+            });
+
+            const sectionTitles = { 'start': 'Початок зміни', 'during': 'Фасування', 'end': 'Мийки / Кінець' };
+            const title = sectionTitles[section] || section;
+
+            const fullReport = `=== ЗВІТ: ${title} ===\n\nКонтролер: ${employeeSelect.value}\nЧас: ${new Date().toLocaleString('uk-UA')}\nВиконано: ${completedCount}/${totalCount}\n\n${reportText}`;
+
+            pendingReportData = {
+                time: new Date().toLocaleString('uk-UA'),
+                employee: employeeSelect.value,
+                section: `Чек-лист: ${title}`,
+                report: fullReport
+            };
+
+            document.getElementById('reportPreview').innerText = fullReport;
+            document.getElementById('sendStatus').innerText = "";
+            document.getElementById('sendActions').style.display = 'flex';
+            document.getElementById('sendSpinner').classList.add('hidden');
+            
+            document.getElementById('sendModal').classList.remove('hidden');
+            document.getElementById('sendModal').classList.add('flex');
+        }
+
+        async function executeReportSend() {
+            const actions = document.getElementById('sendActions');
+            const spinner = document.getElementById('sendSpinner');
+            const status = document.getElementById('sendStatus');
+
+            actions.style.display = 'none';
+            spinner.classList.remove('hidden');
+            status.innerText = "Відправка...";
+
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify(pendingReportData)
+                });
+                status.innerText = "✅ Звіт успішно відправлено!";
+                status.classList.add('text-emerald-600');
+                
+                setTimeout(() => {
+                    closeSendModal();
+                    showToast("Звіт відправлено!");
+                }, 1500);
+            } catch (e) {
+                console.error(e);
+                status.innerText = "⚠️ Помилка відправки.";
+                status.classList.add('text-red-500');
+                actions.style.display = 'flex';
+                spinner.classList.add('hidden');
+            }
+        }
+
+        function closeSendModal() {
+            document.getElementById('sendModal').classList.add('hidden');
+            document.getElementById('sendModal').classList.remove('flex');
+        }
+
+        function showToast(message, isError = false) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast bg-white dark:bg-slate-700 border-l-4 p-4 rounded shadow-xl flex items-center max-w-sm transform transition-all duration-300 translate-x-full border border-slate-200 dark:border-slate-600`;
+            if (isError) {
+                toast.classList.add('border-red-500', 'text-red-700', 'dark:text-red-400');
+                toast.innerHTML = `<span class="mr-2 text-xl">🚫</span> <span class="font-medium text-sm">${message}</span>`;
+            } else {
+                toast.classList.add('border-emerald-500', 'text-emerald-700', 'dark:text-emerald-400');
+                toast.innerHTML = `<span class="mr-2 text-xl">✅</span> <span class="font-medium text-sm">${message}</span>`;
+            }
+            container.appendChild(toast);
+            requestAnimationFrame(() => { toast.classList.remove('translate-x-full'); });
+            setTimeout(() => { toast.classList.add('translate-x-full'); setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        function saveState() {
+            const state = { employee: employeeSelect.value, items: [] };
+            document.querySelectorAll('.checklist-item.completed').forEach(el => state.items.push(el.id));
+            localStorage.setItem('qc_checklist_state', JSON.stringify(state));
+        }
+
+        function loadState() {
+            const state = JSON.parse(localStorage.getItem('qc_checklist_state') || '{}');
+            if(state.items) {
+                state.items.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.classList.add('completed');
+                });
+            }
+            const currentView = document.querySelector('.view-section:not(.hidden)').id.replace('ShiftSection','');
+            updateProgress(currentView);
+        }
+
+        init();
+    </script>
+</body>
+</html>

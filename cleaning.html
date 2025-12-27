@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мийки | QC Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: { colors: { slate: { 50: '#f8fafc', 800: '#1e293b', 900: '#0f172a' } } }
+            }
+        }
+    </script>
+    <style>
+        :root { --bg-color: #f0f9ff; --card-bg: #fff; --text: #1e293b; }
+        .dark { --bg-color: #0f172a; --card-bg: #1e293b; --text: #f1f5f9; }
+        body { background-color: var(--bg-color); color: var(--text); padding-bottom: 2rem; transition: 0.3s; }
+        .card { background-color: var(--card-bg); transition: 0.3s; }
+        
+        input, select {
+            background-color: transparent;
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem; 
+            border-radius: 0.25rem; /* Less rounded */
+            width: 100%;
+            color: inherit;
+            transition: border-color 0.2s;
+        }
+        .dark input, .dark select { border-color: #334155; background-color: #1e293b; }
+        
+        input:focus, select:focus { outline: none; border-color: #0ea5e9; box-shadow: 0 0 0 1px #0ea5e9; }
+        
+        .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #10b981; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(2px); z-index: 50; }
+        
+        #signature-pad {
+            border: 2px dashed #cbd5e1;
+            border-radius: 0.25rem;
+            width: 100%;
+            height: 150px;
+            background-color: white;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased">
+    <div class="container mx-auto max-w-md p-4">
+        <header class="flex items-center gap-4 mb-6">
+            <a href="dashboard.html" class="p-2 bg-white dark:bg-slate-800 rounded shadow text-slate-500 hover:text-cyan-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+            </a>
+            <h1 class="text-2xl font-bold text-cyan-700 dark:text-cyan-500">Контроль Мийки</h1>
+            <button id="themeToggle" class="ml-auto p-2 text-slate-400 hover:text-slate-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg></button>
+        </header>
+
+        <div class="card p-6 rounded shadow-lg border border-cyan-100 dark:border-slate-700 space-y-5">
+            <!-- 1. Controller -->
+            <div>
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Контролер якості</label>
+                <select id="employeeSelect" class="bg-slate-50 dark:bg-slate-800"><option value="">Оберіть...</option></select>
+            </div>
+
+            <!-- 2. Date & Time -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Дата</label><input type="date" id="cln-date"></div>
+                <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Час</label><input type="time" id="cln-time"></div>
+            </div>
+
+            <!-- 3. Equipment Type Selector -->
+            <div>
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Тип обладнання</label>
+                <select id="equipType" onchange="toggleEquipList()">
+                    <option value="" selected disabled>Оберіть тип...</option>
+                    <option value="kettle">🍲 Варочні котли</option> 
+                    <option value="machine">⚙️ Машини фасовки</option>
+                    <option value="tank">🛢️ Збірники соусу</option>
+                </select>
+            </div>
+
+            <!-- 3.1 Dynamic Equipment List -->
+            <div id="equipListContainer" class="hidden">
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Об'єкт мийки</label>
+                <select id="equipList">
+                    <option value="">Оберіть зі списку...</option>
+                </select>
+            </div>
+
+            <!-- 4. Cleaning Type Selector -->
+            <div>
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Вид мийки</label>
+                <select id="cleaningType">
+                    <option value="" selected disabled>Оберіть вид...</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
+            </div>
+
+            <!-- 5. Checks -->
+            <div class="bg-cyan-50 dark:bg-slate-800 p-4 rounded border border-cyan-100 dark:border-slate-700 space-y-4">
+                <h3 class="text-sm font-bold text-cyan-800 dark:text-cyan-400 uppercase mb-2 border-b border-cyan-200 dark:border-slate-600 pb-2">Перевірка відповідності</h3>
+                
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium">Зовнішнє миття</span>
+                    <select id="check-external" class="w-32 py-1 px-2 text-sm bg-white dark:bg-slate-700">
+                        <option value="" selected disabled>...</option>
+                        <option value="Відповідає">✅ ОК</option>
+                        <option value="Не відповідає">❌ Ні</option>
+                    </select>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium">Внутрішнє миття</span>
+                    <select id="check-internal" class="w-32 py-1 px-2 text-sm bg-white dark:bg-slate-700">
+                        <option value="" selected disabled>...</option>
+                        <option value="Відповідає">✅ ОК</option>
+                        <option value="Не відповідає">❌ Ні</option>
+                    </select>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium">Суміжні агрегати</span>
+                    <select id="check-aggregates" class="w-32 py-1 px-2 text-sm bg-white dark:bg-slate-700">
+                        <option value="" selected disabled>...</option>
+                        <option value="Відповідає">✅ ОК</option>
+                        <option value="Не відповідає">❌ Ні</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 6. Responsible Person -->
+            <div>
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Відповідальний за миття</label>
+                <select id="responsiblePerson">
+                    <option value="">Оберіть...</option>
+                </select>
+            </div>
+
+            <!-- 7. Signature Pad -->
+            <div>
+                <div class="flex justify-between items-end mb-1">
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Підпис (Здав/Прийняв)</label>
+                    <button type="button" onclick="clearSignature()" class="text-xs text-red-500 hover:underline font-bold">Очистити</button>
+                </div>
+                <canvas id="signature-pad"></canvas>
+                <p class="text-[10px] text-slate-400 mt-1">* Підпишіть пальцем або стилусом</p>
+            </div>
+
+            <button onclick="initiateSend()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2">
+                <span>📤 Відправити дані</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Sending Modal -->
+    <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
+        <div class="card p-6 rounded shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
+            <h3 class="text-xl font-bold mb-4 text-center">Підтвердження</h3>
+            <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded overflow-y-auto mb-4 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-60" id="reportPreview"></div>
+            <p id="sendStatus" class="text-center text-sm font-bold mb-3 text-emerald-600 min-h-[1.5em]"></p>
+            <div id="sendActions" class="flex flex-col gap-2">
+                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded shadow-lg transition-all active:scale-[0.98]">✅ Підтвердити</button>
+                <button onclick="closeSendModal()" class="w-full bg-transparent border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 font-bold py-3 rounded">Скасувати</button>
+            </div>
+            <div id="sendSpinner" class="hidden py-4 flex justify-center"><div class="spinner"></div></div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyg9z5S63_kl-Yxgnho4f5zjT_cCBFizOBp6eWDWQODEZLD0su5YhKAggmETVXgbPbF/exec";
+        
+        const controllers = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
+        const cooks = ["Загура Іван Борисович", "Солдатова Ірина Володимирівна", "Садиріна Ольга Анатоліївна", "Козурак Іван Миколайович", "Кораблін Дмитро Русланович", "Інший"];
+        const operators = ["Оператор 1", "Оператор 2", "Інший"]; // Placeholder list
+
+        // Data Lists
+        const equipmentData = {
+            kettle: ["ВК-1", "ВК-3", "ВК-4", "ВК-5", "ВВК-11", "ВК-12", "ВК-9"],
+            machine: ['Роторна "А"', 'Ленійна "B"', 'Ленійна "С"', 'Напівавтомат "D"', 'Дой пак'],
+            tank: ["Охолоджувач густого соусу -3000л", "Накопичувач №1", "Накопичувач №2", "Накопичувач №3", "Накопичувач №4", "Накопичувач №5", "Накопичувач №6", "Накопичувач №7", "Накопичувач №8", "Накопичувач 600л"]
+        };
+
+        const empSel = document.getElementById('employeeSelect');
+        const respSel = document.getElementById('responsiblePerson');
+        const equipList = document.getElementById('equipList');
+        
+        // Init
+        controllers.forEach(e => empSel.add(new Option(e, e)));
+        const saved = localStorage.getItem('qc_user');
+        if(saved) empSel.value = saved;
+        empSel.onchange = () => localStorage.setItem('qc_user', empSel.value);
+
+        // Defaults
+        document.getElementById('cln-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
+        document.getElementById('cln-date').valueAsDate = new Date();
+
+        // Theme Toggle
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Logic to switch dropdowns
+        function toggleEquipList() {
+            const type = document.getElementById('equipType').value;
+            const listContainer = document.getElementById('equipListContainer');
+            
+            equipList.innerHTML = '<option value="">Оберіть зі списку...</option>';
+            respSel.innerHTML = '<option value="">Оберіть...</option>';
+
+            if (type && equipmentData[type]) {
+                listContainer.classList.remove('hidden');
+                // Populate Equipment
+                equipmentData[type].forEach(item => {
+                    equipList.add(new Option(item, item));
+                });
+
+                // Populate Responsible
+                const personList = (type === 'kettle') ? cooks : operators;
+                personList.forEach(p => respSel.add(new Option(p, p)));
+            } else {
+                listContainer.classList.add('hidden');
+            }
+        }
+
+        // --- SIGNATURE PAD LOGIC ---
+        const canvas = document.getElementById('signature-pad');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            ctx.scale(ratio, ratio);
+        }
+        window.onresize = resizeCanvas;
+        resizeCanvas();
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function startDraw(e) {
+            isDrawing = true;
+            const pos = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            e.preventDefault();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            e.preventDefault();
+        }
+
+        function endDraw() {
+            isDrawing = false;
+        }
+
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', endDraw);
+        canvas.addEventListener('touchstart', startDraw);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', endDraw);
+
+        function clearSignature() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function isCanvasEmpty() {
+            const blank = document.createElement('canvas');
+            blank.width = canvas.width;
+            blank.height = canvas.height;
+            return canvas.toDataURL() === blank.toDataURL();
+        }
+
+        // --- SEND LOGIC ---
+        let pendingData = null;
+
+        function initiateSend() {
+            if(!empSel.value) { alert("Оберіть контролера!"); return; }
+            if(!document.getElementById('equipType').value) { alert("Оберіть тип обладнання!"); return; }
+            if(!document.getElementById('cleaningType').value) { alert("Оберіть вид мийки!"); return; }
+            
+            const checkExt = document.getElementById('check-external').value;
+            const checkInt = document.getElementById('check-internal').value;
+            const checkAgg = document.getElementById('check-aggregates').value;
+
+            if(!checkExt || !checkInt || !checkAgg) { alert("Заповніть всі поля перевірки відповідності!"); return; }
+            if(isCanvasEmpty()) { alert("Будь ласка, поставте підпис!"); return; }
+
+            const report = `=== КОНТРОЛЬ МИТТЯ ===\nКонтролер: ${empSel.value}\nДата: ${document.getElementById('cln-date').value} ${document.getElementById('cln-time').value}\n\nТип: ${document.getElementById('equipType').selectedOptions[0].text}\nОбладнання: ${equipList.value}\nВид мийки: ${document.getElementById('cleaningType').value}\n\nРЕЗУЛЬТАТИ:\nЗовнішнє: ${checkExt}\nВнутрішнє: ${checkInt}\nСуміжні агрегати: ${checkAgg}\n\nВідповідальний: ${respSel.value}\nПідпис: [Зображення додано]`;
+
+            // Normally send canvas.toDataURL() but truncated for text preview
+            pendingData = {
+                time: new Date().toLocaleString('uk-UA'),
+                employee: empSel.value,
+                section: "Мийки",
+                report: report,
+                cleaningType: document.getElementById('cleaningType').value,
+                // In a real app, send 'signature': canvas.toDataURL() 
+            };
+
+            document.getElementById('reportPreview').innerText = report;
+            document.getElementById('sendStatus').innerText = "";
+            document.getElementById('sendActions').style.display = 'flex';
+            document.getElementById('sendSpinner').classList.add('hidden');
+            
+            document.getElementById('sendModal').classList.remove('hidden');
+            document.getElementById('sendModal').classList.add('flex');
+        }
+
+        async function executeSend() {
+            const actions = document.getElementById('sendActions');
+            const spinner = document.getElementById('sendSpinner');
+            const status = document.getElementById('sendStatus');
+
+            actions.style.display = 'none';
+            spinner.classList.remove('hidden');
+            status.innerText = "Відправка...";
+
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(pendingData) });
+                status.innerText = "✅ Дані відправлено!";
+                status.classList.add('text-emerald-600');
+                
+                setTimeout(() => {
+                    closeSendModal();
+                    clearSignature();
+                }, 1500);
+            } catch(e) {
+                status.innerText = "❌ Помилка з'єднання";
+                status.classList.add('text-red-500');
+                actions.style.display = 'flex';
+                spinner.classList.add('hidden');
+            }
+        }
+
+        function closeSendModal() {
+            document.getElementById('sendModal').classList.add('hidden');
+            document.getElementById('sendModal').classList.remove('flex');
+        }
+        
+        document.getElementById('doSendBtn').onclick = executeSend;
+    </script>
+</body>
+</html>

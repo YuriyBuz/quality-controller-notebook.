@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Варки соусу | QC Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 700: '#334155', 800: '#1e293b', 900: '#0f172a' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root { --bg-color: #f8fafc; --card-bg: #ffffff; --text: #1e293b; --muted: #64748b; }
+        .dark { --bg-color: #0f172a; --card-bg: #1e293b; --text: #f1f5f9; --muted: #94a3b8; }
+        
+        body { background-color: var(--bg-color); color: var(--text); padding-bottom: 2rem; transition: 0.3s; }
+        .card { background-color: var(--card-bg); transition: 0.3s; }
+        
+        /* Inputs - Less rounded as requested */
+        input, select {
+            background-color: transparent;
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem; 
+            border-radius: 0.25rem; /* Less rounded */
+            width: 100%;
+            color: inherit;
+            transition: border-color 0.2s;
+        }
+        .dark input, .dark select { border-color: #334155; background-color: #1e293b; }
+        
+        input:focus, select:focus { outline: none; border-color: #f97316; box-shadow: 0 0 0 1px #f97316; }
+        
+        .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #10b981; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(2px); z-index: 50; }
+    </style>
+</head>
+<body class="font-sans antialiased">
+    
+    <div id="toast-container" class="fixed top-4 right-4 z-[2000] flex flex-col gap-2"></div>
+
+    <div class="container mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
+        
+        <!-- Header -->
+        <header class="relative text-center mb-6">
+            <div class="absolute top-0 left-0">
+                <a href="dashboard.html" class="flex items-center gap-2 text-slate-500 hover:text-emerald-600 transition-colors p-2 rounded bg-white dark:bg-slate-800 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+                    <span class="hidden sm:inline font-bold text-sm">Меню</span>
+                </a>
+            </div>
+            
+            <div class="absolute top-0 right-0">
+                <button id="themeToggle" class="p-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                </button>
+            </div>
+
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-orange-600 dark:text-orange-500">Варки соусу</h1>
+            <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Контроль якості</p>
+        </header>
+
+        <div class="card p-6 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 space-y-6">
+            <!-- Employee -->
+            <div>
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Контролер якості</label>
+                <select id="employeeSelect" class="bg-slate-50 dark:bg-slate-800"><option value="">Оберіть...</option></select>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Час</label><input type="time" id="tst-time"></div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Варник</label>
+                    <select id="tst-cookName">
+                        <option value="">Оберіть...</option>
+                        <option value="Загура Іван Борисович">Загура Іван Борисович</option>
+                        <option value="Солдатова Ірина Володимирівна">Солдатова Ірина Володимирівна</option>
+                        <option value="Садиріна Ольга Анатоліївна">Садиріна Ольга Анатоліївна</option>
+                        <option value="Козурак Іван Миколайович">Козурак Іван Миколайович</option>
+                        <option value="Кораблін Дмитро Русланович">Кораблін Дмитро Русланович</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Product Search -->
+            <div>
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Продукт (Код / Назва)</label>
+                <input type="text" id="tst-product" list="products-list" placeholder="Почніть вводити назву..." autocomplete="off">
+                <datalist id="products-list"></datalist>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">№ Завдання</label><input type="number" id="tst-task" placeholder="12345"></div>
+                <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Дата варки</label><input type="date" id="tst-cookDate"></div>
+            </div>
+
+            <!-- Organoleptic -->
+            <div class="bg-orange-500 text-white p-2 rounded text-center text-sm font-bold uppercase tracking-wide shadow-sm">Органолептика</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <select id="tst-color"><option value="" disabled selected>Колір...</option><option value="+">ОК</option><option value="-">Брак</option></select>
+                <select id="tst-aroma"><option value="" disabled selected>Аромат...</option><option value="+">ОК</option><option value="-">Брак</option></select>
+                <select id="tst-taste"><option value="" disabled selected>Смак...</option><option value="+">ОК</option><option value="-">Брак</option></select>
+                <select id="tst-consist"><option value="" disabled selected>Консист...</option><option value="+">ОК</option><option value="-">Брак</option></select>
+            </div>
+
+            <!-- Phys-Chem -->
+            <div class="bg-orange-500 text-white p-2 rounded text-center text-sm font-bold uppercase tracking-wide shadow-sm">Фізико-хімія</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Сухі (%)</label><input type="number" step="0.1" id="tst-dry"></div>
+                <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">В'язкість</label><input type="text" id="tst-visc"></div>
+                <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">pH</label><input type="number" step="0.01" id="tst-ph"></div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Стійкість</label>
+                    <select id="tst-stab"><option value="" disabled selected>...</option><option value="+">Стійка</option><option value="-">Не стійка</option></select>
+                </div>
+            </div>
+
+            <button onclick="initiateSend()" class="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                <span>📤 Відправити дані</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Sending Modal -->
+    <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
+        <div class="card p-6 rounded shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
+            <h3 class="text-xl font-bold mb-4 text-center">Підтвердження</h3>
+            <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded overflow-y-auto mb-4 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-60" id="reportPreview"></div>
+            <p id="sendStatus" class="text-center text-sm font-bold mb-3 text-emerald-600 min-h-[1.5em]"></p>
+            <div id="sendActions" class="flex flex-col gap-2">
+                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded shadow-lg transition-all active:scale-[0.98]">✅ Підтвердити</button>
+                <button onclick="closeSendModal()" class="w-full bg-transparent border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 font-bold py-3 rounded">Скасувати</button>
+            </div>
+            <div id="sendSpinner" class="hidden py-4 flex justify-center"><div class="spinner"></div></div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyg9z5S63_kl-Yxgnho4f5zjT_cCBFizOBp6eWDWQODEZLD0su5YhKAggmETVXgbPbF/exec";
+        const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
+        const products = [
+            "1101 Соєвий Bonsai", "1102 Соєвий Bonsai Prem", "1103 Соєвий YKI", "1104 Соєвий Bonsai Prof",
+            "1105 Соєвий Чумак", "1106 Соєвий METRO Chef", "1107 ТАМАРИ Bonsai", "1108 Теріякі Bonsai",
+            "1109 УНАГІ Bonsai", "1110 ЯКІТОРІ Bonsai", "1111 Теріякі Bonsai Prem", "1112 Теріякі густий YKI",
+            "1113 Теріякі з медом Bonsai", "1114 Теріякі рідкий YKI", "1115 Теріякі Чумак", "1116 Для Суши Bonsai",
+            "1117 Бальзамик Bonsai Prem", "1118 Горіховий Bonsai Prem", "1119 Соєвий Bonsai Prof (Custom Edition)", "1120 Для Суши Bonsai Prem",
+            "1121 Соєвий (O)", "1122 Соєвий Ketjap", "1123 Устричний Bonsai", "1124 Соєвий Солодкий Теріякі",
+            "1125 Соус соєвий Теріякі SESAME & GINGER PERI PERI", "1126 Соус соєвий Теріякі SWEET CHILI PERI PERI",
+            "1127 Соус соєвий Унагі SWEET & SOUR PERI PERI", "1128 Соус соєвий SOY & WHEAT PERI PERI", "1129 Маринад соєвий №1",
+            "1130 Маринад соєвий №7", "1131 Соус Теріякі Домінос", "1132 Соус соєвий /(Суши Тайм)", "1133 Соєвий густий",
+            "1134 Соус соєвий_PL", "1201 Кисло-солодкий Peri Peri", "1202 Гостро-солодкий Peri Peri", "1203 Журавлинний Peri Peri",
+            "1204 Ожиновий Peri Peri", "1205 Hot Chili PL", "1206 Sweet Chili Peri Peri, Bonsai Prem", "1207 Гранатовий Наршараб Peri Peri",
+            "1208 Для ЛокшиниWOK Peri Peri", "1209 Жовто-гарячий Peri Peri", "1210 Солодкий Чилі YKI", "1211 Манго-Чилі Peri Peri",
+            "1212 Пряні трави Peri Peri", "1213 Солодкий Чилі Чумак", "1214 Солодкий Чилі Bonsai", "1216 Солодкий Чилі(SE) Bonsai Prem",
+            "1217 Sweet Chili PL (PD)", "1218 Sweet Chili PL", "1219 Ткемалі Peri Peri", "1220 Кімчі Premium", "1221 Сацебелі Peri Peri",
+            "1301 Аризона Барбекю Peri Peri", "1302 Болоньезе Peri Peri", "1303 З в’яленими томатами Peri Peri", "1304 Кетчуп Peri Peri",
+            "1305 Болоньєзе YKI", "1307 Для ПІЦИ Bonsai Prof", "1308 Кетчуп Лагідний YKI", "1310 Кетчуп Чілі YKI",
+            "1312 PL_Соус Томатний (PD)", "1314 PL_Соус №95 Томатний", "1315 PL_Томатна паста 1000 гр", "1401 Original Salateria",
+            "1402 Бальзаміко Fresh Salateria", "1403 З кунжутною олією Salateria", "1404 З кунжутом Salateria", "1405 Медово-гірчична Fresh Salateria",
+            "1501 Кунжутний PP, BProf, Salat", "1502 Сирний Bonsai Prof", "1503 Тартар Peri Peri", "1504 Цезар Peri Peri",
+            "1505 Сирний Bonsai Prof, Peri Peri", "1506 ПЕСТО ROSSO", "1507 ПЕСТО", "1508 ПЕСТО PL", "1509 Майонез original 73%",
+            "1510 PL_Вершковий (PD)", "1601 Наповнювач Вишневий PL", "1602 Наповнювач Лісова ягода PL", "1701 Концентрований компот яблучно-грушевий",
+            "1702 Концентрований компот яблучно-вишневий", "1703 Концентрований компот яблучно-малиновий", "1704 Концентрований компот абрикосово-персиковий",
+            "1801 В’ялені томати", 
+            "3101 Bonsai соус соєвий Класичний 1000 мл (20531)", "3102 Bonsai соус соєвий Класичний 235 мл", "3103 Bonsai соус соєвий Класичний 500 мл",
+            "3104 Bonsai соус соєвий Класичний 890 мл", "3105 Bonsai соус соєвий ДЛЯ СУШІ з водоростями КОМБУ 235 мл", "3106 Bonsai соус соєвий ТАМАРІ з натур. медом 235 мл",
+            "3107 Bonsai соус соєвий ТЕРІЯКІ з натуральним медом 500 мл", "3108 Bonsai соус соєвий ТЕРІЯКІ з часником та имбирем (густий) 235 мл", "3109 Bonsai соус соєвий УНАГІ кисло-солодкий (Густий) 240 мл",
+            "3110 Bonsai соус соєвий УНАГІ кисло-солодкий 500 мл", "3111 Bonsai соус соєвий ЯКІТОРІ з устрицями та кунжутом (густий) 235 мл", "3112 Bonsai соус солодкий Теріякі 235 мл",
+            "3113 Bonsai соус Солодкий Чилі 260 гр", "3114 Bonsai соус Солодкий Чилі 550 гр", "3115 Bonsai соус соєвий 750 мл", "3116 Bonsai соус соєвий Теріякі 500 мл",
+            "3117 Bonsai соус соєвий ТЕРІЯКІ з часником та имбирем (густий) дой-пак 200 гр", "3118 Bonsai соус солодкий Теріякі (густий) дой-пак 200 гр", "3119 Bonsai соус соєвий УНАГІ кисло-солодкий (густий) дой-пак 200 гр",
+            "3120 Bonsai соус соєвий Класичний (густий) дой-пак 200 гр", "3121 Bonsai соус Солодкий Чилі (густий) дой-пак 200гр", "3201 Bonsai Premium соус cоєвий Бальзамічний 250 мл",
+            "3202 Bonsai Premium соус cоєвий Ketjap Manis 570 г", "3203 Bonsai Premium соус cоєвий Класичний 1000 мл", "3204 Bonsai Premium соус cоєвий Класичний 250 мл", "3205 Bonsai Premium соус cоєвий Теріякі 250 мл",
+            "3206 Bonsai Premium соус ГОРІХОВИЙ 500 гр", "3207 Bonsai Premium соус Гранатовий (НАРШАРАБ) 350гр", "3208 Bonsai Premium соус солодкий чилі 1100 гр", "3209 Bonsai Premium соус НАРШАРАБ 1300 гр",
+            "3211 Bonsai Premium соус cоєвий Класичний 20 л", "3301 Bonsai professional соус ГОСТРО-СОЛОДКИЙ (Китай. кухня) 1000 мл", "3305 Bonsai professional соус БОЛОНЬЄЗЕ (Італ. кухня) 1000 мл",
+            "3307 Bonsai professional соус Для піци 1000 гр", "3308 Bonsai professional соус КИСЛО-СОЛОДКИЙ (Китай. кухня) 1000 мл", "3309 Bonsai professional соус Кімчі 1100 гр",
+            "3310 Bonsai professional соус КУНЖУТНИЙ (густий) 1000 мл", "3311 Bonsai professional соус Сирний 1 кг/відро", "3312 Bonsai professional соус соєвий Класичний 1000 мл (концентрат 1:1)",
+            "3313 Bonsai professional соус соєвий класичний 5000 мл ПЕТ (Концентрат 1:1)", "3314 Bonsai professional соус соєвий Класичний каністра 20 л New", "3315 Bonsai professional соус соєвий ТЕРІЯКІ (густий) 1000 мл",
+            "3316 Bonsai professional соус соєвий ЯКІТОРІ (густий) 1000 мл", "3317 Bonsai professional соус солодкий ТЕРІЯКІ (густий) 1000 мл", "3318 Bonsai professional соус Солодкий Чилі 5700 гр ПЕТ",
+            "3319 Bonsai professional соус УНАГІ (густий) 1000 мл", "3320 Bonsai professional Соус УСТРИЧНИЙ (густий) 1000 мл", "3601 YKI соус cоєвий 1000 мл", "3602 YKI соус cоєвий 205 мл",
+            "3603 YKI соус cоєвий 470 мл", "3604 YKI соус cоєвий 890 мл", "3605 YKI соус Болоньєзе (Італійська кухня) 220 гр", "3606 YKI соус Болоньєзе (Італійська кухня) 530 гр",
+            "3607 YKI соус Гостро-солодкий (Китайська кухня) 525 гр", "3608 YKI соус Кисло-солодкий (Китайська кухня) 525 гр", "3609 YKI соус соєвий ТЕРІЯКІ (густий) 205 мл",
+            "3610 YKI соус соєвий ТЕРІЯКІ 205 мл", "3611 YKI соус соєвий ТЕРІЯКІ з часником та імбиром (густий) 470 мл", "3612 YKI соус соєвий УНАГІ 205 мл",
+            "3613 YKI соус Солодкий-Чилі (Тайська кухня) 540 гр", "3614 YKI соус Солодкий Чилі 225 гр", "3141 SOY SAUCE соус соєвий Класичний special edition 1000 мл"
+        ];
+
+        const empSel = document.getElementById('employeeSelect');
+        employees.forEach(e => empSel.add(new Option(e, e)));
+        const dl = document.getElementById('products-list');
+        products.forEach(p => { const opt = document.createElement('option'); opt.value = p; dl.appendChild(opt); });
+        
+        // Defaults
+        document.getElementById('tst-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
+        document.getElementById('tst-cookDate').valueAsDate = new Date();
+
+        // Restore User
+        const saved = localStorage.getItem('qc_user');
+        if(saved) empSel.value = saved;
+        empSel.onchange = () => localStorage.setItem('qc_user', empSel.value);
+
+        // Theme Toggle
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+
+        let pendingData = null;
+
+        function initiateSend() {
+            if(!empSel.value) { alert("Оберіть контролера!"); return; }
+            
+            const report = `=== Варки соусу ===\nКонтролер: ${empSel.value}\nЧас: ${document.getElementById('tst-time').value}\nВарник: ${document.getElementById('tst-cookName').value}\nПродукт: ${document.getElementById('tst-product').value}\nЗавдання: ${document.getElementById('tst-task').value}\nДата варки: ${document.getElementById('tst-cookDate').value}\n\nОрганолептика:\nКолір: ${document.getElementById('tst-color').value || '-'}\nАромат: ${document.getElementById('tst-aroma').value || '-'}\nСмак: ${document.getElementById('tst-taste').value || '-'}\nКонсистенція: ${document.getElementById('tst-consist').value || '-'}\n\nФізико-хімія:\nСухі: ${document.getElementById('tst-dry').value}%\nВ'язкість: ${document.getElementById('tst-visc').value}\npH: ${document.getElementById('tst-ph').value}\nСтійкість: ${document.getElementById('tst-stab').value || '-'}`;
+
+            pendingData = {
+                time: new Date().toLocaleString('uk-UA'),
+                employee: empSel.value,
+                section: "Варки соусу",
+                report: report
+            };
+
+            document.getElementById('reportPreview').innerText = report;
+            document.getElementById('sendStatus').innerText = "";
+            document.getElementById('sendActions').style.display = 'flex';
+            document.getElementById('sendSpinner').classList.add('hidden');
+            
+            document.getElementById('sendModal').classList.remove('hidden');
+            document.getElementById('sendModal').classList.add('flex');
+        }
+
+        async function executeSend() {
+            const actions = document.getElementById('sendActions');
+            const spinner = document.getElementById('sendSpinner');
+            const status = document.getElementById('sendStatus');
+
+            actions.style.display = 'none';
+            spinner.classList.remove('hidden');
+            status.innerText = "Відправка...";
+
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(pendingData) });
+                status.innerText = "✅ Дані відправлено!";
+                status.classList.add('text-emerald-600');
+                
+                setTimeout(() => {
+                    closeSendModal();
+                }, 1500);
+            } catch(e) {
+                status.innerText = "❌ Помилка з'єднання";
+                status.classList.add('text-red-500');
+                actions.style.display = 'flex';
+                spinner.classList.add('hidden');
+            }
+        }
+
+        function closeSendModal() {
+            document.getElementById('sendModal').classList.add('hidden');
+            document.getElementById('sendModal').classList.remove('flex');
+        }
+        
+        document.getElementById('doSendBtn').onclick = executeSend;
+    </script>
+</body>
+</html>
