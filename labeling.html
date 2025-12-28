@@ -9,34 +9,33 @@
         tailwind.config = {
             darkMode: 'class',
             theme: {
-                extend: { colors: { slate: { 50: '#f8fafc', 800: '#1e293b', 900: '#0f172a' } } }
+                extend: { colors: { slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 700: '#334155', 800: '#1e293b', 900: '#0f172a' } } }
             }
         }
     </script>
     <style>
         :root { --bg-color: #f8fafc; --card-bg: #fff; --text: #1e293b; }
         .dark { --bg-color: #0f172a; --card-bg: #1e293b; --text: #f1f5f9; }
-        body { background-color: var(--bg-color); color: var(--text); padding-bottom: 4rem; transition: 0.3s; }
-        .card { background-color: var(--card-bg); transition: 0.3s; }
+        body { background-color: var(--bg-color); color: var(--text); padding-bottom: 2rem; transition: background-color 0.3s ease; }
+        .card { background-color: var(--card-bg); transition: background-color 0.3s ease; }
         
         input, select, textarea {
             background-color: transparent;
-            border: 1px solid #e2e8f0;
-            padding: 1rem; 
-            border-radius: 0.25rem; /* Less rounded */
+            border: 1px solid #cbd5e1;
+            padding: 0.75rem 1rem; 
+            border-radius: 0.25rem;
             width: 100%;
-            font-size: 1.1rem; /* Bigger font */
+            font-size: 1.125rem; 
             color: inherit;
             transition: border-color 0.2s;
         }
-        .dark input, .dark select, .dark textarea { border-color: #334155; background-color: #1e293b; }
+        .dark input, .dark select, .dark textarea { border-color: #475569; background-color: #1e293b; }
         
         input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
         input[type="checkbox"] { width: 1.5rem; height: 1.5rem; accent-color: #2563eb; border-radius: 0.25rem; }
         
         .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #10b981; animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
-        
         .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(2px); z-index: 50; }
     </style>
 </head>
@@ -44,22 +43,29 @@
     <div class="container mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
         
         <header class="flex items-center gap-4 mb-8">
-            <a href="index.html" class="p-3 bg-white dark:bg-slate-800 rounded shadow text-slate-500 hover:text-blue-500 transition-colors flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
-                <span class="font-bold hidden sm:inline">Меню</span>
+            <a href="index.html" class="flex items-center gap-2 text-slate-500 hover:text-emerald-600 transition-colors p-3 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+                <span class="hidden sm:inline font-bold text-base">Меню</span>
             </a>
-            <h1 class="text-3xl font-bold text-blue-700 dark:text-blue-500">Етикетування</h1>
-            <button id="themeToggle" class="ml-auto p-3 text-slate-400 hover:text-slate-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg></button>
+            
+            <div class="flex-1 text-center">
+                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">Етикетування</h1>
+                <p class="text-blue-600 dark:text-blue-400 text-sm font-bold mt-1 uppercase tracking-wide">Контроль пакування</p>
+            </div>
+            
+            <button id="themeToggle" class="p-3 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
         </header>
 
-        <div class="card p-8 rounded shadow-lg border border-blue-100 dark:border-slate-700 space-y-6">
+        <div class="card p-6 sm:p-8 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 space-y-6">
             <!-- Employee -->
             <div>
                 <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Контролер</label>
-                <select id="employeeSelect"><option value="">Оберіть...</option></select>
+                <select id="employeeSelect" class="bg-slate-50 dark:bg-slate-800"><option value="">Оберіть...</option></select>
             </div>
 
-            <div class="grid grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div><label class="block text-sm font-bold text-slate-400 uppercase mb-2">Час</label><input type="time" id="lbl-time"></div>
                 <div>
                     <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Машина</label>
@@ -82,23 +88,23 @@
                 <datalist id="lbl-product-list"></datalist>
             </div>
 
-            <div class="grid grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div><label class="block text-sm font-bold text-slate-400 uppercase mb-2">№ Завдання</label><input type="number" id="lbl-task"></div>
                 <div><label class="block text-sm font-bold text-slate-400 uppercase mb-2">Чистота</label><select id="lbl-sanitary"><option value="Відповідає">✅ ОК</option><option value="Не відповідає">❌ Брак</option></select></div>
             </div>
 
-            <div class="grid grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div><label class="block text-sm font-bold text-slate-400 uppercase mb-2">Дата на ет.</label><input type="date" id="lbl-label-date"></div>
-                <div><label class="block text-sm font-bold text-slate-400 uppercase mb-2">Партія</label><input type="text" id="lbl-label-batch" placeholder="L..."></div>
+                <div><label class="block text-sm font-bold text-slate-400 uppercase mb-2">Партія</label><input type="number" id="lbl-label-batch" placeholder="12345"></div>
             </div>
 
-            <div class="grid grid-cols-2 gap-6">
-                <div><label class="block text-sm font-bold text-slate-400 uppercase mb-2">Плівка</label><input type="text" id="lbl-width"></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div><label class="block text-sm font-bold text-slate-400 uppercase mb-2">Плівка</label><input type="number" id="lbl-width"></div>
                 <div><label class="block text-sm font-bold text-slate-400 uppercase mb-2">Т. тунелю</label><input type="number" id="lbl-temp"></div>
             </div>
 
             <!-- Checkboxes -->
-            <div class="bg-blue-50 dark:bg-slate-800 p-6 rounded border border-blue-100 dark:border-slate-700 grid grid-cols-1 gap-4">
+            <div class="bg-blue-50 dark:bg-slate-800 p-6 rounded-xl border border-blue-100 dark:border-slate-700 grid grid-cols-1 gap-4">
                 <label class="flex items-center gap-4 cursor-pointer"><input type="checkbox" id="check-pack"><span class="text-base font-medium">Відповідність формування пака</span></label>
                 <label class="flex items-center gap-4 cursor-pointer"><input type="checkbox" id="check-sticker"><span class="text-base font-medium">Відповідність стікера</span></label>
                 <label class="flex items-center gap-4 cursor-pointer"><input type="checkbox" id="check-pallet"><span class="text-base font-medium">Відповідність палетування</span></label>
@@ -109,7 +115,7 @@
             <textarea id="lbl-comment" class="w-full" rows="2" placeholder="Коментар..."></textarea>
 
             <!-- SEND BUTTON -->
-            <button onclick="initiateSend()" class="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2 text-lg">
+            <button onclick="initiateSend()" class="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2 text-lg">
                 <span>📤 Відправити дані</span>
             </button>
         </div>
@@ -117,13 +123,13 @@
 
     <!-- Sending Modal -->
     <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
-        <div class="card p-8 rounded shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] border border-slate-200">
+        <div class="card p-8 rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] border border-slate-200">
             <h3 class="text-2xl font-bold mb-4 text-center">Підтвердження</h3>
-            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded overflow-y-auto mb-6 border border-slate-200 dark:border-slate-700 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div>
+            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-xl overflow-y-auto mb-6 border border-slate-200 dark:border-slate-700 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div>
             <p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p>
             <div id="sendActions" class="flex flex-col gap-3">
-                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded shadow-lg transition-all active:scale-[0.98] text-lg">✅ Підтвердити</button>
-                <button onclick="closeSendModal()" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 font-bold py-4 rounded transition-colors text-lg">Скасувати</button>
+                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] text-lg">✅ Підтвердити</button>
+                <button onclick="closeSendModal()" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 font-bold py-4 rounded-xl transition-colors text-lg">Скасувати</button>
             </div>
             <div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div>
         </div>
@@ -282,11 +288,6 @@
             }
         };
 
-        // Batch 'L' prefix
-        document.getElementById('lbl-label-batch').onblur = function() {
-            if(this.value && !this.value.trim().toUpperCase().startsWith('L')) this.value = 'L' + this.value.trim();
-        };
-
         document.getElementById('lbl-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
         document.getElementById('lbl-label-date').valueAsDate = new Date();
 
@@ -344,7 +345,7 @@
                 status.innerText = "✅ Дані відправлено (черга)!";
                 status.classList.add('text-emerald-600');
                 
-                const recipients = "Buznitskiy7@gmail.com,Dyndarnastia@gmail.com,olgagoncharukm@gmail.com,sashaalieva18@gmail.com";
+                const recipients = "Dyndarnastia@gmail.com,Buznitskiy7@gmail.com";
                 const subject = encodeURIComponent("Звіт QC Master: Етикетування");
                 const body = encodeURIComponent(pendingData.report);
 
