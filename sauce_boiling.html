@@ -16,76 +16,108 @@
     <style>
         :root { --bg-color: #f8fafc; --card-bg: #fff; --text: #1e293b; }
         .dark { --bg-color: #0f172a; --card-bg: #1e293b; --text: #f1f5f9; }
-        body { background-color: var(--bg-color); color: var(--text); padding-bottom: 2rem; transition: 0.3s; }
-        .card { background-color: var(--card-bg); transition: 0.3s; }
+        body { background-color: var(--bg-color); color: var(--text); padding-bottom: 2rem; transition: background-color 0.3s ease; }
+        .card { background-color: var(--card-bg); transition: background-color 0.3s ease; }
         
         input, select {
             background-color: transparent;
-            border: 1px solid #fed7aa; /* Orange tint border */
-            padding: 1rem; /* Bigger padding */
-            border-radius: 0.25rem; /* Less rounded */
+            border: 1px solid #cbd5e1;
+            padding: 0.75rem 1rem; 
+            border-radius: 0.25rem;
             width: 100%;
-            font-size: 1.1rem; /* Bigger font */
+            font-size: 1.125rem; 
             color: inherit;
+            transition: border-color 0.2s, background-color 0.2s;
         }
-        .dark input, .dark select { border-color: #431407; background-color: #431407; } /* Dark orange/brown */
+        .dark input, .dark select { border-color: #475569; background-color: #1e293b; }
         
         input:focus, select:focus { outline: none; border-color: #f97316; box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2); }
         
+        /* Styles for pH warning */
+        .ph-alert {
+            background-color: #fee2e2 !important; /* red-100 */
+            border-color: #ef4444 !important; /* red-500 */
+            color: #991b1b !important; /* red-800 */
+        }
+        .dark .ph-alert {
+            background-color: #7f1d1d !important;
+            border-color: #ef4444 !important;
+            color: #fecaca !important;
+        }
+
+        datalist { max-height: 200px; overflow-y: auto; }
         .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #10b981; animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
-        
         .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(2px); z-index: 50; }
     </style>
 </head>
 <body class="font-sans antialiased">
+    
+    <div id="toast-container" class="fixed top-4 right-4 z-[2000] flex flex-col gap-2"></div>
+
     <div class="container mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
         <header class="flex items-center gap-4 mb-8">
-            <a href="index.html" class="p-3 bg-white dark:bg-slate-800 rounded shadow text-slate-500 hover:text-orange-500 transition-colors flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
-                <span class="font-bold hidden sm:inline">Меню</span>
+            <a href="index.html" class="flex items-center gap-2 text-slate-500 hover:text-emerald-600 transition-colors p-3 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+                <span class="hidden sm:inline font-bold text-base">Меню</span>
             </a>
-            <h1 class="text-3xl font-bold text-orange-700 dark:text-orange-500">Варки соусу</h1>
-            <button id="themeToggle" class="ml-auto p-3 text-slate-400 hover:text-slate-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg></button>
+            
+            <div class="flex-1 text-center">
+                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">Варки соусу</h1>
+                <p class="text-orange-600 dark:text-orange-400 text-sm font-bold mt-1 uppercase tracking-wide">Лабораторний контроль</p>
+            </div>
+            
+            <button id="themeToggle" class="p-3 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
         </header>
 
-        <div class="card p-8 rounded shadow-lg border border-orange-100 dark:border-slate-700 space-y-6">
+        <div class="card p-6 sm:p-8 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 space-y-6">
             <!-- Employee -->
             <div>
-                <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Контролер</label>
+                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер</label>
                 <select id="employeeSelect"><option value="">Оберіть...</option></select>
             </div>
 
-            <div class="grid grid-cols-2 gap-6">
-                <div><label class="block text-sm font-bold text-slate-400 uppercase mb-2">Час</label><input type="time" id="tst-time"></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Варник</label>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Час</label>
+                    <input type="time" id="tst-time">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Варник</label>
                     <select id="tst-cookName">
                         <option value="">Оберіть...</option>
-                        <option value="Загура Іван Борисович">Загура Іван</option>
-                        <option value="Солдатова Ірина Володимирівна">Солдатова Ірина</option>
-                        <option value="Садиріна Ольга Анатоліївна">Садиріна Ольга</option>
-                        <option value="Козурак Іван Миколайович">Козурак Іван</option>
-                        <option value="Кораблін Дмитро Русланович">Кораблін Дмитро</option>
+                        <option value="Загура Іван Борисович">Загура Іван Борисович</option>
+                        <option value="Солдатова Ірина Володимирівна">Солдатова Ірина Володимирівна</option>
+                        <option value="Садиріна Ольга Анатоліївна">Садиріна Ольга Анатоліївна</option>
+                        <option value="Козурак Іван Миколайович">Козурак Іван Миколайович</option>
+                        <option value="Кораблін Дмитро Русланович">Кораблін Дмитро Русланович</option>
                     </select>
                 </div>
             </div>
 
             <!-- Product Search -->
             <div>
-                <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Продукт (Код/Назва)</label>
-                <input type="text" id="tst-product" list="products-list" placeholder="Введіть код або назву..." autocomplete="off">
+                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Продукт (Код/Назва)</label>
+                <input type="text" id="tst-product" list="products-list" placeholder="Почніть вводити назву..." autocomplete="off">
                 <datalist id="products-list"></datalist>
             </div>
 
-            <div class="grid grid-cols-2 gap-6">
-                <div><label class="block text-sm font-bold text-slate-400 uppercase mb-2">№ Завдання</label><input type="number" id="tst-task" placeholder="12345"></div>
-                <div><label class="block text-sm font-bold text-slate-400 uppercase mb-2">Дата варки</label><input type="date" id="tst-cookDate"></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">№ Завдання</label>
+                    <input type="number" id="tst-task" placeholder="12345">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Дата варки</label>
+                    <input type="date" id="tst-cookDate">
+                </div>
             </div>
 
             <!-- Organoleptic -->
-            <div class="bg-orange-500 text-white p-3 rounded text-center text-base font-bold uppercase tracking-wide">Органолептика</div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="bg-orange-500 text-white p-3 rounded-xl text-center text-lg font-bold uppercase tracking-wide shadow-md">Органолептика</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <select id="tst-color"><option value="" disabled selected>Колір...</option><option value="+">ОК</option><option value="-">Брак</option></select>
                 <select id="tst-aroma"><option value="" disabled selected>Аромат...</option><option value="+">ОК</option><option value="-">Брак</option></select>
                 <select id="tst-taste"><option value="" disabled selected>Смак...</option><option value="+">ОК</option><option value="-">Брак</option></select>
@@ -93,18 +125,28 @@
             </div>
 
             <!-- Phys-Chem -->
-            <div class="bg-orange-500 text-white p-3 rounded text-center text-base font-bold uppercase tracking-wide">Фізико-хімія</div>
-            <div class="grid grid-cols-2 gap-6">
-                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-2">Сухі (%)</label><input type="number" step="0.1" id="tst-dry"></div>
-                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-2">В'язкість</label><input type="text" id="tst-visc"></div>
-                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-2">pH</label><input type="number" step="0.01" id="tst-ph"></div>
+            <div class="bg-orange-500 text-white p-3 rounded-xl text-center text-lg font-bold uppercase tracking-wide shadow-md">Фізико-хімія</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Стійкість</label>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Сухі (%)</label>
+                    <input type="number" step="0.1" id="tst-dry">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">В'язкість</label>
+                    <input type="number" id="tst-visc"> <!-- Changed to number -->
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">pH</label>
+                    <input type="number" step="0.01" id="tst-ph" oninput="validatePH(this)">
+                    <p id="ph-warning" class="hidden text-xs font-bold text-red-600 mt-1 animate-pulse">⚠️ Увага: низька кислотність!</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Стійкість</label>
                     <select id="tst-stab"><option value="" disabled selected>...</option><option value="+">Стійка</option><option value="-">Не стійка</option></select>
                 </div>
             </div>
 
-            <button onclick="initiateSend()" class="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg">
+            <button onclick="initiateSend()" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg">
                 <span>📤 Відправити дані</span>
             </button>
         </div>
@@ -112,13 +154,13 @@
 
     <!-- Sending Modal -->
     <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
-        <div class="card p-8 rounded shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] border border-slate-200">
+        <div class="card p-8 rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700">
             <h3 class="text-2xl font-bold mb-4 text-center">Підтвердження</h3>
-            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded overflow-y-auto mb-6 border border-slate-200 dark:border-slate-700 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div>
+            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-xl overflow-y-auto mb-6 border border-slate-200 dark:border-slate-700 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div>
             <p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p>
             <div id="sendActions" class="flex flex-col gap-3">
-                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded shadow-lg transition-all active:scale-[0.98] text-lg">✅ Підтвердити</button>
-                <button onclick="closeSendModal()" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 font-bold py-4 rounded transition-colors text-lg">Скасувати</button>
+                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] text-lg">✅ Підтвердити</button>
+                <button onclick="closeSendModal()" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 font-bold py-4 rounded-xl transition-colors text-lg">Скасувати</button>
             </div>
             <div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div>
         </div>
@@ -174,25 +216,68 @@
 
         const empSel = document.getElementById('employeeSelect');
         employees.forEach(e => empSel.add(new Option(e, e)));
-        const dl = document.getElementById('products-list');
-        products.forEach(p => { const opt = document.createElement('option'); opt.value = p; dl.appendChild(opt); });
-        
-        // Defaults
-        document.getElementById('tst-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
-        document.getElementById('tst-cookDate').valueAsDate = new Date();
-
-        // Restore User
         const saved = localStorage.getItem('qc_user');
         if(saved) empSel.value = saved;
         empSel.onchange = () => localStorage.setItem('qc_user', empSel.value);
 
-        // Theme
+        // Theme Toggle
         document.getElementById('themeToggle').addEventListener('click', () => {
             document.documentElement.classList.toggle('dark');
             localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
         });
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
+        }
+
+        const tmSel = document.getElementById('lbl-tm');
+        Object.keys(productDatabase).forEach(tm => tmSel.add(new Option(tm, tm)));
+        
+        tmSel.onchange = () => {
+            const list = document.getElementById('lbl-product-list');
+            const inp = document.getElementById('lbl-product');
+            list.innerHTML = ''; inp.value = '';
+            const prods = productDatabase[tmSel.value];
+            if(prods) {
+                inp.disabled = false;
+                prods.forEach(p => { const o = document.createElement('option'); o.value = `${p.id} | ${p.name}`; list.appendChild(o); });
+            } else {
+                inp.disabled = true;
+            }
+        };
+
+        // Defaults
+        document.getElementById('tst-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
+        document.getElementById('tst-cookDate').valueAsDate = new Date();
+
+        // PH Validation Logic
+        function validatePH(input) {
+            const val = parseFloat(input.value);
+            const warning = document.getElementById('ph-warning');
+            
+            if (val > 4.5) {
+                input.classList.add('ph-alert');
+                warning.classList.remove('hidden');
+                showToast('Увага: Низька кислотність (pH > 4.5)', true);
+            } else {
+                input.classList.remove('ph-alert');
+                warning.classList.add('hidden');
+            }
+        }
+
+        function showToast(message, isError = false) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast bg-white dark:bg-slate-700 border-l-4 p-4 rounded-lg shadow-xl flex items-center max-w-sm transform transition-all duration-300 translate-x-full border border-slate-200 dark:border-slate-600`;
+            if (isError) {
+                toast.classList.add('border-red-500', 'text-red-700', 'dark:text-red-400');
+                toast.innerHTML = `<span class="mr-2 text-xl">🚫</span> <span class="font-medium text-sm">${message}</span>`;
+            } else {
+                toast.classList.add('border-emerald-500', 'text-emerald-700', 'dark:text-emerald-400');
+                toast.innerHTML = `<span class="mr-2 text-xl">✅</span> <span class="font-medium text-sm">${message}</span>`;
+            }
+            container.appendChild(toast);
+            requestAnimationFrame(() => { toast.classList.remove('translate-x-full'); });
+            setTimeout(() => { toast.classList.add('translate-x-full'); setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
         let pendingData = null;
@@ -246,7 +331,7 @@
                 status.innerText = "✅ Дані відправлено (черга)!";
                 status.classList.add('text-emerald-600');
                 
-                const recipients = "Buznitskiy7@gmail.com,Dyndarnastia@gmail.com,olgagoncharukm@gmail.com,sashaalieva18@gmail.com";
+                const recipients = "Dyndarnastia@gmail.com,Buznitskiy7@gmail.com";
                 const subject = encodeURIComponent("Звіт QC Master: Варки соусу");
                 const body = encodeURIComponent(pendingData.report);
 
