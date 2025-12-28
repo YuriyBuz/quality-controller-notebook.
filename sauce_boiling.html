@@ -9,34 +9,28 @@
         tailwind.config = {
             darkMode: 'class',
             theme: {
-                extend: {
-                    colors: {
-                        slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 700: '#334155', 800: '#1e293b', 900: '#0f172a' }
-                    }
-                }
+                extend: { colors: { slate: { 50: '#f8fafc', 800: '#1e293b', 900: '#0f172a' } } }
             }
         }
     </script>
     <style>
-        :root { --bg-color: #f8fafc; --card-bg: #ffffff; --text: #1e293b; --muted: #64748b; }
-        .dark { --bg-color: #0f172a; --card-bg: #1e293b; --text: #f1f5f9; --muted: #94a3b8; }
-        
+        :root { --bg-color: #f8fafc; --card-bg: #fff; --text: #1e293b; }
+        .dark { --bg-color: #0f172a; --card-bg: #1e293b; --text: #f1f5f9; }
         body { background-color: var(--bg-color); color: var(--text); padding-bottom: 2rem; transition: 0.3s; }
         .card { background-color: var(--card-bg); transition: 0.3s; }
         
-        /* Inputs - Less rounded as requested */
         input, select {
             background-color: transparent;
-            border: 1px solid #e2e8f0;
-            padding: 0.75rem; 
+            border: 1px solid #fed7aa; /* Orange tint border */
+            padding: 1rem; /* Bigger padding */
             border-radius: 0.25rem; /* Less rounded */
             width: 100%;
+            font-size: 1.1rem; /* Bigger font */
             color: inherit;
-            transition: border-color 0.2s;
         }
-        .dark input, .dark select { border-color: #334155; background-color: #1e293b; }
+        .dark input, .dark select { border-color: #431407; background-color: #431407; } /* Dark orange/brown */
         
-        input:focus, select:focus { outline: none; border-color: #f97316; box-shadow: 0 0 0 1px #f97316; }
+        input:focus, select:focus { outline: none; border-color: #f97316; box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2); }
         
         .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #10b981; animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -45,67 +39,53 @@
     </style>
 </head>
 <body class="font-sans antialiased">
-    
-    <div id="toast-container" class="fixed top-4 right-4 z-[2000] flex flex-col gap-2"></div>
-
     <div class="container mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
-        
-        <!-- Header -->
-        <header class="relative text-center mb-6">
-            <div class="absolute top-0 left-0">
-                <a href="dashboard.html" class="flex items-center gap-2 text-slate-500 hover:text-emerald-600 transition-colors p-2 rounded bg-white dark:bg-slate-800 shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
-                    <span class="hidden sm:inline font-bold text-sm">Меню</span>
-                </a>
-            </div>
-            
-            <div class="absolute top-0 right-0">
-                <button id="themeToggle" class="p-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
-                </button>
-            </div>
-
-            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-orange-600 dark:text-orange-500">Варки соусу</h1>
-            <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Контроль якості</p>
+        <header class="flex items-center gap-4 mb-8">
+            <a href="index.html" class="p-3 bg-white dark:bg-slate-800 rounded shadow text-slate-500 hover:text-orange-500 transition-colors flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+                <span class="font-bold hidden sm:inline">Меню</span>
+            </a>
+            <h1 class="text-3xl font-bold text-orange-700 dark:text-orange-500">Варки соусу</h1>
+            <button id="themeToggle" class="ml-auto p-3 text-slate-400 hover:text-slate-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg></button>
         </header>
 
-        <div class="card p-6 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 space-y-6">
+        <div class="card p-8 rounded shadow-lg border border-orange-100 dark:border-slate-700 space-y-6">
             <!-- Employee -->
             <div>
-                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Контролер якості</label>
-                <select id="employeeSelect" class="bg-slate-50 dark:bg-slate-800"><option value="">Оберіть...</option></select>
+                <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Контролер</label>
+                <select id="employeeSelect"><option value="">Оберіть...</option></select>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Час</label><input type="time" id="tst-time"></div>
+            <div class="grid grid-cols-2 gap-6">
+                <div><label class="block text-sm font-bold text-slate-400 uppercase mb-2">Час</label><input type="time" id="tst-time"></div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Варник</label>
+                    <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Варник</label>
                     <select id="tst-cookName">
                         <option value="">Оберіть...</option>
-                        <option value="Загура Іван Борисович">Загура Іван Борисович</option>
-                        <option value="Солдатова Ірина Володимирівна">Солдатова Ірина Володимирівна</option>
-                        <option value="Садиріна Ольга Анатоліївна">Садиріна Ольга Анатоліївна</option>
-                        <option value="Козурак Іван Миколайович">Козурак Іван Миколайович</option>
-                        <option value="Кораблін Дмитро Русланович">Кораблін Дмитро Русланович</option>
+                        <option value="Загура Іван Борисович">Загура Іван</option>
+                        <option value="Солдатова Ірина Володимирівна">Солдатова Ірина</option>
+                        <option value="Садиріна Ольга Анатоліївна">Садиріна Ольга</option>
+                        <option value="Козурак Іван Миколайович">Козурак Іван</option>
+                        <option value="Кораблін Дмитро Русланович">Кораблін Дмитро</option>
                     </select>
                 </div>
             </div>
 
             <!-- Product Search -->
             <div>
-                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Продукт (Код / Назва)</label>
-                <input type="text" id="tst-product" list="products-list" placeholder="Почніть вводити назву..." autocomplete="off">
+                <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Продукт (Код/Назва)</label>
+                <input type="text" id="tst-product" list="products-list" placeholder="Введіть код або назву..." autocomplete="off">
                 <datalist id="products-list"></datalist>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">№ Завдання</label><input type="number" id="tst-task" placeholder="12345"></div>
-                <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Дата варки</label><input type="date" id="tst-cookDate"></div>
+            <div class="grid grid-cols-2 gap-6">
+                <div><label class="block text-sm font-bold text-slate-400 uppercase mb-2">№ Завдання</label><input type="number" id="tst-task" placeholder="12345"></div>
+                <div><label class="block text-sm font-bold text-slate-400 uppercase mb-2">Дата варки</label><input type="date" id="tst-cookDate"></div>
             </div>
 
             <!-- Organoleptic -->
-            <div class="bg-orange-500 text-white p-2 rounded text-center text-sm font-bold uppercase tracking-wide shadow-sm">Органолептика</div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="bg-orange-500 text-white p-3 rounded text-center text-base font-bold uppercase tracking-wide">Органолептика</div>
+            <div class="grid grid-cols-2 gap-4">
                 <select id="tst-color"><option value="" disabled selected>Колір...</option><option value="+">ОК</option><option value="-">Брак</option></select>
                 <select id="tst-aroma"><option value="" disabled selected>Аромат...</option><option value="+">ОК</option><option value="-">Брак</option></select>
                 <select id="tst-taste"><option value="" disabled selected>Смак...</option><option value="+">ОК</option><option value="-">Брак</option></select>
@@ -113,18 +93,18 @@
             </div>
 
             <!-- Phys-Chem -->
-            <div class="bg-orange-500 text-white p-2 rounded text-center text-sm font-bold uppercase tracking-wide shadow-sm">Фізико-хімія</div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Сухі (%)</label><input type="number" step="0.1" id="tst-dry"></div>
-                <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">В'язкість</label><input type="text" id="tst-visc"></div>
-                <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">pH</label><input type="number" step="0.01" id="tst-ph"></div>
+            <div class="bg-orange-500 text-white p-3 rounded text-center text-base font-bold uppercase tracking-wide">Фізико-хімія</div>
+            <div class="grid grid-cols-2 gap-6">
+                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-2">Сухі (%)</label><input type="number" step="0.1" id="tst-dry"></div>
+                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-2">В'язкість</label><input type="text" id="tst-visc"></div>
+                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-2">pH</label><input type="number" step="0.01" id="tst-ph"></div>
                 <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Стійкість</label>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Стійкість</label>
                     <select id="tst-stab"><option value="" disabled selected>...</option><option value="+">Стійка</option><option value="-">Не стійка</option></select>
                 </div>
             </div>
 
-            <button onclick="initiateSend()" class="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+            <button onclick="initiateSend()" class="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg">
                 <span>📤 Відправити дані</span>
             </button>
         </div>
@@ -132,15 +112,15 @@
 
     <!-- Sending Modal -->
     <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
-        <div class="card p-6 rounded shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
-            <h3 class="text-xl font-bold mb-4 text-center">Підтвердження</h3>
-            <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded overflow-y-auto mb-4 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-60" id="reportPreview"></div>
-            <p id="sendStatus" class="text-center text-sm font-bold mb-3 text-emerald-600 min-h-[1.5em]"></p>
-            <div id="sendActions" class="flex flex-col gap-2">
-                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded shadow-lg transition-all active:scale-[0.98]">✅ Підтвердити</button>
-                <button onclick="closeSendModal()" class="w-full bg-transparent border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 font-bold py-3 rounded">Скасувати</button>
+        <div class="card p-8 rounded shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] border border-slate-200">
+            <h3 class="text-2xl font-bold mb-4 text-center">Підтвердження</h3>
+            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded overflow-y-auto mb-6 border border-slate-200 dark:border-slate-700 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div>
+            <p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p>
+            <div id="sendActions" class="flex flex-col gap-3">
+                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded shadow-lg transition-all active:scale-[0.98] text-lg">✅ Підтвердити</button>
+                <button onclick="closeSendModal()" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 font-bold py-4 rounded transition-colors text-lg">Скасувати</button>
             </div>
-            <div id="sendSpinner" class="hidden py-4 flex justify-center"><div class="spinner"></div></div>
+            <div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div>
         </div>
     </div>
 
@@ -206,7 +186,7 @@
         if(saved) empSel.value = saved;
         empSel.onchange = () => localStorage.setItem('qc_user', empSel.value);
 
-        // Theme Toggle
+        // Theme
         document.getElementById('themeToggle').addEventListener('click', () => {
             document.documentElement.classList.toggle('dark');
             localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
@@ -223,10 +203,24 @@
             const report = `=== Варки соусу ===\nКонтролер: ${empSel.value}\nЧас: ${document.getElementById('tst-time').value}\nВарник: ${document.getElementById('tst-cookName').value}\nПродукт: ${document.getElementById('tst-product').value}\nЗавдання: ${document.getElementById('tst-task').value}\nДата варки: ${document.getElementById('tst-cookDate').value}\n\nОрганолептика:\nКолір: ${document.getElementById('tst-color').value || '-'}\nАромат: ${document.getElementById('tst-aroma').value || '-'}\nСмак: ${document.getElementById('tst-taste').value || '-'}\nКонсистенція: ${document.getElementById('tst-consist').value || '-'}\n\nФізико-хімія:\nСухі: ${document.getElementById('tst-dry').value}%\nВ'язкість: ${document.getElementById('tst-visc').value}\npH: ${document.getElementById('tst-ph').value}\nСтійкість: ${document.getElementById('tst-stab').value || '-'}`;
 
             pendingData = {
+                type: "sauce",
                 time: new Date().toLocaleString('uk-UA'),
                 employee: empSel.value,
                 section: "Варки соусу",
-                report: report
+                report: report,
+                // Structured data:
+                cook: document.getElementById('tst-cookName').value,
+                product: document.getElementById('tst-product').value,
+                task: document.getElementById('tst-task').value,
+                cookDate: document.getElementById('tst-cookDate').value,
+                color: document.getElementById('tst-color').value,
+                aroma: document.getElementById('tst-aroma').value,
+                taste: document.getElementById('tst-taste').value,
+                consist: document.getElementById('tst-consist').value,
+                dry: document.getElementById('tst-dry').value,
+                visc: document.getElementById('tst-visc').value,
+                ph: document.getElementById('tst-ph').value,
+                stability: document.getElementById('tst-stab').value
             };
 
             document.getElementById('reportPreview').innerText = report;
@@ -249,11 +243,16 @@
 
             try {
                 await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(pendingData) });
-                status.innerText = "✅ Дані відправлено!";
+                status.innerText = "✅ Дані відправлено (черга)!";
                 status.classList.add('text-emerald-600');
                 
+                const recipients = "Buznitskiy7@gmail.com,Dyndarnastia@gmail.com,olgagoncharukm@gmail.com,sashaalieva18@gmail.com";
+                const subject = encodeURIComponent("Звіт QC Master: Варки соусу");
+                const body = encodeURIComponent(pendingData.report);
+
                 setTimeout(() => {
                     closeSendModal();
+                    window.location.href = `mailto:${recipients}?subject=${subject}&body=${body}`;
                 }, 1500);
             } catch(e) {
                 status.innerText = "❌ Помилка з'єднання";
