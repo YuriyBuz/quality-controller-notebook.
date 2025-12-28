@@ -19,7 +19,6 @@
         body { background-color: var(--bg-color); color: var(--text); padding-bottom: 2rem; transition: background-color 0.3s ease; }
         .card { background-color: var(--card-bg); transition: background-color 0.3s ease; }
         
-        /* Reset defaults to ensure Tailwind classes work perfectly */
         input, select, textarea {
             background-color: transparent;
             width: 100%;
@@ -35,6 +34,8 @@
     </style>
 </head>
 <body class="font-sans antialiased">
+    <div id="toast-container" class="fixed top-4 right-4 z-[2000] flex flex-col gap-2"></div>
+
     <div class="container mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
         
         <header class="flex items-center gap-4 mb-8">
@@ -108,8 +109,8 @@
                 <div>
                     <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Чистота продукції </label>
                     <select id="lbl-sanitary" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg focus:outline-none focus:border-blue-500 transition-colors">
+                        <option value="Не відповідає" selected>❌ НЕ ОК</option>
                         <option value="Відповідає">✅ ОК</option>
-                        <option value="Не відповідає">❌ НЕ ОК</option>
                     </select>
                 </div>
             </div>
@@ -166,17 +167,31 @@
         </div>
     </div>
 
-    <!-- Sending Modal -->
-    <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
-        <div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700">
-            <h3 class="text-2xl font-bold mb-4 text-center">Підтвердження</h3>
-            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto mb-6 border border-slate-200 dark:border-slate-700 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div>
-            <p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p>
-            <div id="sendActions" class="flex flex-col gap-3">
-                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg transition-all active:scale-[0.98] text-lg">✅ Підтвердити</button>
-                <button onclick="closeSendModal()" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 font-bold py-4 rounded-lg transition-colors text-lg">Скасувати</button>
+    <!-- New Fancy Sending Modal -->
+    <div id="confirmationModal" class="fixed inset-0 hidden items-center justify-center modal-overlay z-[2500] p-4">
+        <div class="card p-6 rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[85vh]">
+            <div class="text-center mb-4">
+                <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-2 text-2xl">📤</div>
+                <h3 class="text-xl font-bold">Підтвердження відправки</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Перевірте введені дані перед відправкою</p>
             </div>
-            <div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div>
+            
+            <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl overflow-y-auto mb-4 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner" id="confirmationText"></div>
+            
+            <p id="sendMsg" class="text-center text-sm font-bold mb-3 min-h-[1.25em] text-emerald-600"></p>
+            
+            <div id="modalActions" class="flex flex-col gap-2">
+                <button id="confirmSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-500/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                    <span>✅ Підтвердити та Надіслати</span>
+                </button>
+                <button onclick="closeModal('confirmationModal')" class="w-full bg-transparent border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 font-bold py-3.5 rounded-xl transition-colors">
+                    Скасувати
+                </button>
+            </div>
+            
+            <div id="modalSpinner" class="hidden py-4 flex justify-center">
+                <div class="spinner"></div>
+            </div>
         </div>
     </div>
 
@@ -303,6 +318,12 @@
 
         const empSel = document.getElementById('employeeSelect');
         employees.forEach(e => empSel.add(new Option(e, e)));
+        
+        // Defaults
+        document.getElementById('lbl-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
+        document.getElementById('lbl-label-date').valueAsDate = new Date();
+
+        // Restore User
         const saved = localStorage.getItem('qc_user');
         if(saved) empSel.value = saved;
         empSel.onchange = () => localStorage.setItem('qc_user', empSel.value);
@@ -357,6 +378,7 @@
             // Restore defaults
             document.getElementById('lbl-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
             document.getElementById('lbl-label-date').valueAsDate = new Date();
+            document.getElementById('lbl-sanitary').value = "Не відповідає"; // Reset to NOT OK default
             
             document.getElementById('confirmResetModal').classList.add('hidden');
             document.getElementById('confirmResetModal').classList.remove('flex');
@@ -382,9 +404,58 @@
         let pendingData = null;
 
         function initiateSend() {
-            if(!empSel.value) { alert("Оберіть контролера!"); return; }
+            if(!empSel.value) { showToast("Оберіть контролера!", true); return; }
             
-            const report = `=== Етикетування ===\nКонтролер: ${empSel.value}\nЧас: ${document.getElementById('lbl-time').value}\nМашина: ${document.getElementById('lbl-machine').value}\nТМ: ${tmSel.value}\nПродукт: ${document.getElementById('lbl-product').value}\nПартія: ${document.getElementById('lbl-label-batch').value}\n\nПеревірки:\nПак: ${document.getElementById('check-pack').checked ? 'Так' : 'Ні'}\nСтікер: ${document.getElementById('check-sticker').checked ? 'Так' : 'Ні'}\nПалета: ${document.getElementById('check-pallet').checked ? 'Так' : 'Ні'}\nРозкладка: ${document.getElementById('check-layout').checked ? 'Так' : 'Ні'}\nЕтикетка нанесена: ${document.getElementById('check-label-applied').checked ? 'Так' : 'Ні'}\n\nКоментар: ${document.getElementById('lbl-comment').value}`;
+            const checks = [
+                {id: 'check-pack', label: 'Пак'},
+                {id: 'check-sticker', label: 'Стікер'},
+                {id: 'check-pallet', label: 'Палета'},
+                {id: 'check-layout', label: 'Розкладка'},
+                {id: 'check-label-applied', label: 'Етикетка нанесена'}
+            ];
+            
+            let checksText = "";
+            let alerts = "";
+            let allChecksOk = true;
+
+            checks.forEach(c => {
+                const el = document.getElementById(c.id);
+                const isOk = el.checked;
+                if (!isOk) {
+                    allChecksOk = false;
+                    alerts += `\n🔴 УВАГА: Невідповідність - ${c.label}`;
+                }
+                checksText += `${c.label}: ${isOk ? '✅' : '❌'}\n`;
+            });
+
+            const sanitary = document.getElementById('lbl-sanitary').value;
+            if (sanitary !== 'Відповідає') {
+                allChecksOk = false;
+                alerts += `\n🔴 УВАГА: Санітарний стан - ${sanitary}`;
+            }
+
+            let headerIcon = allChecksOk ? "🟢" : "⚠️";
+
+            const report = `${headerIcon} ЗВІТ QC : Етикетування
+===========================
+👤 Контролер: ${empSel.value}
+🕒 Час: ${document.getElementById('lbl-time').value}
+⚙️ Машина: ${document.getElementById('lbl-machine').value}
+🏷️ ТМ: ${tmSel.value}
+📦 Продукт: ${document.getElementById('lbl-product').value}
+🔢 Партія: ${document.getElementById('lbl-label-batch').value}
+📅 Дата етикетки: ${document.getElementById('lbl-label-date').value}
+
+🔍 Перевірки:
+${checksText}
+${alerts}
+
+💬 Коментар: ${document.getElementById('lbl-comment').value}
+===========================`;
+
+            // Adding a space ' ' before the icon forces Excel to treat it as string text, not a formula or boolean
+            const iconOk = ' ✅'; 
+            const iconBad = ' ❌';
 
             pendingData = {
                 type: "labeling",
@@ -392,37 +463,37 @@
                 employee: empSel.value,
                 section: "Етикетування",
                 report: report,
-                // Structured:
+                // Structured Data with Emojis:
                 machine: document.getElementById('lbl-machine').value,
                 tm: tmSel.value,
                 product: document.getElementById('lbl-product').value,
                 task: document.getElementById('lbl-task').value,
-                sanitary: document.getElementById('lbl-sanitary').value,
+                sanitary: document.getElementById('lbl-sanitary').value === 'Відповідає' ? iconOk : iconBad,
                 labelDate: document.getElementById('lbl-label-date').value,
                 batch: document.getElementById('lbl-label-batch').value,
                 width: document.getElementById('lbl-width').value,
                 temp: document.getElementById('lbl-temp').value,
-                checkPack: document.getElementById('check-pack').checked,
-                checkSticker: document.getElementById('check-sticker').checked,
-                checkPallet: document.getElementById('check-pallet').checked,
-                checkLayout: document.getElementById('check-layout').checked,
-                checkLabel: document.getElementById('check-label-applied').checked,
+                checkPack: document.getElementById('check-pack').checked ? iconOk : iconBad,
+                checkSticker: document.getElementById('check-sticker').checked ? iconOk : iconBad,
+                checkPallet: document.getElementById('check-pallet').checked ? iconOk : iconBad,
+                checkLayout: document.getElementById('check-layout').checked ? iconOk : iconBad,
+                checkLabel: document.getElementById('check-label-applied').checked ? iconOk : iconBad,
                 comment: document.getElementById('lbl-comment').value
             };
 
-            document.getElementById('reportPreview').innerText = report;
-            document.getElementById('sendStatus').innerText = "";
-            document.getElementById('sendActions').style.display = 'flex';
-            document.getElementById('sendSpinner').classList.add('hidden');
+            document.getElementById('confirmationText').innerText = report;
+            document.getElementById('sendMsg').innerText = "";
+            document.getElementById('modalActions').style.display = 'flex';
+            document.getElementById('modalSpinner').classList.add('hidden');
             
-            document.getElementById('sendModal').classList.remove('hidden');
-            document.getElementById('sendModal').classList.add('flex');
+            document.getElementById('confirmationModal').classList.remove('hidden');
+            document.getElementById('confirmationModal').classList.add('flex');
         }
 
         async function executeSend() {
-            const actions = document.getElementById('sendActions');
-            const spinner = document.getElementById('sendSpinner');
-            const status = document.getElementById('sendStatus');
+            const actions = document.getElementById('modalActions');
+            const spinner = document.getElementById('modalSpinner');
+            const status = document.getElementById('sendMsg');
 
             actions.style.display = 'none';
             spinner.classList.remove('hidden');
@@ -431,6 +502,7 @@
             try {
                 await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(pendingData) });
                 status.innerText = "✅ Дані відправлено (черга)!";
+                status.classList.remove('text-red-500');
                 status.classList.add('text-emerald-600');
                 
                 const recipients = "Dyndarnastia@gmail.com,Buznitskiy7@gmail.com";
@@ -438,7 +510,7 @@
                 const body = encodeURIComponent(pendingData.report);
 
                 setTimeout(() => {
-                    closeSendModal();
+                    closeModal('confirmationModal');
                     window.location.href = `mailto:${recipients}?subject=${subject}&body=${body}`;
                 }, 1500);
             } catch(e) {
@@ -449,12 +521,12 @@
             }
         }
 
-        function closeSendModal() {
-            document.getElementById('sendModal').classList.add('hidden');
-            document.getElementById('sendModal').classList.remove('flex');
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+            document.getElementById(id).classList.remove('flex');
         }
         
-        document.getElementById('doSendBtn').onclick = executeSend;
+        document.getElementById('confirmSendBtn').onclick = executeSend;
     </script>
 </body>
 </html>
