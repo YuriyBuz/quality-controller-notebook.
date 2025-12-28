@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        
         .link-card {
             background-color: #ffffff; border-radius: 1rem;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -15,14 +16,23 @@
             text-align: center; padding: 2rem; text-decoration: none; color: #1e293b;
             height: 100%; min-height: 240px; border: 1px solid #e2e8f0;
         }
-        .link-card:hover {
+
+        /* Ефекти наведення працюють ТІЛЬКИ для активних посилань (тег <a>) */
+        a.link-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
             border-color: #10b981;
         }
+
         .link-card svg { width: 4rem; height: 4rem; margin-bottom: 1.5rem; color: #059669; }
         .link-card h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
         .link-card p { font-size: 1rem; color: #64748b; }
+
+        /* Стиль для неактивних карток (тег <div>) */
+        div.link-card {
+            cursor: default;
+            background-color: #f1f5f9; /* Трохи сірий фон */
+        }
     </style>
 </head>
 <body class="font-sans text-slate-800">
@@ -65,18 +75,17 @@
                     <p>Звірка етикетки та пакування</p>
                 </a>
 
-                <!-- Фасування -->
-                <a href="sauce_boiling.html" class="link-card group">
-                    <!-- Icon: Plastic Bottle -->
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-purple-500 transition-colors">
+                <!-- Фасування (Неактивне) -->
+                <div class="link-card opacity-60 grayscale">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="text-slate-400">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 3h6v3H9z" /> <!-- Cap -->
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10 6v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V6" /> <!-- Neck -->
                         <path stroke-linecap="round" stroke-linejoin="round" d="M7 10h10v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10z" /> <!-- Body -->
                         <path stroke-linecap="round" stroke-linejoin="round" d="M7 15h10" /> <!-- Label line -->
                     </svg>
-                    <h2>Фасування</h2>
-                    <p>Контроль ваги, герметичності та процесу фасування</p>
-                </a>
+                    <h2 class="text-slate-500">Фасування</h2>
+                    <p class="text-slate-400">Контроль ваги, герметичності та процесу фасування</p>
+                </div>
 
                 <!-- Мийки -->
                 <a href="cleaning.html" class="link-card group">
@@ -87,17 +96,17 @@
                     <p>Контроль якості миття обладнання та приміщень</p>
                 </a>
 
-                <!-- Лаб. Контроль ХВО (Нова іконка) -->
-                <a href="hvo_control.html" class="link-card group">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-teal-500 transition-colors">
+                <!-- Лаб. Контроль ХВО (Неактивне) -->
+                <div class="link-card opacity-60 grayscale">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="text-slate-400">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l-3.6 4.8a2.25 2.25 0 0 0 1.8 3.6h8.1a2.25 2.25 0 0 0 1.8-3.6l-3.6-4.8V3.75h-4.5v6z" />
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.75h4.5" />
                         <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6v9a2.25 2.25 0 0 1-2.25 2.25h0a2.25 2.25 0 0 1-2.25-2.25V6" />
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6h4.5" />
                     </svg>
-                    <h2>Лаб. Контроль ХВО</h2>
-                    <p>Аналіз води та водопідготовка</p>
-                </a>
+                    <h2 class="text-slate-500">Лаб. Контроль ХВО</h2>
+                    <p class="text-slate-400">Аналіз води та водопідготовка</p>
+                </div>
 
                 <!-- Довідкова інформація -->
                 <a href="https://sites.google.com/view/forstaf" target="_blank" class="link-card group">
@@ -124,5 +133,3 @@
     </script>
 </body>
 </html>
-
-
