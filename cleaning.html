@@ -22,9 +22,10 @@
         input, select {
             background-color: transparent;
             border: 1px solid #e2e8f0;
-            padding: 0.75rem; 
+            padding: 1rem; /* Bigger padding */
             border-radius: 0.25rem; /* Less rounded */
             width: 100%;
+            font-size: 1.1rem; /* Bigger font */
             color: inherit;
             transition: border-color 0.2s;
         }
@@ -41,38 +42,39 @@
             border: 2px dashed #cbd5e1;
             border-radius: 0.25rem;
             width: 100%;
-            height: 150px;
+            height: 200px; /* Taller */
             background-color: white;
             touch-action: none;
         }
     </style>
 </head>
 <body class="font-sans antialiased">
-    <div class="container mx-auto max-w-md p-4">
-        <header class="flex items-center gap-4 mb-6">
-            <a href="dashboard.html" class="p-2 bg-white dark:bg-slate-800 rounded shadow text-slate-500 hover:text-cyan-600 transition-colors">
+    <div class="container mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
+        <header class="flex items-center gap-4 mb-8">
+            <a href="index.html" class="p-3 bg-white dark:bg-slate-800 rounded shadow text-slate-500 hover:text-cyan-600 transition-colors flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+                <span class="font-bold hidden sm:inline">Меню</span>
             </a>
-            <h1 class="text-2xl font-bold text-cyan-700 dark:text-cyan-500">Контроль Мийки</h1>
-            <button id="themeToggle" class="ml-auto p-2 text-slate-400 hover:text-slate-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg></button>
+            <h1 class="text-3xl font-bold text-cyan-700 dark:text-cyan-500">Контроль Мийки</h1>
+            <button id="themeToggle" class="ml-auto p-3 text-slate-400 hover:text-slate-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg></button>
         </header>
 
-        <div class="card p-6 rounded shadow-lg border border-cyan-100 dark:border-slate-700 space-y-5">
+        <div class="card p-8 rounded shadow-lg border border-cyan-100 dark:border-slate-700 space-y-6">
             <!-- 1. Controller -->
             <div>
-                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Контролер якості</label>
+                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер якості</label>
                 <select id="employeeSelect" class="bg-slate-50 dark:bg-slate-800"><option value="">Оберіть...</option></select>
             </div>
 
             <!-- 2. Date & Time -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Дата</label><input type="date" id="cln-date"></div>
-                <div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Час</label><input type="time" id="cln-time"></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Дата</label><input type="date" id="cln-date"></div>
+                <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Час</label><input type="time" id="cln-time"></div>
             </div>
 
             <!-- 3. Equipment Type Selector -->
             <div>
-                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Тип обладнання</label>
+                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Тип обладнання</label>
                 <select id="equipType" onchange="toggleEquipList()">
                     <option value="" selected disabled>Оберіть тип...</option>
                     <option value="kettle">🍲 Варочні котли</option> 
@@ -83,7 +85,7 @@
 
             <!-- 3.1 Dynamic Equipment List -->
             <div id="equipListContainer" class="hidden">
-                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Об'єкт мийки</label>
+                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Об'єкт мийки</label>
                 <select id="equipList">
                     <option value="">Оберіть зі списку...</option>
                 </select>
@@ -91,7 +93,7 @@
 
             <!-- 4. Cleaning Type Selector -->
             <div>
-                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Вид мийки</label>
+                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Вид мийки</label>
                 <select id="cleaningType">
                     <option value="" selected disabled>Оберіть вид...</option>
                     <option value="1">1</option>
@@ -103,28 +105,28 @@
             </div>
 
             <!-- 5. Checks -->
-            <div class="bg-cyan-50 dark:bg-slate-800 p-4 rounded border border-cyan-100 dark:border-slate-700 space-y-4">
-                <h3 class="text-sm font-bold text-cyan-800 dark:text-cyan-400 uppercase mb-2 border-b border-cyan-200 dark:border-slate-600 pb-2">Перевірка відповідності</h3>
+            <div class="bg-cyan-50 dark:bg-slate-800 p-6 rounded border border-cyan-100 dark:border-slate-700 space-y-4">
+                <h3 class="text-base font-bold text-cyan-800 dark:text-cyan-400 uppercase mb-2 border-b border-cyan-200 dark:border-slate-600 pb-2">Перевірка відповідності</h3>
                 
                 <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium">Зовнішнє миття</span>
-                    <select id="check-external" class="w-32 py-1 px-2 text-sm bg-white dark:bg-slate-700">
+                    <span class="text-base font-medium">Зовнішнє миття</span>
+                    <select id="check-external" class="w-40 py-2 px-3 text-sm bg-white dark:bg-slate-700">
                         <option value="" selected disabled>...</option>
                         <option value="Відповідає">✅ ОК</option>
                         <option value="Не відповідає">❌ Ні</option>
                     </select>
                 </div>
                 <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium">Внутрішнє миття</span>
-                    <select id="check-internal" class="w-32 py-1 px-2 text-sm bg-white dark:bg-slate-700">
+                    <span class="text-base font-medium">Внутрішнє миття</span>
+                    <select id="check-internal" class="w-40 py-2 px-3 text-sm bg-white dark:bg-slate-700">
                         <option value="" selected disabled>...</option>
                         <option value="Відповідає">✅ ОК</option>
                         <option value="Не відповідає">❌ Ні</option>
                     </select>
                 </div>
                 <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium">Суміжні агрегати</span>
-                    <select id="check-aggregates" class="w-32 py-1 px-2 text-sm bg-white dark:bg-slate-700">
+                    <span class="text-base font-medium">Суміжні агрегати</span>
+                    <select id="check-aggregates" class="w-40 py-2 px-3 text-sm bg-white dark:bg-slate-700">
                         <option value="" selected disabled>...</option>
                         <option value="Відповідає">✅ ОК</option>
                         <option value="Не відповідає">❌ Ні</option>
@@ -134,7 +136,7 @@
 
             <!-- 6. Responsible Person -->
             <div>
-                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Відповідальний за миття</label>
+                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Відповідальний за миття</label>
                 <select id="responsiblePerson">
                     <option value="">Оберіть...</option>
                 </select>
@@ -142,15 +144,15 @@
 
             <!-- 7. Signature Pad -->
             <div>
-                <div class="flex justify-between items-end mb-1">
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Підпис (Здав/Прийняв)</label>
-                    <button type="button" onclick="clearSignature()" class="text-xs text-red-500 hover:underline font-bold">Очистити</button>
+                <div class="flex justify-between items-end mb-2">
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase">Підпис (Здав/Прийняв)</label>
+                    <button type="button" onclick="clearSignature()" class="text-sm text-red-500 hover:underline font-bold">Очистити</button>
                 </div>
                 <canvas id="signature-pad"></canvas>
-                <p class="text-[10px] text-slate-400 mt-1">* Підпишіть пальцем або стилусом</p>
+                <p class="text-xs text-slate-400 mt-2">* Підпишіть пальцем або стилусом</p>
             </div>
 
-            <button onclick="initiateSend()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2">
+            <button onclick="initiateSend()" class="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2 text-lg">
                 <span>📤 Відправити дані</span>
             </button>
         </div>
@@ -158,15 +160,15 @@
 
     <!-- Sending Modal -->
     <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
-        <div class="card p-6 rounded shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
-            <h3 class="text-xl font-bold mb-4 text-center">Підтвердження</h3>
-            <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded overflow-y-auto mb-4 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-60" id="reportPreview"></div>
-            <p id="sendStatus" class="text-center text-sm font-bold mb-3 text-emerald-600 min-h-[1.5em]"></p>
-            <div id="sendActions" class="flex flex-col gap-2">
-                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded shadow-lg transition-all active:scale-[0.98]">✅ Підтвердити</button>
-                <button onclick="closeSendModal()" class="w-full bg-transparent border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 font-bold py-3 rounded">Скасувати</button>
+        <div class="card p-8 rounded shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] border border-slate-200">
+            <h3 class="text-2xl font-bold mb-4 text-center">Підтвердження</h3>
+            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded overflow-y-auto mb-6 border border-slate-200 dark:border-slate-700 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div>
+            <p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p>
+            <div id="sendActions" class="flex flex-col gap-3">
+                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded shadow-lg transition-all active:scale-[0.98] text-lg">✅ Підтвердити</button>
+                <button onclick="closeSendModal()" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 font-bold py-4 rounded transition-colors text-lg">Скасувати</button>
             </div>
-            <div id="sendSpinner" class="hidden py-4 flex justify-center"><div class="spinner"></div></div>
+            <div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div>
         </div>
     </div>
 
@@ -308,11 +310,21 @@
 
             // Normally send canvas.toDataURL() but truncated for text preview
             pendingData = {
+                type: "cleaning",
                 time: new Date().toLocaleString('uk-UA'),
                 employee: empSel.value,
                 section: "Мийки",
                 report: report,
+                // Structured Data:
+                date: document.getElementById('cln-date').value,
+                timeVal: document.getElementById('cln-time').value,
+                equipType: document.getElementById('equipType').selectedOptions[0].text,
+                equipObj: document.getElementById('equipList').value,
                 cleaningType: document.getElementById('cleaningType').value,
+                ext: checkExt,
+                int: checkInt,
+                agg: checkAgg,
+                resp: respSel.value,
                 // In a real app, send 'signature': canvas.toDataURL() 
             };
 
@@ -336,12 +348,17 @@
 
             try {
                 await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(pendingData) });
-                status.innerText = "✅ Дані відправлено!";
+                status.innerText = "✅ Дані відправлено (черга)!";
                 status.classList.add('text-emerald-600');
                 
+                const recipients = "Buznitskiy7@gmail.com,Dyndarnastia@gmail.com,olgagoncharukm@gmail.com,sashaalieva18@gmail.com";
+                const subject = encodeURIComponent("Звіт QC Master: Мийки");
+                const body = encodeURIComponent(pendingData.report);
+
                 setTimeout(() => {
                     closeSendModal();
                     clearSignature();
+                    window.location.href = `mailto:${recipients}?subject=${subject}&body=${body}`;
                 }, 1500);
             } catch(e) {
                 status.innerText = "❌ Помилка з'єднання";
