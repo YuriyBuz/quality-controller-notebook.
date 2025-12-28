@@ -19,19 +19,19 @@
         body { background-color: var(--bg-color); color: var(--text); padding-bottom: 2rem; transition: background-color 0.3s ease; }
         .card { background-color: var(--card-bg); transition: background-color 0.3s ease; }
         
+        /* Base styles for inputs that match checklist.html */
         input, select {
             background-color: transparent;
-            border: 1px solid #cbd5e1;
-            padding: 0.75rem 1rem; 
-            border-radius: 0.25rem;
-            width: 100%;
-            font-size: 1.125rem; 
-            color: inherit;
-            transition: border-color 0.2s, background-color 0.2s;
+            /* border handled by tailwind classes */
         }
-        .dark input, .dark select { border-color: #475569; background-color: #1e293b; }
         
-        input:focus, select:focus { outline: none; border-color: #f97316; box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2); }
+        /* Custom scrollbar for datalist if needed */
+        datalist { max-height: 200px; overflow-y: auto; }
+
+        .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #f97316; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(2px); z-index: 50; }
         
         /* Styles for pH warning */
         .ph-alert {
@@ -44,11 +44,6 @@
             border-color: #ef4444 !important;
             color: #fecaca !important;
         }
-
-        datalist { max-height: 200px; overflow-y: auto; }
-        .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #10b981; animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(2px); z-index: 50; }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -57,36 +52,31 @@
 
     <div class="container mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
         <header class="flex items-center gap-4 mb-8">
-            <a href="index.html" class="flex items-center gap-2 text-slate-500 hover:text-emerald-600 transition-colors p-3 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
-                <span class="hidden sm:inline font-bold text-base">Меню</span>
+            <a href="index.html" class="p-3 bg-white dark:bg-slate-800 rounded shadow text-slate-500 hover:text-orange-500 transition-colors flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+                <span class="font-bold hidden sm:inline">Меню</span>
             </a>
-            
-            <div class="flex-1 text-center">
-                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">Варки соусу</h1>
-                <p class="text-orange-600 dark:text-orange-400 text-sm font-bold mt-1 uppercase tracking-wide">Лабораторний контроль</p>
-            </div>
-            
-            <button id="themeToggle" class="p-3 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-            </button>
+            <h1 class="text-3xl font-bold text-orange-700 dark:text-orange-500">Варки соусу</h1>
+            <button id="themeToggle" class="ml-auto p-3 text-slate-400 hover:text-slate-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg></button>
         </header>
 
-        <div class="card p-6 sm:p-8 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 space-y-6">
+        <div class="card p-8 rounded shadow-lg border border-orange-100 dark:border-slate-700 space-y-6">
             <!-- Employee -->
             <div>
-                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер</label>
-                <select id="employeeSelect"><option value="">Оберіть...</option></select>
+                <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Контролер</label>
+                <select id="employeeSelect" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
+                    <option value="">Оберіть...</option>
+                </select>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Час</label>
-                    <input type="time" id="tst-time">
+                    <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Час</label>
+                    <input type="time" id="tst-time" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Варник</label>
-                    <select id="tst-cookName">
+                    <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Варник</label>
+                    <select id="tst-cookName" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
                         <option value="">Оберіть...</option>
                         <option value="Загура Іван Борисович">Загура Іван Борисович</option>
                         <option value="Солдатова Ірина Володимирівна">Солдатова Ірина Володимирівна</option>
@@ -99,50 +89,70 @@
 
             <!-- Product Search -->
             <div>
-                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Продукт (Код/Назва)</label>
-                <input type="text" id="tst-product" list="products-list" placeholder="Почніть вводити назву..." autocomplete="off">
+                <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Продукт (Код/Назва)</label>
+                <input type="text" id="tst-product" list="products-list" placeholder="Введіть код або назву..." autocomplete="off" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
                 <datalist id="products-list"></datalist>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">№ Завдання</label>
-                    <input type="number" id="tst-task" placeholder="12345">
+                    <label class="block text-sm font-bold text-slate-400 uppercase mb-2">№ Завдання</label>
+                    <input type="number" id="tst-task" placeholder="12345" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Дата варки</label>
-                    <input type="date" id="tst-cookDate">
+                    <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Дата варки</label>
+                    <input type="date" id="tst-cookDate" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
                 </div>
             </div>
 
             <!-- Organoleptic -->
-            <div class="bg-orange-500 text-white p-3 rounded-xl text-center text-lg font-bold uppercase tracking-wide shadow-md">Органолептика</div>
+            <div class="bg-orange-500 text-white p-3 rounded text-center text-base font-bold uppercase tracking-wide">Органолептика</div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <select id="tst-color"><option value="" disabled selected>Колір...</option><option value="+">ОК</option><option value="-">Брак</option></select>
-                <select id="tst-aroma"><option value="" disabled selected>Аромат...</option><option value="+">ОК</option><option value="-">Брак</option></select>
-                <select id="tst-taste"><option value="" disabled selected>Смак...</option><option value="+">ОК</option><option value="-">Брак</option></select>
-                <select id="tst-consist"><option value="" disabled selected>Консист...</option><option value="+">ОК</option><option value="-">Брак</option></select>
+                <select id="tst-color" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
+                    <option value="" disabled selected>Колір...</option>
+                    <option value="+">ОК</option>
+                    <option value="-">Брак</option>
+                </select>
+                <select id="tst-aroma" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
+                    <option value="" disabled selected>Аромат...</option>
+                    <option value="+">ОК</option>
+                    <option value="-">Брак</option>
+                </select>
+                <select id="tst-taste" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
+                    <option value="" disabled selected>Смак...</option>
+                    <option value="+">ОК</option>
+                    <option value="-">Брак</option>
+                </select>
+                <select id="tst-consist" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
+                    <option value="" disabled selected>Консист...</option>
+                    <option value="+">ОК</option>
+                    <option value="-">Брак</option>
+                </select>
             </div>
 
             <!-- Phys-Chem -->
-            <div class="bg-orange-500 text-white p-3 rounded-xl text-center text-lg font-bold uppercase tracking-wide shadow-md">Фізико-хімія</div>
+            <div class="bg-orange-500 text-white p-3 rounded text-center text-base font-bold uppercase tracking-wide">Фізико-хімія</div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Сухі (%)</label>
-                    <input type="number" step="0.1" id="tst-dry">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Сухі (%)</label>
+                    <input type="number" step="0.1" id="tst-dry" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">В'язкість</label>
-                    <input type="number" id="tst-visc"> <!-- Changed to number -->
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">В'язкість</label>
+                    <input type="number" id="tst-visc" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">pH</label>
-                    <input type="number" step="0.01" id="tst-ph" oninput="validatePH(this)">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">pH</label>
+                    <input type="number" step="0.01" id="tst-ph" oninput="validatePH(this)" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
                     <p id="ph-warning" class="hidden text-xs font-bold text-red-600 mt-1 animate-pulse">⚠️ Увага: низька кислотність!</p>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Стійкість</label>
-                    <select id="tst-stab"><option value="" disabled selected>...</option><option value="+">Стійка</option><option value="-">Не стійка</option></select>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Стійкість</label>
+                    <select id="tst-stab" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
+                        <option value="" disabled selected>...</option>
+                        <option value="+">Стійка</option>
+                        <option value="-">Не стійка</option>
+                    </select>
                 </div>
             </div>
 
@@ -216,11 +226,19 @@
 
         const empSel = document.getElementById('employeeSelect');
         employees.forEach(e => empSel.add(new Option(e, e)));
+        const dl = document.getElementById('products-list');
+        products.forEach(p => { const opt = document.createElement('option'); opt.value = p; dl.appendChild(opt); });
+        
+        // Defaults
+        document.getElementById('tst-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
+        document.getElementById('tst-cookDate').valueAsDate = new Date();
+
+        // Restore User
         const saved = localStorage.getItem('qc_user');
         if(saved) empSel.value = saved;
         empSel.onchange = () => localStorage.setItem('qc_user', empSel.value);
 
-        // Theme Toggle
+        // Theme
         document.getElementById('themeToggle').addEventListener('click', () => {
             document.documentElement.classList.toggle('dark');
             localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
@@ -228,26 +246,6 @@
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         }
-
-        const tmSel = document.getElementById('lbl-tm');
-        Object.keys(productDatabase).forEach(tm => tmSel.add(new Option(tm, tm)));
-        
-        tmSel.onchange = () => {
-            const list = document.getElementById('lbl-product-list');
-            const inp = document.getElementById('lbl-product');
-            list.innerHTML = ''; inp.value = '';
-            const prods = productDatabase[tmSel.value];
-            if(prods) {
-                inp.disabled = false;
-                prods.forEach(p => { const o = document.createElement('option'); o.value = `${p.id} | ${p.name}`; list.appendChild(o); });
-            } else {
-                inp.disabled = true;
-            }
-        };
-
-        // Defaults
-        document.getElementById('tst-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
-        document.getElementById('tst-cookDate').valueAsDate = new Date();
 
         // PH Validation Logic
         function validatePH(input) {
