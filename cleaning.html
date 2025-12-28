@@ -378,10 +378,16 @@
 
             if(!checkExt || !checkInt || !checkAgg) { alert("Заповніть всі поля перевірки відповідності!"); return; }
             if(isCanvasEmpty()) { alert("Будь ласка, поставте підпис!"); return; }
+            
+            let alerts = "";
+            if(checkExt === 'Не відповідає') alerts += "\n🔴 Зовнішнє миття: НЕ ОК";
+            if(checkInt === 'Не відповідає') alerts += "\n🔴 Внутрішнє миття: НЕ ОК";
+            if(checkAgg === 'Не відповідає') alerts += "\n🔴 Суміжні агрегати: НЕ ОК";
+            
+            let headerIcon = alerts ? "⚠️" : "🟢";
 
-            const report = `=== КОНТРОЛЬ МИТТЯ ===\nКонтролер: ${empSel.value}\nДата: ${document.getElementById('cln-date').value} ${document.getElementById('cln-time').value}\n\nТип: ${document.getElementById('equipType').selectedOptions[0].text}\nОбладнання: ${equipList.value}\nВид мийки: ${document.getElementById('cleaningType').value}\n\nРЕЗУЛЬТАТИ:\nЗовнішнє: ${checkExt}\nВнутрішнє: ${checkInt}\nСуміжні агрегати: ${checkAgg}\n\nВідповідальний: ${respSel.value}\nПідпис: [Зображення додано]`;
+            const report = `${headerIcon} ЗВІТ QC Master: Контроль Мийки\n==========================\n👤 Контролер: ${empSel.value}\n📅 Дата: ${document.getElementById('cln-date').value} ${document.getElementById('cln-time').value}\n🔢 Вид мийки: ${document.getElementById('cleaningType').value}\n\n🏭 Обладнання: ${equipList.value}\n📋 Тип: ${document.getElementById('equipType').selectedOptions[0].text}\n\n📊 РЕЗУЛЬТАТИ:\nЗовнішнє: ${checkExt === 'Відповідає' ? '🟢 ОК' : '🔴 НІ'}\nВнутрішнє: ${checkInt === 'Відповідає' ? '🟢 ОК' : '🔴 НІ'}\nСуміжні: ${checkAgg === 'Відповідає' ? '🟢 ОК' : '🔴 НІ'}\n\n👷 Відповідальний: ${respSel.value}\n✍️ Підпис: [Зображення додано]\n${alerts}\n==========================`;
 
-            // Normally send canvas.toDataURL() but truncated for text preview
             pendingData = {
                 type: "cleaning",
                 time: new Date().toLocaleString('uk-UA'),
@@ -398,7 +404,7 @@
                 int: checkInt,
                 agg: checkAgg,
                 resp: respSel.value,
-                signature: canvas.toDataURL() // Sends base64 image string
+                signature: canvas.toDataURL() 
             };
 
             document.getElementById('reportPreview').innerText = report;
@@ -420,7 +426,13 @@
             status.innerText = "Відправка...";
 
             try {
-                await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(pendingData) });
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(pendingData)
+                });
+                
                 status.innerText = "✅ Дані відправлено!";
                 status.classList.add('text-emerald-600');
                 
