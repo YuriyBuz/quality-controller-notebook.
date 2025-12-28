@@ -29,7 +29,7 @@
         }
     </script>
     <style>
-        /* Base Variables for Theming - Matching Shift Master */
+        /* Base Variables for Theming */
         :root {
             --bg-color: #f8fafc;
             --card-bg-color: #ffffff;
@@ -43,7 +43,7 @@
         }
 
         .dark {
-            --bg-color: #0f172a; /* Darker slate */
+            --bg-color: #0f172a;
             --card-bg-color: #1e293b;
             --text-color: #f1f5f9;
             --text-muted-color: #94a3b8;
@@ -76,7 +76,7 @@
         .checklist-item:hover { background-color: var(--item-hover-bg-color); }
         
         .checklist-item.completed {
-            background-color: rgba(16, 185, 129, 0.1); /* Emerald tint */
+            background-color: rgba(16, 185, 129, 0.1);
             border-color: #10b981;
         }
         .dark .checklist-item.completed {
@@ -128,7 +128,7 @@
         }
         .nav-button:hover { background-color: var(--item-hover-bg-color); }
         .nav-button.active {
-            background-color: #059669; /* Emerald 600 */
+            background-color: #059669;
             color: white;
             border-color: #059669;
             box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.2);
@@ -205,7 +205,7 @@
             </p>
         </div>
 
-        <!-- Navigation Tabs (Updated Text) -->
+        <!-- Navigation Tabs -->
         <nav class="grid grid-cols-3 gap-2 mb-6 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
             <button data-view="start" class="nav-button active py-2 px-1 rounded-lg font-bold text-xs sm:text-sm text-center">Початок<br><span class="text-[10px] font-normal opacity-75 leading-tight block mt-0.5">звіт надіслати до 10:00</span></button>
             <button data-view="during" class="nav-button py-2 px-1 rounded-lg font-bold text-xs sm:text-sm text-center">Зміна<br><span class="text-[10px] font-normal opacity-75 leading-tight block mt-0.5">звіт надіслати до 20:00</span></button>
@@ -310,9 +310,10 @@
     </div>
 
     <script>
+        // NEW URL Provided by User
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyg9z5S63_kl-Yxgnho4f5zjT_cCBFizOBp6eWDWQODEZLD0su5YhKAggmETVXgbPbF/exec";
 
-        // Checklist items based on the "Start", "During", "End" sections
+        // Checklist items
         const checklistItems = {
             start: [
                 { id: 'start-1-1', text: 'Перевірити чистоту та справність обладнання в лабораторії.', type: 'normal' },
@@ -359,14 +360,8 @@
                 toast.classList.add('border-emerald-500', 'text-emerald-700', 'dark:text-emerald-400');
                 toast.innerHTML = `<span class="mr-2 text-xl">✅</span> <span class="font-medium text-sm">${message}</span>`;
             }
-            
             container.appendChild(toast);
-            
-            // Trigger animation
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-x-full');
-            });
-
+            requestAnimationFrame(() => toast.classList.remove('translate-x-full'));
             setTimeout(() => {
                 toast.classList.add('translate-x-full');
                 setTimeout(() => toast.remove(), 300);
@@ -375,33 +370,33 @@
 
         function customConfirm(text, onConfirm) {
             document.getElementById('genericConfirmText').innerText = text;
-            document.getElementById('genericConfirmModal').classList.remove('hidden');
-            document.getElementById('genericConfirmModal').classList.add('flex');
+            const modal = document.getElementById('genericConfirmModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
             confirmCallback = onConfirm;
         }
 
         document.getElementById('genericConfirmCancel').addEventListener('click', () => {
-            document.getElementById('genericConfirmModal').classList.add('hidden');
-            document.getElementById('genericConfirmModal').classList.remove('flex');
+            const modal = document.getElementById('genericConfirmModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
             confirmCallback = null;
         });
 
         document.getElementById('genericConfirmOk').addEventListener('click', () => {
             if(confirmCallback) confirmCallback();
-            document.getElementById('genericConfirmModal').classList.add('hidden');
-            document.getElementById('genericConfirmModal').classList.remove('flex');
+            const modal = document.getElementById('genericConfirmModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
             confirmCallback = null;
         });
 
-        // Theme Toggle
         document.getElementById('themeToggle').addEventListener('click', () => {
             document.documentElement.classList.toggle('dark');
-            const isDark = document.documentElement.classList.contains('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
         });
 
         function initApp() {
-            // Restore theme
             if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
             }
@@ -433,8 +428,8 @@
                 if (item.type !== 'normal') {
                     const btnClass = item.type === 'info' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300';
                     actionBtn = `<button class="action-btn ml-2 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 ${btnClass} transition-colors hover:opacity-80" data-id="${item.id}" data-type="form">${item.btn}</button>`;
-                    
-                    const inputs = item.fields.map((f, i) => `<input type="text" data-field="${i}" class="w-full p-2 border rounded-lg text-sm mb-2" placeholder="${f}">`).join('');
+                    // Added data-label attribute here for easier scraping
+                    const inputs = item.fields.map((f, i) => `<input type="text" data-field="${i}" data-label="${f}" class="w-full p-2 border rounded-lg text-sm mb-2" placeholder="${f}">`).join('');
                     formHtml = `<div id="form-${item.id}" class="hidden mt-3 p-4 border rounded-xl bg-white dark:bg-slate-800 dark:border-slate-700 shadow-inner"><div class="text-xs font-bold mb-2 text-muted uppercase">${item.btn}</div>${inputs}<div class="flex justify-end gap-2 mt-2"><button class="form-cancel px-3 py-1.5 bg-transparent border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-bold text-muted hover:bg-slate-100 dark:hover:bg-slate-700" data-id="${item.id}">Скасувати</button><button class="form-save px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700" data-id="${item.id}">Зберегти</button></div></div>`;
                 }
                 
@@ -452,7 +447,6 @@
                 </li>`;
             }).join('');
             
-            // Add "Send" button to the end of each list
             const sendBtnHtml = `
             <button onclick="prepareChecklistReport('${section}')" class="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg">
                 <span>📤 Відправити звіт (${section === 'start' ? 'Початок' : (section === 'during' ? 'Зміна' : 'Кінець')})</span>
@@ -535,13 +529,24 @@
         function saveForm(id) {
             const form = document.getElementById(`form-${id}`);
             const inputs = form.querySelectorAll('input');
-            const vals = Array.from(inputs).map(i => i.value);
-            if (vals.some(v => !v)) { showToast("Заповніть всі поля!", true); return; }
+            const values = [];
+            let isValid = true;
+
+            inputs.forEach(input => {
+                if (!input.value) isValid = false;
+                // Capture field label (e.g., "Temperature") along with value
+                values.push(`[${input.dataset.label}: ${input.value}]`);
+            });
+
+            if (!isValid) { showToast("Заповніть всі поля!", true); return; }
             
             const item = document.getElementById(id);
             const isInfo = item.innerHTML.includes('text-blue-700'); 
             const c = item.querySelector('.comment-text');
-            c.innerText = vals.join(' | ');
+            
+            // Join with spaces for readability
+            c.innerText = values.join(' '); 
+            
             c.classList.remove('hidden', 'alert', 'info');
             c.classList.add(isInfo ? 'info' : 'alert');
             
@@ -572,10 +577,6 @@
 
         function updateProgress() {
             const list = document.getElementById(`list-${currentChecklistTab}`);
-            const total = list.children.length; // Note: this includes the send button div, need to be careful
-            // Actually, list children are LIs. The button is appended to parent, so it might be outside UL or inside div after UL?
-            // In renderChecklist, I appended button AFTER UL. So UL only has LIs.
-            
             const listItems = list.querySelectorAll('.checklist-item');
             const totalItems = listItems.length;
             const done = list.querySelectorAll('.completed').length;
@@ -588,18 +589,15 @@
         function switchView(view) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.nav-button').forEach(b => b.classList.remove('active'));
-            
             document.getElementById(`${view}ShiftSection`).classList.remove('hidden');
             document.querySelector(`[data-view="${view}"]`).classList.add('active');
             currentChecklistTab = view;
-            
             updateProgress();
         }
 
         function resetSection(sectionId) {
             customConfirm('Ви дійсно бажаєте очистити всі поля в цьому розділі?', () => {
                 const section = document.getElementById(sectionId);
-                
                 section.querySelectorAll('.checklist-item').forEach(el => {
                     el.classList.remove('completed', 'has-problem', 'has-info');
                     const c = el.querySelector('.comment-text');
@@ -608,7 +606,6 @@
                     const f = el.querySelector('[id^="form-"]');
                     if(f) f.classList.add('hidden');
                 });
-                
                 saveState();
                 updateProgress();
                 showToast("Розділ успішно очищено");
@@ -621,24 +618,39 @@
             let report = "";
             let problemCount = 0;
             const listItems = document.getElementById(`list-${key}`).querySelectorAll('.checklist-item');
+            const totalItems = listItems.length;
+            const doneItems = document.getElementById(`list-${key}`).querySelectorAll('.checklist-item.completed').length;
             
             listItems.forEach(item => {
                 const text = item.querySelector('.task-text').innerText;
-                const status = item.classList.contains('completed') ? (item.classList.contains('has-problem') ? "⚠️ ПРОБЛЕМА" : "✅ ОК") : "❌ Не вик.";
+                const status = item.classList.contains('completed') ? (item.classList.contains('has-problem') ? "⚠️" : "✅") : "❌";
+                
+                // Get innerText of comment-text div. 
+                // Note: saveForm now puts formatted text here like "[Temp: 25]", so we just grab it.
                 const comment = item.querySelector('.comment-text').innerText;
+                
                 if (item.classList.contains('has-problem')) problemCount++;
-                report += `${text}: ${status} ${comment ? '('+comment+')' : ''}\n`;
+                
+                // New Format: ICON | TEXT | COMMENT
+                report += `${status} | ${text} ${comment ? ' — ' + comment : ''}\n`;
             });
 
             const titles = { 'start': 'Початок зміни', 'during': 'Протягом зміни', 'end': 'Кінець зміни' };
 
+            // ОНОВЛЕНА СТРУКТУРА ОБ'ЄКТА ПІД GOOGLE SCRIPT
             pendingReportData = {
-                time: new Date().toLocaleTimeString('uk-UA'),
+                type: 'checklist',
                 employee: document.getElementById('employeeSelect').value,
-                section: `Чек-лист: ${titles[key]}`,
-                report: report
+                stage: titles[key],
+                done: doneItems,
+                total: totalItems,
+                reportText: report
             };
             
+            pendingReportData.time = new Date().toLocaleTimeString('uk-UA');
+            pendingReportData.section = `Чек-лист: ${titles[key]}`;
+            pendingReportData.report = report;
+
             showConfirmation(report);
         }
 
@@ -663,17 +675,25 @@
             msg.innerText = "Відправка даних...";
 
             try {
-                await fetch(GOOGLE_SCRIPT_URL, {
+                const url = GOOGLE_SCRIPT_URL + "?t=" + new Date().getTime();
+                
+                await fetch(url, {
                     method: 'POST',
-                    mode: 'no-cors',
+                    mode: 'no-cors', 
+                    cache: 'no-cache',
+                    keepalive: true,
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                    },
                     body: JSON.stringify(pendingReportData)
                 });
+                
                 msg.innerText = "✅ Дані успішно відправлено!";
                 msg.classList.remove('text-red-500');
                 msg.classList.add('text-emerald-600');
             } catch (e) {
-                console.error(e);
-                msg.innerText = "⚠️ Помилка скрипта (відправка поштою)";
+                console.error("Fetch Error:", e);
+                msg.innerText = "⚠️ Помилка з'єднання (мережева помилка)";
                 msg.classList.add('text-red-500');
             }
 
@@ -712,7 +732,6 @@
             });
             document.querySelectorAll('input').forEach(el => {
                 if (el.dataset.field !== undefined && el.closest('.checklist-item')) {
-                   // Saving inputs inside checklist items specifically
                    const parentId = el.closest('.checklist-item').id;
                    if(!state.inputs[parentId]) state.inputs[parentId] = [];
                    state.inputs[parentId][el.dataset.field] = el.value;
@@ -760,4 +779,3 @@
     </script>
 </body>
 </html>
-
