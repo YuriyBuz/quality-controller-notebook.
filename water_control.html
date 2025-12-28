@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Контроль ХВО | QC Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: { colors: { slate: { 50: '#f8fafc', 800: '#1e293b', 900: '#0f172a' } } }
+            }
+        }
+    </script>
+    <style>
+        :root { --bg-color: #f8fafc; --card-bg: #fff; --text: #1e293b; }
+        .dark { --bg-color: #0f172a; --card-bg: #1e293b; --text: #f1f5f9; }
+        body { background-color: var(--bg-color); color: var(--text); padding-bottom: 2rem; transition: background-color 0.3s ease; }
+        .card { background-color: var(--card-bg); transition: background-color 0.3s ease; }
+        
+        input, select {
+            background-color: transparent;
+            width: 100%;
+            color: inherit;
+        }
+        
+        /* Focus ring color for Sky theme */
+        input:focus, select:focus { outline: none; border-color: #0ea5e9; box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2); }
+        
+        /* Styling for empty select to look like placeholder */
+        select:required:invalid { color: #94a3b8; }
+        option[value=""][disabled] { display: none; }
+        option { color: var(--text); }
+
+        .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #0ea5e9; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 50; }
+        
+        /* Alerts in inputs */
+        .input-alert { border-color: #ef4444 !important; background-color: rgba(239, 68, 68, 0.05) !important; }
+    </style>
+</head>
+<body class="font-sans antialiased">
+    
+    <div id="toast-container" class="fixed top-4 right-4 z-[2000] flex flex-col gap-2"></div>
+
+    <div class="container mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
+        <header class="flex items-center gap-4 mb-8">
+            <a href="index.html" class="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-sky-600 transition-colors flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+                <span class="font-bold hidden sm:inline">Меню</span>
+            </a>
+            
+            <div class="flex-1 text-center">
+                <h1 class="text-3xl font-bold text-sky-700 dark:text-sky-500">Лаб. Контроль ХВО</h1>
+                <p class="text-sky-600 dark:text-sky-400 text-sm font-bold mt-1 uppercase tracking-wide">Водопідготовка</p>
+            </div>
+            
+            <!-- Water Drop Icon -->
+            <div class="p-2 text-sky-500">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                </svg>
+            </div>
+
+            <button id="themeToggle" class="p-3 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
+        </header>
+
+        <div class="card p-8 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 space-y-6 relative">
+            
+            <button onclick="resetForm()" class="absolute top-4 right-4 text-xs font-bold text-orange-600 hover:text-orange-800 bg-orange-100 hover:bg-orange-200 px-3 py-1.5 rounded-lg transition-colors dark:bg-orange-900/30 dark:text-orange-300 border border-transparent hover:border-orange-300">
+                Скинути
+            </button>
+
+            <!-- Instructions Link -->
+            <div class="bg-sky-50 dark:bg-slate-800/50 p-4 rounded-lg border border-sky-100 dark:border-sky-900/30 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <svg class="w-6 h-6 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Інструкція з моніторингу</span>
+                </div>
+                <a href="https://yuriybuz.github.io/Instructions-for-monitoring-water-quality/" target="_blank" class="text-xs sm:text-sm font-bold text-white bg-sky-600 hover:bg-sky-700 px-4 py-2 rounded-lg transition-colors shadow-sm flex items-center gap-2">
+                    <span>Читати</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                </a>
+            </div>
+
+            <div class="mt-2">
+                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер</label>
+                <select id="employeeSelect" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors" required>
+                    <option value="" disabled selected>Оберіть...</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Час дослідження</label>
+                    <input type="time" id="hvo-time" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Загальний стан системи</label>
+                    <select id="hvo-status" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors" required onchange="checkStatus(this)">
+                        <option value="" disabled selected>Оберіть стан...</option>
+                        <option value="Відповідає">✅ Відповідає</option>
+                        <option value="Не відповідає">❌ Не відповідає</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Salt Section -->
+            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg border border-slate-200 dark:border-slate-700">
+                <h3 class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-4 border-b border-slate-200 dark:border-slate-600 pb-2">Таблетована сіль (рівень)</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Бачок №1</label>
+                        <select id="hvo-salt1" class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors" required onchange="checkStatus(this)">
+                            <option value="" disabled selected>Оберіть...</option>
+                            <option value="В нормі">В нормі</option>
+                            <option value="Не в нормі">⚠️ Не в нормі</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Бачок №2</label>
+                        <select id="hvo-salt2" class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors" required onchange="checkStatus(this)">
+                            <option value="" disabled selected>Оберіть...</option>
+                            <option value="В нормі">В нормі</option>
+                            <option value="Не в нормі">⚠️ Не в нормі</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rotameters -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Ротаметр "Пом'якшена"</label>
+                    <input type="text" id="hvo-rot-soft" placeholder="Показник..." class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Ротаметр "Чиста"</label>
+                    <input type="text" id="hvo-rot-pure" placeholder="Показник..." class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors">
+                </div>
+            </div>
+
+            <!-- Chemical Indicators -->
+            <div class="bg-sky-50 dark:bg-slate-800/80 p-5 rounded-lg border border-sky-100 dark:border-slate-700">
+                <h3 class="text-sm font-bold text-sky-800 dark:text-sky-400 uppercase mb-4 border-b border-sky-200 dark:border-slate-600 pb-2">Хімічні показники (після ХВО)</h3>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Загальна жорсткість</label>
+                        <input type="number" step="0.01" id="hvo-hardness" class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Рівень заліза (Fe)</label>
+                        <input type="number" step="0.01" id="hvo-iron" class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Рівень марганцю (Mn)</label>
+                        <input type="number" step="0.01" id="hvo-manganese" class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">pH води</label>
+                        <input type="number" step="0.01" id="hvo-ph" class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors">
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="initiateSend()" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2 text-lg">
+                <span>📤 Відправити дані</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Confirm Reset Modal -->
+    <div id="confirmResetModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
+        <div class="card p-8 rounded-lg shadow-2xl max-w-sm w-full border border-slate-200 dark:border-slate-700">
+            <h3 class="font-bold text-xl mb-3 text-center">Скидання</h3>
+            <p class="mb-8 text-base text-center text-slate-500 dark:text-slate-400">Ви дійсно бажаєте очистити форму, включаючи контролера?</p>
+            <div class="flex justify-center gap-4">
+                <button onclick="document.getElementById('confirmResetModal').classList.add('hidden')" class="px-6 py-3 bg-slate-100 dark:bg-slate-700 rounded-lg font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors text-lg">Ні</button>
+                <button onclick="performReset()" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold shadow-lg transition-colors text-lg">Так</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sending Modal -->
+    <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
+        <div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700">
+            <h3 class="text-2xl font-bold mb-4 text-center">Підтвердження</h3>
+            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto mb-6 border border-slate-200 dark:border-slate-700 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div>
+            <p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p>
+            <div id="sendActions" class="flex flex-col gap-3">
+                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg transition-all active:scale-[0.98] text-lg">✅ Підтвердити</button>
+                <button onclick="closeSendModal()" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 font-bold py-4 rounded-lg transition-colors text-lg">Скасувати</button>
+            </div>
+            <div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyg9z5S63_kl-Yxgnho4f5zjT_cCBFizOBp6eWDWQODEZLD0su5YhKAggmETVXgbPbF/exec";
+        const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
+        
+        const empSel = document.getElementById('employeeSelect');
+        employees.forEach(e => empSel.add(new Option(e, e)));
+        
+        // Init Defaults
+        document.getElementById('hvo-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
+
+        // Restore User
+        const saved = localStorage.getItem('qc_user');
+        if(saved) empSel.value = saved;
+        empSel.onchange = () => localStorage.setItem('qc_user', empSel.value);
+
+        // Theme Toggle
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Visual Validation
+        function checkStatus(el) {
+            if (el.value.includes('Не') || el.value.includes('Not')) {
+                el.classList.add('input-alert');
+            } else {
+                el.classList.remove('input-alert');
+            }
+        }
+
+        function showToast(message, isError = false) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast bg-white dark:bg-slate-700 border-l-4 p-4 rounded-lg shadow-xl flex items-center max-w-sm transform transition-all duration-300 translate-x-full border border-slate-200 dark:border-slate-600`;
+            if (isError) {
+                toast.classList.add('border-red-500', 'text-red-700', 'dark:text-red-400');
+                toast.innerHTML = `<span class="mr-2 text-xl">🚫</span> <span class="font-medium text-sm">${message}</span>`;
+            } else {
+                toast.classList.add('border-emerald-500', 'text-emerald-700', 'dark:text-emerald-400');
+                toast.innerHTML = `<span class="mr-2 text-xl">✅</span> <span class="font-medium text-sm">${message}</span>`;
+            }
+            container.appendChild(toast);
+            requestAnimationFrame(() => { toast.classList.remove('translate-x-full'); });
+            setTimeout(() => { toast.classList.add('translate-x-full'); setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        // Reset Logic
+        function resetForm() {
+            document.getElementById('confirmResetModal').classList.remove('hidden');
+            document.getElementById('confirmResetModal').classList.add('flex');
+        }
+
+        function performReset() {
+            document.querySelectorAll('input, select').forEach(el => {
+                el.value = ''; // Reset everything to empty
+                el.classList.remove('input-alert');
+            });
+            // Restore ONLY time default
+            document.getElementById('hvo-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
+            
+            document.getElementById('confirmResetModal').classList.add('hidden');
+            document.getElementById('confirmResetModal').classList.remove('flex');
+            showToast("Форму очищено");
+        }
+
+        // Auto-reset logic (23:00)
+        setInterval(() => {
+            const now = new Date();
+            // Check if it is 23:00 (checks every 10s, so using minute precision and a day-flag)
+            if (now.getHours() === 23 && now.getMinutes() === 0) {
+                const lastRun = localStorage.getItem('last_auto_reset_date');
+                const today = now.toDateString();
+                
+                if (lastRun !== today) {
+                    performReset();
+                    localStorage.setItem('last_auto_reset_date', today);
+                    showToast("Автоматичне скидання зміни (23:00)");
+                }
+            }
+        }, 10000); // Check every 10 seconds
+
+        let pendingData = null;
+
+        function initiateSend() {
+            const emp = empSel.value;
+            const status = document.getElementById('hvo-status').value;
+            const salt1 = document.getElementById('hvo-salt1').value;
+            const salt2 = document.getElementById('hvo-salt2').value;
+
+            // Strict Validation for REQUIRED dropdowns
+            if(!emp) { showToast("Оберіть контролера!", true); return; }
+            if(!status) { showToast("Оберіть стан системи!", true); return; }
+            if(!salt1) { showToast("Оберіть рівень солі (Бачок 1)!", true); return; }
+            if(!salt2) { showToast("Оберіть рівень солі (Бачок 2)!", true); return; }
+            
+            // Alerts logic
+            let alerts = "";
+            if (status.includes('Не')) alerts += "\n🔴 ЗАГАЛЬНИЙ СТАН: НЕ ВІДПОВІДАЄ";
+            if (salt1.includes('Не')) alerts += "\n🔴 Сіль Бачок №1: НЕ В НОРМІ";
+            if (salt2.includes('Не')) alerts += "\n🔴 Сіль Бачок №2: НЕ В НОРМІ";
+            
+            // pH Alert (optional check)
+            const ph = parseFloat(document.getElementById('hvo-ph').value);
+            if (ph && (ph < 6 || ph > 9)) alerts += `\n🔴 УВАГА: pH ${ph} (можливе відхилення)`;
+
+            let headerIcon = alerts ? "⚠️" : "💧";
+
+            const report = `${headerIcon} ЗВІТ QC: Лаб. Контроль ХВО
+===========================
+👤 Контролер: ${emp}
+🕒 Час: ${document.getElementById('hvo-time').value}
+🏭 Стан системи: ${status}
+
+🧂 Таблетована сіль:
+   • Бачок №1: ${salt1}
+   • Бачок №2: ${salt2}
+
+📈 Ротаметри:
+   • Пом'якшена: ${document.getElementById('hvo-rot-soft').value || '-'}
+   • Чиста: ${document.getElementById('hvo-rot-pure').value || '-'}
+
+🧪 Хімічні показники:
+   • Жорсткість: ${document.getElementById('hvo-hardness').value || '-'}
+   • Залізо (Fe): ${document.getElementById('hvo-iron').value || '-'}
+   • Марганець (Mn): ${document.getElementById('hvo-manganese').value || '-'}
+   • pH: ${document.getElementById('hvo-ph').value || '-'}
+${alerts}
+===========================`;
+
+            pendingData = {
+                type: "hvo_control",
+                time: new Date().toLocaleString('uk-UA'),
+                employee: emp,
+                section: "Лаб. Контроль ХВО",
+                report: report,
+                // Fields
+                timeVal: document.getElementById('hvo-time').value,
+                systemStatus: status,
+                salt1: salt1,
+                salt2: salt2,
+                rotSoft: document.getElementById('hvo-rot-soft').value,
+                rotPure: document.getElementById('hvo-rot-pure').value,
+                hardness: document.getElementById('hvo-hardness').value,
+                iron: document.getElementById('hvo-iron').value,
+                manganese: document.getElementById('hvo-manganese').value,
+                ph: document.getElementById('hvo-ph').value
+            };
+
+            document.getElementById('reportPreview').innerText = report;
+            document.getElementById('sendStatus').innerText = "";
+            document.getElementById('sendActions').style.display = 'flex';
+            document.getElementById('sendSpinner').classList.add('hidden');
+            
+            document.getElementById('sendModal').classList.remove('hidden');
+            document.getElementById('sendModal').classList.add('flex');
+        }
+
+        async function executeSend() {
+            const actions = document.getElementById('sendActions');
+            const spinner = document.getElementById('sendSpinner');
+            const status = document.getElementById('sendStatus');
+
+            actions.style.display = 'none';
+            spinner.classList.remove('hidden');
+            status.innerText = "Відправка...";
+
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(pendingData)
+                });
+                
+                status.innerText = "✅ Дані відправлено (черга)!";
+                status.classList.add('text-emerald-600');
+                
+                const recipients = "Dyndarnastia@gmail.com,Buznitskiy7@gmail.com";
+                const subject = encodeURIComponent("Звіт QC: Контроль ХВО");
+                const body = encodeURIComponent(pendingData.report);
+
+                setTimeout(() => {
+                    closeSendModal();
+                    window.location.href = `mailto:${recipients}?subject=${subject}&body=${body}`;
+                }, 1500);
+            } catch(e) {
+                status.innerText = "❌ Помилка з'єднання";
+                status.classList.add('text-red-500');
+                actions.style.display = 'flex';
+                spinner.classList.add('hidden');
+            }
+        }
+
+        function closeSendModal() {
+            document.getElementById('sendModal').classList.add('hidden');
+            document.getElementById('sendModal').classList.remove('flex');
+        }
+        
+        document.getElementById('doSendBtn').onclick = executeSend;
+    </script>
+</body>
+</html>
