@@ -13,47 +13,46 @@
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             text-align: center; padding: 2rem; text-decoration: none; color: #1e293b;
-            height: 100%; min-height: 220px; border: 1px solid #e2e8f0;
+            height: 100%; min-height: 240px; border: 1px solid #e2e8f0;
         }
         .link-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
             border-color: #10b981;
         }
-        .link-card svg { width: 3.5rem; height: 3.5rem; margin-bottom: 1rem; color: #059669; }
-        .link-card h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; }
-        .link-card p { font-size: 0.875rem; color: #64748b; }
+        .link-card svg { width: 4rem; height: 4rem; margin-bottom: 1.5rem; color: #059669; }
+        .link-card h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .link-card p { font-size: 1rem; color: #64748b; }
     </style>
 </head>
 <body class="font-sans text-slate-800">
-    <div class="container mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
+    <div class="container mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
         <header class="relative text-center mb-10 pt-8 sm:pt-4">
              <div id="current-date" class="absolute top-0 left-0 text-slate-500 text-sm sm:text-base font-medium hidden sm:block"></div>
-            <img src="https://foodline-production.com/wp-content/uploads/2021/10/3752781497_3752781497.webp" alt="Foodline Logo" class="w-32 h-auto mx-auto mb-4 rounded-lg bg-white p-2 shadow-sm" onerror="this.src='https://placehold.co/120x60?text=FoodLine'">
-            <h1 class="text-2xl sm:text-4xl font-bold text-slate-800 mb-2">Цифровий блокнот контролера якості</h1>
-            <p class="text-slate-500 text-lg">Контроль якості та безпечності продукції</p>
+            <img src="https://foodline-production.com/wp-content/uploads/2021/10/3752781497_3752781497.webp" alt="Foodline Logo" class="w-40 h-auto mx-auto mb-6 rounded-lg bg-white p-3 shadow-sm" onerror="this.src='https://placehold.co/120x60?text=FoodLine'">
+            <h1 class="text-3xl sm:text-5xl font-bold text-slate-800 mb-2">Цифровий блокнот</h1>
+            <p class="text-slate-500 text-xl">Контроль якості та безпечності продукції</p>
             <div id="current-date-mobile" class="text-slate-400 text-sm mt-2 sm:hidden"></div>
         </header>
 
         <main>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                 <!-- Чек лист -->
                 <a href="checklist.html?view=start" class="link-card group">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-emerald-500 transition-colors">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <h2>Чек-лист</h2>
-                    <p>Загальний контроль зміни (Початок, Процес, Кінець)</p>
+                    <p>Загальний контроль зміни</p>
                 </a>
 
                 <!-- Варки соусу -->
                 <a href="sauce_boiling.html" class="link-card group">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-orange-500 transition-colors">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1.001A3.75 3.75 0 0012 18z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v2m-4-2v2m8-2v2M4 8h16a1 1 0 0 1 1 1v2a9 9 0 1 1-18 0V9a1 1 0 0 1 1-1z" />
                     </svg>
                     <h2>Варки соусу</h2>
-                    <p>Лабораторний контроль, органолептика та фізико-хімія</p>
+                    <p>Контроль параметрів варіння</p>
                 </a>
 
                 <!-- Етикетування -->
@@ -63,13 +62,17 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
                     </svg>
                     <h2>Етикетування</h2>
-                    <p>Звірка етикетки, датування, пакування та стікери</p>
+                    <p>Звірка етикетки та пакування</p>
                 </a>
 
                 <!-- Фасування -->
                 <a href="checklist.html?view=during" class="link-card group">
+                    <!-- Icon: Plastic Bottle -->
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-purple-500 transition-colors">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 3h6v3H9z" /> <!-- Cap -->
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V6" /> <!-- Neck -->
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 10h10v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10z" /> <!-- Body -->
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 15h10" /> <!-- Label line -->
                     </svg>
                     <h2>Фасування</h2>
                     <p>Контроль ваги, герметичності та процесу фасування</p>
@@ -84,10 +87,13 @@
                     <p>Контроль якості миття обладнання та приміщень</p>
                 </a>
 
-                <!-- Лаб. Контроль ХВО -->
+                <!-- Лаб. Контроль ХВО (Нова іконка) -->
                 <a href="hvo_control.html" class="link-card group">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-teal-500 transition-colors">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.519C4.195 15.325 4.195 16.64 5 17.445l10 10c.806.805 2.12.805 2.925 0l4.08-4.081c.806-.805.806-2.12 0-2.925L17.909 10.41a2.25 2.25 0 01-.659-1.591V3.104c0-.83.672-1.5 1.5-1.5h-9c.828 0 1.5.67 1.5 1.5z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l-3.6 4.8a2.25 2.25 0 0 0 1.8 3.6h8.1a2.25 2.25 0 0 0 1.8-3.6l-3.6-4.8V3.75h-4.5v6z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.75h4.5" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6v9a2.25 2.25 0 0 1-2.25 2.25h0a2.25 2.25 0 0 1-2.25-2.25V6" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6h4.5" />
                     </svg>
                     <h2>Лаб. Контроль ХВО</h2>
                     <p>Аналіз води та водопідготовка</p>
