@@ -26,8 +26,18 @@
         }
         
         input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
-        input[type="checkbox"] { width: 1.5rem; height: 1.5rem; accent-color: #2563eb; border-radius: 0.25rem; }
         
+        /* Стилізація випадаючих списків для кращого вигляду */
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+        }
+
         .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #10b981; animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 50; }
@@ -108,9 +118,9 @@
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Чистота продукції </label>
-                    <select id="lbl-sanitary" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg focus:outline-none focus:border-blue-500 transition-colors">
-                        <option value="Не відповідає" selected>❌ НЕ ОК</option>
-                        <option value="Відповідає">✅ ОК</option>
+                    <select id="lbl-sanitary" class="qc-check-input w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg focus:outline-none focus:border-blue-500 transition-colors cursor-pointer">
+                        <option value="❌ НЕ ОК">❌ НЕ ОК</option>
+                        <option value="✅ ОК">✅ ОК</option>
                     </select>
                 </div>
             </div>
@@ -137,13 +147,49 @@
                 </div>
             </div>
 
-            <!-- Checkboxes -->
-            <div class="bg-blue-50 dark:bg-slate-800 p-6 rounded-lg border border-blue-100 dark:border-slate-700 grid grid-cols-1 gap-4">
-                <label class="flex items-center gap-4 cursor-pointer"><input type="checkbox" id="check-pack"><span class="text-base font-medium">Відповідність формування пака</span></label>
-                <label class="flex items-center gap-4 cursor-pointer"><input type="checkbox" id="check-sticker"><span class="text-base font-medium">Відповідність стікера</span></label>
-                <label class="flex items-center gap-4 cursor-pointer"><input type="checkbox" id="check-pallet"><span class="text-base font-medium">Відповідність палетування</span></label>
-                <label class="flex items-center gap-4 cursor-pointer"><input type="checkbox" id="check-layout"><span class="text-base font-medium">Відповідність розкладки</span></label>
-                <label class="flex items-center gap-4 cursor-pointer"><input type="checkbox" id="check-label-applied"><span class="text-base font-medium">Відповідність нанесеної етикетки</span></label>
+            <!-- New Checkboxes as Dropdowns with explicit values -->
+            <div class="bg-blue-50 dark:bg-slate-800 p-6 rounded-lg border border-blue-100 dark:border-slate-700 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Формування пака</label>
+                    <select id="check-pack" class="qc-check-input w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 text-lg focus:outline-none focus:border-blue-500 transition-colors">
+                        <option value="❌ НЕ ОК">❌ НЕ ОК</option>
+                        <option value="✅ ОК">✅ ОК</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Стікер</label>
+                    <select id="check-sticker" class="qc-check-input w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 text-lg focus:outline-none focus:border-blue-500 transition-colors">
+                        <option value="❌ НЕ ОК">❌ НЕ ОК</option>
+                        <option value="✅ ОК">✅ ОК</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Палетування</label>
+                    <select id="check-pallet" class="qc-check-input w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 text-lg focus:outline-none focus:border-blue-500 transition-colors">
+                        <option value="❌ НЕ ОК">❌ НЕ ОК</option>
+                        <option value="✅ ОК">✅ ОК</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Розкладка</label>
+                    <select id="check-layout" class="qc-check-input w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 text-lg focus:outline-none focus:border-blue-500 transition-colors">
+                        <option value="❌ НЕ ОК">❌ НЕ ОК</option>
+                        <option value="✅ ОК">✅ ОК</option>
+                    </select>
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Нанесення етикетки</label>
+                    <select id="check-label-applied" class="qc-check-input w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 text-lg focus:outline-none focus:border-blue-500 transition-colors">
+                        <option value="❌ НЕ ОК">❌ НЕ ОК</option>
+                        <option value="✅ ОК">✅ ОК</option>
+                    </select>
+                </div>
+
             </div>
 
             <textarea id="lbl-comment" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg focus:outline-none focus:border-blue-500 transition-colors" rows="2" placeholder="Коментар..."></textarea>
@@ -371,14 +417,16 @@
         function performReset() {
             document.querySelectorAll('input, select, textarea').forEach(el => {
                  if (el.id !== 'employeeSelect') {
-                    if(el.type === 'checkbox') el.checked = false;
-                    else el.value = '';
+                    el.value = '';
                  }
             });
+            
+            // Set all QC dropdowns to '❌ НЕ ОК' by default
+            document.querySelectorAll('.qc-check-input').forEach(el => el.value = "❌ НЕ ОК");
+
             // Restore defaults
             document.getElementById('lbl-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
             document.getElementById('lbl-label-date').valueAsDate = new Date();
-            document.getElementById('lbl-sanitary').value = "Не відповідає"; // Reset to NOT OK default
             
             document.getElementById('confirmResetModal').classList.add('hidden');
             document.getElementById('confirmResetModal').classList.remove('flex');
@@ -391,10 +439,10 @@
             toast.className = `toast bg-white dark:bg-slate-700 border-l-4 p-4 rounded-lg shadow-xl flex items-center max-w-sm transform transition-all duration-300 translate-x-full border border-slate-200 dark:border-slate-600`;
             if (isError) {
                 toast.classList.add('border-red-500', 'text-red-700', 'dark:text-red-400');
-                toast.innerHTML = `<span class="mr-2 text-xl">🚫</span> <span class="font-medium text-sm">${message}</span>`;
+                toast.innerHTML = `<span class=\"mr-2 text-xl\">🚫</span> <span class=\"font-medium text-sm\">${message}</span>`;
             } else {
                 toast.classList.add('border-emerald-500', 'text-emerald-700', 'dark:text-emerald-400');
-                toast.innerHTML = `<span class="mr-2 text-xl">✅</span> <span class="font-medium text-sm">${message}</span>`;
+                toast.innerHTML = `<span class=\"mr-2 text-xl\">✅</span> <span class=\"font-medium text-sm\">${message}</span>`;
             }
             container.appendChild(toast);
             requestAnimationFrame(() => { toast.classList.remove('translate-x-full'); });
@@ -406,36 +454,26 @@
         function initiateSend() {
             if(!empSel.value) { showToast("Оберіть контролера!", true); return; }
             
-            const checks = [
-                {id: 'check-pack', label: 'Пак'},
-                {id: 'check-sticker', label: 'Стікер'},
-                {id: 'check-pallet', label: 'Палета'},
-                {id: 'check-layout', label: 'Розкладка'},
-                {id: 'check-label-applied', label: 'Етикетка нанесена'}
-            ];
-            
-            let checksText = "";
+            // 1. Get values directly from the dropdowns (values are already safe strings)
+            const valPack = document.getElementById('check-pack').value;
+            const valSticker = document.getElementById('check-sticker').value;
+            const valPallet = document.getElementById('check-pallet').value;
+            const valLayout = document.getElementById('check-layout').value;
+            const valLabel = document.getElementById('check-label-applied').value;
+            const valSanitary = document.getElementById('lbl-sanitary').value;
+
+            // 2. Build Alerts
             let alerts = "";
-            let allChecksOk = true;
+            if (valPack.includes('❌')) alerts += "\n🔴 УВАГА: Невідповідність - Формування пака";
+            if (valSticker.includes('❌')) alerts += "\n🔴 УВАГА: Невідповідність - Стікер";
+            if (valPallet.includes('❌')) alerts += "\n🔴 УВАГА: Невідповідність - Палетування";
+            if (valLayout.includes('❌')) alerts += "\n🔴 УВАГА: Невідповідність - Розкладка";
+            if (valLabel.includes('❌')) alerts += "\n🔴 УВАГА: Невідповідність - Нанесення етикетки";
+            if (valSanitary.includes('❌')) alerts += "\n🔴 УВАГА: Санітарний стан";
 
-            checks.forEach(c => {
-                const el = document.getElementById(c.id);
-                const isOk = el.checked;
-                if (!isOk) {
-                    allChecksOk = false;
-                    alerts += `\n🔴 УВАГА: Невідповідність - ${c.label}`;
-                }
-                checksText += `${c.label}: ${isOk ? '✅' : '❌'}\n`;
-            });
+            let headerIcon = alerts ? "⚠️" : "🟢";
 
-            const sanitary = document.getElementById('lbl-sanitary').value;
-            if (sanitary !== 'Відповідає') {
-                allChecksOk = false;
-                alerts += `\n🔴 УВАГА: Санітарний стан - ${sanitary}`;
-            }
-
-            let headerIcon = allChecksOk ? "🟢" : "⚠️";
-
+            // 3. Build Report (Visual)
             const report = `${headerIcon} ЗВІТ QC : Етикетування
 ===========================
 👤 Контролер: ${empSel.value}
@@ -447,37 +485,39 @@
 📅 Дата етикетки: ${document.getElementById('lbl-label-date').value}
 
 🔍 Перевірки:
-${checksText}
+Формування пака: ${valPack}
+Стікер: ${valSticker}
+Палетування: ${valPallet}
+Розкладка: ${valLayout}
+Етикетка нанесена: ${valLabel}
+Санітарний стан: ${valSanitary}
 ${alerts}
 
 💬 Коментар: ${document.getElementById('lbl-comment').value}
 ===========================`;
 
-            // Adding a space ' ' before the icon forces Excel to treat it as string text, not a formula or boolean
-            const iconOk = ' ✅'; 
-            const iconBad = ' ❌';
-
+            // 5. Build Data (Excel)
             pendingData = {
                 type: "labeling",
                 time: new Date().toLocaleString('uk-UA'),
                 employee: empSel.value,
                 section: "Етикетування",
                 report: report,
-                // Structured Data with Emojis:
                 machine: document.getElementById('lbl-machine').value,
                 tm: tmSel.value,
                 product: document.getElementById('lbl-product').value,
                 task: document.getElementById('lbl-task').value,
-                sanitary: document.getElementById('lbl-sanitary').value === 'Відповідає' ? iconOk : iconBad,
+                // Direct Values (no processing needed, they are already strings)
+                sanitary: valSanitary,
                 labelDate: document.getElementById('lbl-label-date').value,
                 batch: document.getElementById('lbl-label-batch').value,
                 width: document.getElementById('lbl-width').value,
                 temp: document.getElementById('lbl-temp').value,
-                checkPack: document.getElementById('check-pack').checked ? iconOk : iconBad,
-                checkSticker: document.getElementById('check-sticker').checked ? iconOk : iconBad,
-                checkPallet: document.getElementById('check-pallet').checked ? iconOk : iconBad,
-                checkLayout: document.getElementById('check-layout').checked ? iconOk : iconBad,
-                checkLabel: document.getElementById('check-label-applied').checked ? iconOk : iconBad,
+                checkPack: valPack,
+                checkSticker: valSticker,
+                checkPallet: valPallet,
+                checkLayout: valLayout,
+                checkLabel: valLabel,
                 comment: document.getElementById('lbl-comment').value
             };
 
@@ -500,7 +540,13 @@ ${alerts}
             status.innerText = "Відправка...";
 
             try {
-                await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(pendingData) });
+                // Use fetch just like in checklist.html
+                await fetch(GOOGLE_SCRIPT_URL, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    body: JSON.stringify(pendingData) 
+                });
+                
                 status.innerText = "✅ Дані відправлено (черга)!";
                 status.classList.remove('text-red-500');
                 status.classList.add('text-emerald-600');
@@ -511,7 +557,11 @@ ${alerts}
 
                 setTimeout(() => {
                     closeModal('confirmationModal');
-                    window.location.href = `mailto:${recipients}?subject=${subject}&body=${body}`;
+                    // Create hidden link to trigger mailto
+                    const mailtoLink = `mailto:${recipients}?subject=${subject}&body=${body}`;
+                    const link = document.createElement('a');
+                    link.href = mailtoLink;
+                    link.click();
                 }, 1500);
             } catch(e) {
                 status.innerText = "❌ Помилка з'єднання";
