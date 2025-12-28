@@ -38,16 +38,16 @@
         .checklist-item.completed .task-text { text-decoration: line-through; opacity: 0.7; }
         
         .checkbox-icon {
-            width: 1.5rem; height: 1.5rem;
+            width: 1.8rem; height: 1.8rem;
             border: 2px solid #cbd5e1;
-            border-radius: 0.25rem; /* Less rounded */
+            border-radius: 0.25rem;
             display: flex; align-items: center; justify-content: center;
             flex-shrink: 0; background: var(--card-bg);
         }
         .dark .checkbox-icon { border-color: #64748b; }
         
         .checklist-item.completed .checkbox-icon { background-color: #10b981; border-color: #10b981; }
-        .checklist-item.completed .checkbox-icon::after { content: '✔'; color: white; font-weight: bold; font-size: 14px; }
+        .checklist-item.completed .checkbox-icon::after { content: '✔'; color: white; font-weight: bold; font-size: 16px; }
 
         .nav-button { background-color: var(--card-bg); color: var(--muted); border: 1px solid #e2e8f0; transition: all 0.2s; }
         .dark .nav-button { border-color: #334155; }
@@ -58,148 +58,131 @@
         .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #10b981; animation: spin 1s linear infinite; margin: 0 auto; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* Custom styles for inputs to be less rounded */
-        select { border-radius: 0.25rem !important; } 
+        select { padding: 0.75rem !important; font-size: 1rem; border-radius: 0.25rem; }
     </style>
 </head>
 <body class="font-sans antialiased">
     
-    <!-- Toast Container -->
     <div id="toast-container" class="fixed top-4 right-4 z-[2000] flex flex-col gap-2"></div>
 
     <div class="container mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
         
-        <!-- Header -->
-        <header class="relative text-center mb-6">
+        <header class="relative text-center mb-8">
             <div class="absolute top-0 left-0">
-                <a href="dashboard.html" class="flex items-center gap-2 text-slate-500 hover:text-emerald-600 transition-colors p-2 rounded bg-white dark:bg-slate-800 shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
-                    <span class="hidden sm:inline font-bold text-sm">Меню</span>
+                <a href="index.html" class="flex items-center gap-2 text-slate-500 hover:text-emerald-600 transition-colors p-3 rounded bg-white dark:bg-slate-800 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+                    <span class="hidden sm:inline font-bold text-base">Меню</span>
                 </a>
             </div>
             
             <div class="absolute top-0 right-0">
-                <button id="themeToggle" class="p-2 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                <button id="themeToggle" class="p-3 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
                 </button>
             </div>
 
-            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Чек-лист</h1>
-            <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Щоденний контроль зміни</p>
+            <h1 class="text-3xl font-bold tracking-tight">Чек-лист</h1>
+            <p class="text-slate-500 dark:text-slate-400 text-base font-medium mt-1">Щоденний контроль зміни</p>
         </header>
 
-        <!-- Employee Select -->
-        <div class="mb-6 card p-4 rounded shadow-sm border border-slate-200 dark:border-slate-700">
+        <div class="mb-8 card p-6 rounded shadow-sm border border-slate-200 dark:border-slate-700">
             <label class="block text-sm font-bold mb-2 text-slate-500 dark:text-slate-400 uppercase">Контролер якості:</label>
-            <select id="employeeSelect" class="block w-full p-3 border rounded focus:ring-2 focus:ring-emerald-500 outline-none transition-all bg-transparent dark:border-slate-600">
+            <select id="employeeSelect" class="block w-full p-4 border rounded text-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all bg-transparent dark:border-slate-600">
                 <option value="">Оберіть зі списку...</option>
             </select>
         </div>
 
-        <!-- Navigation -->
-        <nav class="grid grid-cols-3 gap-2 mb-6 p-1 bg-slate-100 dark:bg-slate-800 rounded">
-            <button data-view="start" class="nav-button active py-2 px-1 rounded text-sm font-bold">Початок</button>
-            <button data-view="during" class="nav-button py-2 px-1 rounded text-sm font-bold">Фасування</button>
-            <button data-view="end" class="nav-button py-2 px-1 rounded text-sm font-bold">Мийки / Кінець</button>
+        <nav class="grid grid-cols-3 gap-3 mb-8 p-1 bg-slate-100 dark:bg-slate-800 rounded">
+            <button data-view="start" class="nav-button active py-3 px-1 rounded text-base font-bold">Початок</button>
+            <button data-view="during" class="nav-button py-3 px-1 rounded text-base font-bold">Фасування</button>
+            <button data-view="end" class="nav-button py-3 px-1 rounded text-base font-bold">Мийки / Кінець</button>
         </nav>
 
         <main>
-            <!-- Start Section -->
             <section id="startShiftSection" class="view-section">
-                <div class="card p-4 sm:p-6 rounded shadow-md border border-slate-200 dark:border-slate-700">
+                <div class="card p-6 rounded shadow-md border border-slate-200 dark:border-slate-700">
                     <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-xl font-bold text-emerald-700 dark:text-emerald-400">Початок зміни</h2>
-                        <button onclick="resetSection('start')" class="px-3 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 text-xs font-bold rounded hover:bg-orange-200 transition-colors">Скинути</button>
+                        <h2 class="text-2xl font-bold text-emerald-700 dark:text-emerald-400">Початок зміни</h2>
+                        <button onclick="resetSection('start')" class="px-4 py-2 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 text-sm font-bold rounded hover:bg-orange-200 transition-colors">Скинути</button>
                     </div>
-                    <ul class="space-y-3" id="list-start"></ul>
+                    <ul class="space-y-4" id="list-start"></ul>
                     
-                    <button onclick="initiateSend('start')" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                    <button onclick="initiateSend('start')" class="w-full mt-10 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg">
                         <span>📤 Відправити дані</span>
                     </button>
                 </div>
             </section>
 
-            <!-- During Section -->
             <section id="duringShiftSection" class="view-section hidden">
-                <div class="card p-4 sm:p-6 rounded shadow-md border border-slate-200 dark:border-slate-700">
+                <div class="card p-6 rounded shadow-md border border-slate-200 dark:border-slate-700">
                     <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-xl font-bold text-blue-700 dark:text-blue-400">Фасування (Процес)</h2>
-                        <button onclick="resetSection('during')" class="px-3 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 text-xs font-bold rounded hover:bg-orange-200 transition-colors">Скинути</button>
+                        <h2 class="text-2xl font-bold text-blue-700 dark:text-blue-400">Фасування (Процес)</h2>
+                        <button onclick="resetSection('during')" class="px-4 py-2 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 text-sm font-bold rounded hover:bg-orange-200 transition-colors">Скинути</button>
                     </div>
-                    <ul class="space-y-3" id="list-during"></ul>
+                    <ul class="space-y-4" id="list-during"></ul>
 
-                    <button onclick="initiateSend('during')" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                    <button onclick="initiateSend('during')" class="w-full mt-10 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg">
                         <span>📤 Відправити дані</span>
                     </button>
                 </div>
             </section>
 
-            <!-- End Section -->
             <section id="endShiftSection" class="view-section hidden">
-                <div class="card p-4 sm:p-6 rounded shadow-md border border-slate-200 dark:border-slate-700">
+                <div class="card p-6 rounded shadow-md border border-slate-200 dark:border-slate-700">
                     <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-xl font-bold text-sky-700 dark:text-sky-400">Мийки / Кінець</h2>
-                        <button onclick="resetSection('end')" class="px-3 py-1 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 text-xs font-bold rounded hover:bg-orange-200 transition-colors">Скинути</button>
+                        <h2 class="text-2xl font-bold text-sky-700 dark:text-sky-400">Мийки / Кінець</h2>
+                        <button onclick="resetSection('end')" class="px-4 py-2 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 text-sm font-bold rounded hover:bg-orange-200 transition-colors">Скинути</button>
                     </div>
-                    <ul class="space-y-3" id="list-end"></ul>
+                    <ul class="space-y-4" id="list-end"></ul>
 
-                    <button onclick="initiateSend('end')" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                    <button onclick="initiateSend('end')" class="w-full mt-10 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg">
                         <span>📤 Відправити дані</span>
                     </button>
                 </div>
             </section>
         </main>
         
-        <!-- Footer Progress -->
         <div class="fixed bottom-0 left-0 right-0 card p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex items-center justify-between z-40 border-t border-slate-200 dark:border-slate-700">
              <div class="w-full max-w-3xl mx-auto">
                 <div class="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1 font-bold">
                     <span>Прогрес</span>
                     <span id="progressText">0/0</span>
                 </div>
-                <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
                     <div id="progressBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" style="width: 0%"></div>
                 </div>
              </div>
         </div>
     </div>
 
-    <!-- Confirm Reset Modal -->
     <div id="confirmModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
-        <div class="card p-6 rounded shadow-2xl max-w-sm w-full">
-            <h3 class="font-bold text-lg mb-2 text-center">Скидання</h3>
-            <p id="confirmText" class="mb-6 text-sm text-center text-slate-500 dark:text-slate-400"></p>
-            <div class="flex justify-center gap-3">
-                <button id="confirmCancel" class="px-5 py-2.5 bg-slate-100 dark:bg-slate-700 rounded font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">Ні</button>
-                <button id="confirmOk" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded font-bold shadow-lg transition-colors">Так</button>
+        <div class="card p-8 rounded shadow-2xl max-w-sm w-full border border-slate-200">
+            <h3 class="font-bold text-xl mb-3 text-center">Скидання</h3>
+            <p id="confirmText" class="mb-8 text-base text-center text-slate-500 dark:text-slate-400"></p>
+            <div class="flex justify-center gap-4">
+                <button id="confirmCancel" class="px-6 py-3 bg-slate-100 dark:bg-slate-700 rounded font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors text-lg">Ні</button>
+                <button id="confirmOk" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded font-bold shadow-lg transition-colors text-lg">Так</button>
             </div>
         </div>
     </div>
 
-    <!-- Sending Modal -->
     <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
-        <div class="card p-6 rounded shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
-            <h3 class="text-xl font-bold mb-4 text-center">Підтвердження відправки</h3>
-                <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-2 text-2xl">📝</div>
-                <h3 class="text-xl font-bold">Підтвердження відправки</h3>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Перевірте дані перед відправкою</p>
+        <div class="card p-6 rounded shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] border border-slate-200">
+            <div class="text-center mb-4">
+                <div class="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-3 text-3xl">📝</div>
+                <h3 class="text-2xl font-bold">Підтвердження</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Перевірте дані перед відправкою</p>
             </div>
             
-            <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded overflow-y-auto mb-4 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-60" id="reportPreview"></div>
+            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded overflow-y-auto mb-6 border border-slate-200 dark:border-slate-700 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80 leading-relaxed" id="reportPreview"></div>
             
-            <p id="sendStatus" class="text-center text-sm font-bold mb-3 text-emerald-600 min-h-[1.5em]"></p>
+            <p id="sendStatus" class="text-center text-base font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p>
             
-            <div id="sendActions" class="flex flex-col gap-2">
-                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                    <span>✅ Відправити дані</span>
-                </button>
-                <button onclick="closeSendModal()" class="w-full bg-transparent border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 font-bold py-3.5 rounded transition-colors">
-                    Скасувати
-                </button>
+            <div id="sendActions" class="flex flex-col gap-3">
+                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded shadow-lg transition-all active:scale-[0.98] text-lg">✅ Підтвердити та Надіслати</button>
+                <button onclick="closeSendModal()" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 font-bold py-4 rounded transition-colors text-lg">Скасувати</button>
             </div>
-            <div id="sendSpinner" class="hidden py-4 flex justify-center">
-                <div class="spinner"></div>
-            <div id="sendSpinner" class="hidden py-4 flex justify-center"><div class="spinner"></div></div>
+            <div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div>
         </div>
     </div>
 
@@ -234,7 +217,6 @@
         let pendingReportData = null;
         const employeeSelect = document.getElementById('employeeSelect');
 
-        // Theme Toggle Logic
         document.getElementById('themeToggle').addEventListener('click', () => {
             document.documentElement.classList.toggle('dark');
             localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
@@ -279,9 +261,9 @@
         function renderList(section) {
             const ul = document.getElementById(`list-${section}`);
             ul.innerHTML = checklistItems[section].map(item => `
-                <li id="${item.id}" class="checklist-item p-4 rounded flex items-center cursor-pointer select-none" onclick="toggleItem('${item.id}', '${section}')">
+                <li id="${item.id}" class="checklist-item p-5 rounded flex items-center cursor-pointer select-none" onclick="toggleItem('${item.id}', '${section}')">
                     <div class="checkbox-icon"></div>
-                    <span class="task-text text-sm sm:text-base font-medium ml-4 text-slate-700 dark:text-slate-200">${item.text}</span>
+                    <span class="task-text text-base sm:text-lg font-medium ml-4 text-slate-700 dark:text-slate-200">${item.text}</span>
                 </li>
             `).join('');
         }
@@ -313,7 +295,6 @@
             };
         }
 
-        // --- REPORT SENDING LOGIC ---
         function initiateSend(section) {
             if(!employeeSelect.value) { showToast("Оберіть ім'я контролера!", true); return; }
             
@@ -336,10 +317,14 @@
             const fullReport = `=== ЗВІТ: ${title} ===\n\nКонтролер: ${employeeSelect.value}\nЧас: ${new Date().toLocaleString('uk-UA')}\nВиконано: ${completedCount}/${totalCount}\n\n${reportText}`;
 
             pendingReportData = {
+                type: "checklist",
                 time: new Date().toLocaleString('uk-UA'),
                 employee: employeeSelect.value,
-                section: `Чек-лист: ${title}`,
-                report: fullReport
+                stage: title,
+                done: completedCount,
+                total: totalCount,
+                reportText: reportText,
+                fullReport: fullReport
             };
 
             document.getElementById('reportPreview').innerText = fullReport;
@@ -364,14 +349,22 @@
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(pendingReportData)
                 });
-                status.innerText = "✅ Звіт успішно відправлено!";
+                
+                status.innerText = "✅ Дані відправлено (черга)!";
                 status.classList.add('text-emerald-600');
+                
+                // Mailto trigger
+                const recipients = "Buznitskiy7@gmail.com,Dyndarnastia@gmail.com,olgagoncharukm@gmail.com,sashaalieva18@gmail.com";
+                const subject = encodeURIComponent(`Звіт QC Master: ${pendingReportData.stage} - ${pendingReportData.employee}`);
+                const body = encodeURIComponent(pendingReportData.fullReport);
                 
                 setTimeout(() => {
                     closeSendModal();
-                    showToast("Звіт відправлено!");
+                    showToast("Відкриття пошти...");
+                    window.location.href = `mailto:${recipients}?subject=${subject}&body=${body}`;
                 }, 1500);
             } catch (e) {
                 console.error(e);
@@ -390,7 +383,7 @@
         function showToast(message, isError = false) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = `toast bg-white dark:bg-slate-700 border-l-4 p-4 rounded shadow-xl flex items-center max-w-sm transform transition-all duration-300 translate-x-full border border-slate-200 dark:border-slate-600`;
+            toast.className = `toast bg-white dark:bg-slate-700 border-l-4 p-4 rounded-lg shadow-xl flex items-center max-w-sm transform transition-all duration-300 translate-x-full border border-slate-200 dark:border-slate-600`;
             if (isError) {
                 toast.classList.add('border-red-500', 'text-red-700', 'dark:text-red-400');
                 toast.innerHTML = `<span class="mr-2 text-xl">🚫</span> <span class="font-medium text-sm">${message}</span>`;
