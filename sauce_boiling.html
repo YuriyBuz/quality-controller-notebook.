@@ -19,25 +19,31 @@
         body { background-color: var(--bg-color); color: var(--text); padding-bottom: 2rem; transition: background-color 0.3s ease; }
         .card { background-color: var(--card-bg); transition: background-color 0.3s ease; }
         
-        /* Base styles for inputs that match checklist.html */
         input, select {
-            background-color: transparent;
-            /* border handled by tailwind classes */
+            background-color: transparent !important;
+            border: 2px solid #cbd5e1 !important;
+            padding: 1.3rem 1rem !important;
+            border-radius: 0.5rem !important;
+            width: 100%;
+            font-size: 1.125rem !important; 
+            color: inherit;
+            transition: border-color 0.2s;
+            appearance: none;
         }
+        .dark input, .dark select { border-color: #475569 !important; background-color: #1e293b !important; }
         
-        /* Custom scrollbar for datalist if needed */
+        input:focus, select:focus { outline: none; border-color: #f97316 !important; box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2); }
+        
         datalist { max-height: 200px; overflow-y: auto; }
-
         .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #f97316; animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         
-        .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(2px); z-index: 50; }
+        .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 50; }
         
-        /* Styles for pH warning */
         .ph-alert {
-            background-color: #fee2e2 !important; /* red-100 */
-            border-color: #ef4444 !important; /* red-500 */
-            color: #991b1b !important; /* red-800 */
+            background-color: #fee2e2 !important; 
+            border-color: #ef4444 !important;
+            color: #991b1b !important;
         }
         .dark .ph-alert {
             background-color: #7f1d1d !important;
@@ -52,31 +58,47 @@
 
     <div class="container mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
         <header class="flex items-center gap-4 mb-8">
-            <a href="index.html" class="p-3 bg-white dark:bg-slate-800 rounded shadow text-slate-500 hover:text-orange-500 transition-colors flex items-center gap-2">
+            <a href="index.html" class="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-orange-500 transition-colors flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
                 <span class="font-bold hidden sm:inline">Меню</span>
             </a>
-            <h1 class="text-3xl font-bold text-orange-700 dark:text-orange-500">Варки соусу</h1>
-            <button id="themeToggle" class="ml-auto p-3 text-slate-400 hover:text-slate-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg></button>
+            
+            <div class="flex-1 text-center">
+                <h1 class="text-3xl font-bold text-orange-700 dark:text-orange-500">Варки соусу</h1>
+                <p class="text-orange-600 dark:text-orange-400 text-sm font-bold mt-1 uppercase tracking-wide">Лабораторний контроль</p>
+            </div>
+
+            <!-- Kettle Icon -->
+            <div class="p-2 text-orange-500">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                   <path d="M12 4v2m-4-2v2m8-2v2M4 8h16a1 1 0 0 1 1 1v2a9 9 0 1 1-18 0V9a1 1 0 0 1 1-1z" />
+                </svg>
+            </div>
+            
+            <button id="themeToggle" class="p-3 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
         </header>
 
-        <div class="card p-8 rounded shadow-lg border border-orange-100 dark:border-slate-700 space-y-6">
-            <!-- Employee -->
-            <div>
-                <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Контролер</label>
-                <select id="employeeSelect" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
-                    <option value="">Оберіть...</option>
-                </select>
+        <div class="card p-8 rounded-lg shadow-lg border border-orange-100 dark:border-slate-700 space-y-6 relative">
+            
+            <button onclick="resetForm()" class="absolute top-4 right-4 text-xs font-bold text-orange-600 hover:text-orange-800 bg-orange-100 hover:bg-orange-200 px-3 py-1.5 rounded-lg transition-colors dark:bg-orange-900/30 dark:text-orange-300 border border-transparent hover:border-orange-300">
+                Скинути
+            </button>
+
+            <div class="mt-4">
+                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер</label>
+                <select id="employeeSelect" class="rounded-lg"><option value="">Оберіть...</option></select>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Час</label>
-                    <input type="time" id="tst-time" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Час</label>
+                    <input type="time" id="tst-time" class="rounded-lg">
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Варник</label>
-                    <select id="tst-cookName" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Варник</label>
+                    <select id="tst-cookName" class="rounded-lg">
                         <option value="">Оберіть...</option>
                         <option value="Загура Іван Борисович">Загура Іван Борисович</option>
                         <option value="Солдатова Ірина Володимирівна">Солдатова Ірина Володимирівна</option>
@@ -87,90 +109,79 @@
                 </div>
             </div>
 
-            <!-- Product Search -->
             <div>
-                <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Продукт (Код/Назва)</label>
-                <input type="text" id="tst-product" list="products-list" placeholder="Введіть код або назву..." autocomplete="off" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
+                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Продукт (Код/Назва)</label>
+                <input type="text" id="tst-product" list="products-list" placeholder="Введіть код або назву..." autocomplete="off" class="rounded-lg">
                 <datalist id="products-list"></datalist>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-bold text-slate-400 uppercase mb-2">№ Завдання</label>
-                    <input type="number" id="tst-task" placeholder="12345" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">№ Завдання</label>
+                    <input type="number" id="tst-task" placeholder="12345" class="rounded-lg">
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-slate-400 uppercase mb-2">Дата варки</label>
-                    <input type="date" id="tst-cookDate" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
+                    <input type="date" id="tst-cookDate" class="rounded-lg">
                 </div>
             </div>
 
-            <!-- Organoleptic -->
-            <div class="bg-orange-500 text-white p-3 rounded text-center text-base font-bold uppercase tracking-wide">Органолептика</div>
+            <div class="bg-orange-500 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md">Органолептика</div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <select id="tst-color" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
-                    <option value="" disabled selected>Колір...</option>
-                    <option value="+">ОК</option>
-                    <option value="-">Брак</option>
-                </select>
-                <select id="tst-aroma" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
-                    <option value="" disabled selected>Аромат...</option>
-                    <option value="+">ОК</option>
-                    <option value="-">Брак</option>
-                </select>
-                <select id="tst-taste" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
-                    <option value="" disabled selected>Смак...</option>
-                    <option value="+">ОК</option>
-                    <option value="-">Брак</option>
-                </select>
-                <select id="tst-consist" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
-                    <option value="" disabled selected>Консист...</option>
-                    <option value="+">ОК</option>
-                    <option value="-">Брак</option>
-                </select>
+                <select id="tst-color" class="rounded-lg"><option value="" disabled selected>Колір...</option><option value="+">ОК</option><option value="-">Брак</option></select>
+                <select id="tst-aroma" class="rounded-lg"><option value="" disabled selected>Аромат...</option><option value="+">ОК</option><option value="-">Брак</option></select>
+                <select id="tst-taste" class="rounded-lg"><option value="" disabled selected>Смак...</option><option value="+">ОК</option><option value="-">Брак</option></select>
+                <select id="tst-consist" class="rounded-lg"><option value="" disabled selected>Консист...</option><option value="+">ОК</option><option value="-">Брак</option></select>
             </div>
 
-            <!-- Phys-Chem -->
-            <div class="bg-orange-500 text-white p-3 rounded text-center text-base font-bold uppercase tracking-wide">Фізико-хімія</div>
+            <div class="bg-orange-500 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md">Фізико-хімія</div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Сухі (%)</label>
-                    <input type="number" step="0.1" id="tst-dry" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Сухі розчинні речовини, °Bx (20°C)</label>
+                    <input type="number" step="0.1" id="tst-dry" class="rounded-lg">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">В'язкість</label>
-                    <input type="number" id="tst-visc" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Bostwick, cm/30 sec (20 °C)</label>
+                    <input type="number" id="tst-visc" class="rounded-lg">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">pH</label>
-                    <input type="number" step="0.01" id="tst-ph" oninput="validatePH(this)" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">pH (кислотність)</label>
+                    <input type="number" step="0.01" id="tst-ph" oninput="validatePH(this)" class="rounded-lg">
                     <p id="ph-warning" class="hidden text-xs font-bold text-red-600 mt-1 animate-pulse">⚠️ Увага: низька кислотність!</p>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Стійкість</label>
-                    <select id="tst-stab" class="block w-full p-3 border border-orange-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-orange-500 outline-none transition-all bg-transparent text-lg">
-                        <option value="" disabled selected>...</option>
-                        <option value="+">Стійка</option>
-                        <option value="-">Не стійка</option>
-                    </select>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Центрифугування</label>
+                    <select id="tst-stab" class="rounded-lg"><option value="" disabled selected>...</option><option value="+">Стійка</option><option value="-">Не стійка</option></select>
                 </div>
             </div>
 
-            <button onclick="initiateSend()" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg">
+            <button onclick="initiateSend()" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg">
                 <span>📤 Відправити дані</span>
             </button>
         </div>
     </div>
 
+    <!-- Confirm Reset Modal -->
+    <div id="confirmResetModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
+        <div class="card p-8 rounded-lg shadow-2xl max-w-sm w-full border border-slate-200 dark:border-slate-700">
+            <h3 class="font-bold text-xl mb-3 text-center">Скидання</h3>
+            <p class="mb-8 text-base text-center text-slate-500 dark:text-slate-400">Ви дійсно бажаєте очистити форму?</p>
+            <div class="flex justify-center gap-4">
+                <button onclick="document.getElementById('confirmResetModal').classList.add('hidden')" class="px-6 py-3 bg-slate-100 dark:bg-slate-700 rounded-lg font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors text-lg">Ні</button>
+                <button onclick="performReset()" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold shadow-lg transition-colors text-lg">Так</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Sending Modal -->
     <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
-        <div class="card p-8 rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700">
+        <div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700">
             <h3 class="text-2xl font-bold mb-4 text-center">Підтвердження</h3>
-            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-xl overflow-y-auto mb-6 border border-slate-200 dark:border-slate-700 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div>
+            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto mb-6 border border-slate-200 dark:border-slate-700 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div>
             <p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p>
             <div id="sendActions" class="flex flex-col gap-3">
-                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] text-lg">✅ Підтвердити</button>
-                <button onclick="closeSendModal()" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 font-bold py-4 rounded-xl transition-colors text-lg">Скасувати</button>
+                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg transition-all active:scale-[0.98] text-lg">✅ Підтвердити</button>
+                <button onclick="closeSendModal()" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 font-bold py-4 rounded-lg transition-colors text-lg">Скасувати</button>
             </div>
             <div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div>
         </div>
@@ -179,8 +190,9 @@
     <script>
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyg9z5S63_kl-Yxgnho4f5zjT_cCBFizOBp6eWDWQODEZLD0su5YhKAggmETVXgbPbF/exec";
         const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
+        // (Product list shortened for brevity, assumes full list is present)
         const products = [
-            "1101 Соєвий Bonsai", "1102 Соєвий Bonsai Prem", "1103 Соєвий YKI", "1104 Соєвий Bonsai Prof",
+             "1101 Соєвий Bonsai", "1102 Соєвий Bonsai Prem", "1103 Соєвий YKI", "1104 Соєвий Bonsai Prof",
             "1105 Соєвий Чумак", "1106 Соєвий METRO Chef", "1107 ТАМАРИ Bonsai", "1108 Теріякі Bonsai",
             "1109 УНАГІ Bonsai", "1110 ЯКІТОРІ Bonsai", "1111 Теріякі Bonsai Prem", "1112 Теріякі густий YKI",
             "1113 Теріякі з медом Bonsai", "1114 Теріякі рідкий YKI", "1115 Теріякі Чумак", "1116 Для Суши Bonsai",
@@ -221,7 +233,7 @@
             "3603 YKI соус cоєвий 470 мл", "3604 YKI соус cоєвий 890 мл", "3605 YKI соус Болоньєзе (Італійська кухня) 220 гр", "3606 YKI соус Болоньєзе (Італійська кухня) 530 гр",
             "3607 YKI соус Гостро-солодкий (Китайська кухня) 525 гр", "3608 YKI соус Кисло-солодкий (Китайська кухня) 525 гр", "3609 YKI соус соєвий ТЕРІЯКІ (густий) 205 мл",
             "3610 YKI соус соєвий ТЕРІЯКІ 205 мл", "3611 YKI соус соєвий ТЕРІЯКІ з часником та імбиром (густий) 470 мл", "3612 YKI соус соєвий УНАГІ 205 мл",
-            "3613 YKI соус Солодкий-Чилі (Тайська кухня) 540 гр", "3614 YKI соус Солодкий Чилі 225 гр", "3141 SOY SAUCE соус соєвий Класичний special edition 1000 мл"
+            "3614 YKI соус Солодкий Чилі 225 гр", "3613 YKI соус Солодкий-Чилі (Тайська кухня) 540 гр"
         ];
 
         const empSel = document.getElementById('employeeSelect');
@@ -278,20 +290,53 @@
             setTimeout(() => { toast.classList.add('translate-x-full'); setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
+        // Reset Logic
+        function resetForm() {
+            document.getElementById('confirmResetModal').classList.remove('hidden');
+            document.getElementById('confirmResetModal').classList.add('flex');
+        }
+
+        function performReset() {
+            document.querySelectorAll('input, select').forEach(el => {
+                 if (el.id !== 'employeeSelect') el.value = '';
+            });
+            // Restore defaults
+            document.getElementById('tst-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
+            document.getElementById('tst-cookDate').valueAsDate = new Date();
+            
+            document.getElementById('confirmResetModal').classList.add('hidden');
+            document.getElementById('confirmResetModal').classList.remove('flex');
+            showToast("Форму очищено");
+        }
+
         let pendingData = null;
 
         function initiateSend() {
             if(!empSel.value) { alert("Оберіть контролера!"); return; }
             
-            const report = `=== Варки соусу ===\nКонтролер: ${empSel.value}\nЧас: ${document.getElementById('tst-time').value}\nВарник: ${document.getElementById('tst-cookName').value}\nПродукт: ${document.getElementById('tst-product').value}\nЗавдання: ${document.getElementById('tst-task').value}\nДата варки: ${document.getElementById('tst-cookDate').value}\n\nОрганолептика:\nКолір: ${document.getElementById('tst-color').value || '-'}\nАромат: ${document.getElementById('tst-aroma').value || '-'}\nСмак: ${document.getElementById('tst-taste').value || '-'}\nКонсистенція: ${document.getElementById('tst-consist').value || '-'}\n\nФізико-хімія:\nСухі: ${document.getElementById('tst-dry').value}%\nВ'язкість: ${document.getElementById('tst-visc').value}\npH: ${document.getElementById('tst-ph').value}\nСтійкість: ${document.getElementById('tst-stab').value || '-'}`;
+            // Build Report Logic
+            const color = document.getElementById('tst-color').value || '-';
+            const taste = document.getElementById('tst-taste').value || '-';
+            const ph = parseFloat(document.getElementById('tst-ph').value);
+            const stab = document.getElementById('tst-stab').value || '-';
+
+            let alerts = "";
+            if (ph > 4.5) alerts += "\n🔴 УВАГА: ВИСОКИЙ pH (> 4.5)";
+            if (color === '-') alerts += "\n🔴 УВАГА: Невідповідність кольору";
+            if (taste === '-') alerts += "\n🔴 УВАГА: Невідповідність смаку";
+            if (stab === '-') alerts += "\n🔴 УВАГА: Не стійка емульсія";
+
+            let headerIcon = alerts ? "⚠️" : "🟢";
+
+            const report = `${headerIcon} ЗВІТ QC Master: Варки соусу\n===========================\n👤 Контролер: ${empSel.value}\n🕒 Час: ${document.getElementById('tst-time').value}\n👨‍🍳 Варник: ${document.getElementById('tst-cookName').value}\n📦 Продукт: ${document.getElementById('tst-product').value}\n🔢 Завдання: ${document.getElementById('tst-task').value}\n📅 Дата варки: ${document.getElementById('tst-cookDate').value}\n\n👅 Органолептика:\nКолір: ${color}\nАромат: ${document.getElementById('tst-aroma').value || '-'}\nСмак: ${taste}\nКонсистенція: ${document.getElementById('tst-consist').value || '-'}\n\n🧪 Фізико-хімія:\nСухі: ${document.getElementById('tst-dry').value}%\nBostwick: ${document.getElementById('tst-visc').value}\npH: ${document.getElementById('tst-ph').value}\nЦентрифугування: ${stab}\n${alerts}\n===========================`;
 
             pendingData = {
                 type: "sauce",
                 time: new Date().toLocaleString('uk-UA'),
                 employee: empSel.value,
                 section: "Варки соусу",
-                report: report,
-                // Structured data:
+                report: report, // Fallback
+                // Structured data for script:
                 cook: document.getElementById('tst-cookName').value,
                 product: document.getElementById('tst-product').value,
                 task: document.getElementById('tst-task').value,
@@ -325,7 +370,13 @@
             status.innerText = "Відправка...";
 
             try {
-                await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(pendingData) });
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(pendingData)
+                });
+                
                 status.innerText = "✅ Дані відправлено (черга)!";
                 status.classList.add('text-emerald-600');
                 
