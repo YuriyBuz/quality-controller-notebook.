@@ -165,6 +165,7 @@
     </div>
 
     <script>
+        // NEW SCRIPT URL
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzsxJU02BRlR5g_d3JIgVBHlTJydcXywicaZpqc-QQYwPN07z5iWsd7C6XzKQpiSC7a/exec";
         const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
 
@@ -203,41 +204,36 @@
             btnSpinner.classList.remove('hidden');
 
             const filters = {
-                action: 'getData', // Signal for backend (if supported)
+                action: 'getData', // Key for backend
                 dateStart: document.getElementById('filter-date-start').value,
                 dateEnd: document.getElementById('filter-date-end').value,
                 employee: document.getElementById('filter-employee').value,
                 section: document.getElementById('filter-section').value
             };
 
-            // DEMO DATA GENERATOR (Оскільки бекенд, ймовірно, ще не вміє повертати дані)
-            // Видаліть цей блок, якщо ваш Google Script оновлено для обробки 'getData'
-            const mockData = generateMockData(filters); 
-            
             try {
                 // REAL FETCH ATTEMPT
-                // Uncomment this when backend is ready
-                /*
                 const response = await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST', // Google Apps Script Web Apps usually allow GET or POST. POST is safer for payload.
-                    mode: 'no-cors', // 'no-cors' returns opaque response, so we can't read JSON. 
-                                     // For reading, you usually need valid CORS or JSONP.
-                    // NOTE: Without CORS configured on GAS, we cannot read the response in browser.
-                    // For this demo, we use the mock data below.
+                    method: 'POST',
                     body: JSON.stringify(filters)
                 });
-                */
 
-                // Simulated delay
-                await new Promise(r => setTimeout(r, 1000));
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
                 
-                renderTable(mockData);
+                renderTable(data);
                 document.getElementById('resultsArea').classList.remove('hidden');
-                showToast(`Знайдено записів: ${mockData.length}`);
+                showToast(`Знайдено записів: ${data.length}`);
 
             } catch (e) {
                 console.error(e);
-                showToast("Помилка отримання даних");
+                showToast("Помилка отримання даних (Перевірте підключення)");
+                // Clean table on error
+                renderTable([]);
+                document.getElementById('resultsArea').classList.remove('hidden');
             } finally {
                 btnText.classList.remove('hidden');
                 btnSpinner.classList.add('hidden');
@@ -249,8 +245,13 @@
             const emptyState = document.getElementById('emptyState');
             tbody.innerHTML = '';
 
-            if (data.length === 0) {
+            if (!data || data.length === 0) {
                 emptyState.classList.remove('hidden');
+                if(data && data.result === 'error') {
+                     emptyState.innerText = "Помилка сервера: " + data.error;
+                } else {
+                     emptyState.innerText = "Даних не знайдено за вказаними параметрами.";
+                }
                 return;
             } else {
                 emptyState.classList.add('hidden');
@@ -261,7 +262,7 @@
                 tr.className = "bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors border-b border-slate-100 dark:border-slate-700";
                 
                 let statusBadge = '';
-                if(row.status.includes('FAIL') || row.status.includes('Не')) {
+                if(row.status.includes('FAIL') || row.status.includes('Не') || row.status.includes('Incomplete')) {
                     statusBadge = `<span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-300">Проблема</span>`;
                 } else {
                     statusBadge = `<span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">OK</span>`;
@@ -310,29 +311,6 @@
                 'hvo_control': 'ХВО'
             };
             return map[sec] || sec;
-        }
-
-        // --- MOCK DATA GENERATOR (Для демонстрації) ---
-        function generateMockData(filters) {
-            const data = [];
-            const count = Math.floor(Math.random() * 5) + 3; // 3-8 items
-            
-            for(let i=0; i<count; i++) {
-                // Filter logic simulation
-                if(filters.employee !== 'all' && filters.employee !== employees[0]) continue; // simplified
-                
-                const type = filters.section === 'all' ? ['checklist', 'packing', 'sauce_boiling'][Math.floor(Math.random()*3)] : filters.section;
-                
-                data.push({
-                    time: new Date().toLocaleDateString('uk-UA') + " " + new Date().toLocaleTimeString('uk-UA'),
-                    employee: employees[Math.floor(Math.random() * employees.length)],
-                    section: type,
-                    status: Math.random() > 0.8 ? "FAIL" : "OK",
-                    summary: type === 'packing' ? "Лінія А, Соєвий..." : "Зміна прийнята...",
-                    report: `ДЕМОНСТРАЦІЙНИЙ ЗВІТ\n------------------\nТип: ${type}\nСтатус: ${Math.random() > 0.8 ? "Є зауваження" : "Норма"}\n\nЦе приклад того, як виглядатиме звіт, коли backend буде налаштовано на віддачу історії.`
-                });
-            }
-            return data;
         }
     </script>
 </body>
