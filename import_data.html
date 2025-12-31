@@ -19,13 +19,17 @@
         body { background-color: var(--bg-color); color: var(--text); padding-bottom: 2rem; transition: background-color 0.3s ease; }
         .card { background-color: var(--card-bg); transition: background-color 0.3s ease; }
         
+        /* UPDATED INPUT STYLES (MATCHING SAUCE BOILING) */
         input, select {
             background-color: transparent !important;
             border: 2px solid #cbd5e1 !important;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
+            padding: 1.3rem 1rem !important; /* Increased padding */
+            border-radius: 0.5rem !important;
             width: 100%;
+            font-size: 1.125rem !important; /* Increased font size */
             color: inherit;
+            transition: border-color 0.2s;
+            appearance: none;
         }
         .dark input, .dark select { border-color: #475569 !important; }
         
@@ -164,7 +168,8 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
             <h3 class="text-xl font-bold mb-6 pr-8 text-fuchsia-700 dark:text-fuchsia-400 border-b border-slate-200 dark:border-slate-700 pb-2">Деталі звіту</h3>
-            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto border border-slate-200 dark:border-slate-700 font-mono text-sm whitespace-pre-wrap flex-1 shadow-inner text-slate-700 dark:text-slate-300" id="modalContent"></div>
+            <!-- Changed to div with HTML support for rich content -->
+            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto border border-slate-200 dark:border-slate-700 font-mono text-sm flex-1 shadow-inner text-slate-700 dark:text-slate-300" id="modalContent"></div>
             <div class="mt-6 flex justify-end">
                 <button onclick="document.getElementById('reportModal').classList.add('hidden'); document.getElementById('reportModal').classList.remove('flex')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-sm">Закрити</button>
             </div>
@@ -174,6 +179,7 @@
     <script>
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwtN3ZNBAsj3XE-99NuX_iLaZDCqGtmM6baNfXDylPM1qqbasGeNGLfdc4vc73f5GPl/exec";
         const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
+        let currentData = []; // Store fetched data to access details
 
         const empSel = document.getElementById('filter-employee');
         employees.forEach(e => empSel.add(new Option(e, e)));
@@ -229,6 +235,7 @@
                 }
 
                 const data = await response.json();
+                currentData = data; // Store data globally
                 
                 renderTable(data);
                 document.getElementById('resultsArea').classList.remove('hidden');
@@ -243,7 +250,6 @@
             } catch (e) {
                 console.error(e);
                 showToast("Помилка отримання даних (Перевірте підключення)");
-                // Clean table on error
                 renderTable([]);
                 document.getElementById('resultsArea').classList.remove('hidden');
             } finally {
@@ -269,7 +275,7 @@
                 emptyState.classList.add('hidden');
             }
 
-            data.forEach(row => {
+            data.forEach((row, index) => {
                 const tr = document.createElement('tr');
                 tr.className = "bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-100 dark:border-slate-700/50 last:border-0";
                 
@@ -293,11 +299,11 @@
                     <td class="px-6 py-4 text-slate-500 dark:text-slate-400">
                         <div class="flex flex-col gap-1">
                             ${statusBadge}
-                            <span class="truncate max-w-[200px] text-xs opacity-75" title="${row.summary}">${row.summary}</span>
+                            <span class="truncate max-w-[150px] text-xs opacity-75" title="${row.summary}">${row.summary}</span>
                         </div>
                     </td>
                     <td class="px-6 py-4 text-center no-print">
-                        <button onclick="openReport('${encodeURIComponent(row.report)}')" class="text-fuchsia-600 hover:text-fuchsia-800 dark:text-fuchsia-400 dark:hover:text-fuchsia-300 font-bold text-sm bg-fuchsia-50 dark:bg-fuchsia-900/20 px-3 py-1.5 rounded-lg transition-colors border border-fuchsia-100 dark:border-fuchsia-800 hover:border-fuchsia-300">
+                        <button onclick="openReport(${index})" class="text-fuchsia-600 hover:text-fuchsia-800 dark:text-fuchsia-400 dark:hover:text-fuchsia-300 font-bold text-sm bg-fuchsia-50 dark:bg-fuchsia-900/20 px-3 py-1.5 rounded-lg transition-colors border border-fuchsia-100 dark:border-fuchsia-800 hover:border-fuchsia-300">
                             Переглянути
                         </button>
                     </td>
@@ -306,9 +312,29 @@
             });
         }
 
-        function openReport(encodedReport) {
-            const report = decodeURIComponent(encodedReport);
-            document.getElementById('modalContent').innerText = report;
+        // Updated Function to Render Rich HTML Content
+        function openReport(index) {
+            if (!currentData || !currentData[index]) return;
+            const row = currentData[index];
+            let reportHtml = row.report;
+
+            // Convert plain text report to HTML with icons/bolding
+            // 1. Replace newlines
+            reportHtml = reportHtml.replace(/\n/g, '<br>');
+            
+            // 2. Bold keys (text before colon)
+            reportHtml = reportHtml.replace(/(.*?):/g, '<strong>$1:</strong>');
+            
+            // 3. Highlight Statuses
+            reportHtml = reportHtml.replace(/FAIL|❌|Не відповідає|Невідповідність/g, '<span class="text-red-600 font-bold">$&</span>');
+            reportHtml = reportHtml.replace(/OK|✅|Відповідає/g, '<span class="text-green-600 font-bold">$&</span>');
+
+            // 4. Add Image if present (assuming backend might send it in future)
+            if (row.photo) {
+                reportHtml += `<br><br><div class="mt-4 border-t pt-4"><strong class="block mb-2">📷 Фотодоказ:</strong><img src="${row.photo}" class="max-w-full rounded-lg shadow-md border border-slate-200"></div>`;
+            }
+
+            document.getElementById('modalContent').innerHTML = reportHtml;
             document.getElementById('reportModal').classList.remove('hidden');
             document.getElementById('reportModal').classList.add('flex');
         }
