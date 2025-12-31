@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Цифровий блокнот контролера якості</title>
+    <title>Цифровий блокнот QC</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
-        
         .link-card {
             background-color: #ffffff; border-radius: 1rem;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -16,23 +15,10 @@
             text-align: center; padding: 2rem; text-decoration: none; color: #1e293b;
             height: 100%; min-height: 240px; border: 1px solid #e2e8f0;
         }
-
-        /* Ефекти наведення працюють ТІЛЬКИ для активних посилань (тег <a>) */
-        a.link-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-            border-color: #10b981;
-        }
-
+        a.link-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); border-color: #10b981; }
         .link-card svg { width: 4rem; height: 4rem; margin-bottom: 1.5rem; color: #059669; }
         .link-card h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
         .link-card p { font-size: 1rem; color: #64748b; }
-
-        /* Стиль для неактивних карток (тег <div>) */
-        div.link-card {
-            cursor: default;
-            background-color: #f1f5f9; /* Трохи сірий фон */
-        }
     </style>
 </head>
 <body class="font-sans text-slate-800">
@@ -42,13 +28,12 @@
             <img src="https://foodline-production.com/wp-content/uploads/2021/10/3752781497_3752781497.webp" alt="Foodline Logo" class="w-40 h-auto mx-auto mb-6 rounded-lg bg-white p-3 shadow-sm" onerror="this.src='https://placehold.co/120x60?text=FoodLine'">
             <h1 class="text-3xl sm:text-5xl font-bold text-slate-800 mb-2">Цифровий блокнот</h1>
             <p class="text-slate-500 text-xl">Контроль якості та безпечності продукції</p>
-            <div id="current-date-mobile" class="text-slate-400 text-sm mt-2 sm:hidden"></div>
         </header>
 
         <main>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                 <!-- Чек лист -->
-                <a href="checklist.html?view=start" class="link-card group">
+                <a href="checklist.html" class="link-card group">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-emerald-500 transition-colors">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -75,16 +60,13 @@
                     <p>Звірка етикетки та пакування</p>
                 </a>
 
-                <!-- Фасування (АКТИВНЕ) -->
+                <!-- Фасування -->
                 <a href="packing.html" class="link-card group">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-indigo-500 transition-colors">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 3h6v3H9z" /> <!-- Cap -->
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V6" /> <!-- Neck -->
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 10h10v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10z" /> <!-- Body -->
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 15h10" /> <!-- Label line -->
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 3h6v3H9z" /> <path stroke-linecap="round" stroke-linejoin="round" d="M10 6v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V6" /> <path stroke-linecap="round" stroke-linejoin="round" d="M7 10h10v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10z" /> <path stroke-linecap="round" stroke-linejoin="round" d="M7 15h10" />
                     </svg>
                     <h2>Фасування</h2>
-                    <p>Контроль ваги, герметичності та процесу фасування</p>
+                    <p>Контроль ваги та герметичності</p>
                 </a>
 
                 <!-- Мийки -->
@@ -93,7 +75,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                     </svg>
                     <h2>Мийки</h2>
-                    <p>Контроль якості миття обладнання та приміщень</p>
+                    <p>Контроль санітарного стану</p>
                 </a>
 
                 <!-- Лаб. Контроль ХВО -->
@@ -108,22 +90,22 @@
                     <p>Аналіз води та водопідготовка</p>
                 </a>
 
-                <!-- Імпорт данних (АКТИВНА КНОПКА) -->
+                <!-- Імпорт даних -->
                 <a href="import_data.html" class="link-card group">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-fuchsia-500 transition-colors">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                     </svg>
                     <h2>Імпорт даних</h2>
-                    <p>Завантаження зовнішніх даних</p>
+                    <p>Перегляд історії та звітів</p>
                 </a>
 
-                <!-- Довідкова інформація -->
+                <!-- Довідкова -->
                 <a href="https://sites.google.com/view/forstaf" target="_blank" class="link-card group">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-indigo-500 transition-colors">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                     </svg>
                     <h2>Довідкова інформація</h2>
-                    <p>Стандарти, специфікації та інструкції</p>
+                    <p>Стандарти та інструкції</p>
                 </a>
             </div>
         </main>
@@ -131,13 +113,11 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const dateElement = document.getElementById('current-date');
-            const dateElementMobile = document.getElementById('current-date-mobile');
             const now = new Date();
             const options = { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' };
             const formattedDate = new Intl.DateTimeFormat('uk-UA', options).format(now);
             const capitalizedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
             if (dateElement) dateElement.textContent = capitalizedDate;
-            if (dateElementMobile) dateElementMobile.textContent = capitalizedDate;
         });
     </script>
 </body>
