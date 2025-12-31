@@ -3,142 +3,337 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Цифровий блокнот контролера якості</title>
+    <title>Імпорт даних | QC Master</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: { colors: { slate: { 50: '#f8fafc', 800: '#1e293b', 900: '#0f172a' } } }
+            }
+        }
+    </script>
     <style>
-        body { background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        :root { --bg-color: #f8fafc; --card-bg: #fff; --text: #1e293b; }
+        .dark { --bg-color: #0f172a; --card-bg: #1e293b; --text: #f1f5f9; }
+        body { background-color: var(--bg-color); color: var(--text); padding-bottom: 2rem; transition: background-color 0.3s ease; }
+        .card { background-color: var(--card-bg); transition: background-color 0.3s ease; }
         
-        .link-card {
-            background-color: #ffffff; border-radius: 1rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            text-align: center; padding: 2rem; text-decoration: none; color: #1e293b;
-            height: 100%; min-height: 240px; border: 1px solid #e2e8f0;
+        input, select {
+            background-color: transparent;
+            width: 100%;
+            color: inherit;
         }
+        
+        /* Focus ring color for Fuchsia theme */
+        input:focus, select:focus { outline: none; border-color: #c026d3; box-shadow: 0 0 0 2px rgba(192, 38, 211, 0.2); }
+        
+        .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #c026d3; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 50; }
 
-        /* Ефекти наведення працюють ТІЛЬКИ для активних посилань (тег <a>) */
-        a.link-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-            border-color: #10b981;
-        }
-
-        .link-card svg { width: 4rem; height: 4rem; margin-bottom: 1.5rem; color: #059669; }
-        .link-card h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
-        .link-card p { font-size: 1rem; color: #64748b; }
-
-        /* Стиль для неактивних карток (тег <div>) */
-        div.link-card {
-            cursor: default;
-            background-color: #f1f5f9; /* Трохи сірий фон */
+        @media print {
+            body * { visibility: hidden; }
+            #resultsArea, #resultsArea * { visibility: visible; }
+            #resultsArea { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
         }
     </style>
 </head>
-<body class="font-sans text-slate-800">
-    <div class="container mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
-        <header class="relative text-center mb-10 pt-8 sm:pt-4">
-             <div id="current-date" class="absolute top-0 left-0 text-slate-500 text-sm sm:text-base font-medium hidden sm:block"></div>
-            <img src="https://foodline-production.com/wp-content/uploads/2021/10/3752781497_3752781497.webp" alt="Foodline Logo" class="w-40 h-auto mx-auto mb-6 rounded-lg bg-white p-3 shadow-sm" onerror="this.src='https://placehold.co/120x60?text=FoodLine'">
-            <h1 class="text-3xl sm:text-5xl font-bold text-slate-800 mb-2">Цифровий блокнот</h1>
-            <p class="text-slate-500 text-xl">Контроль якості та безпечності продукції</p>
-            <div id="current-date-mobile" class="text-slate-400 text-sm mt-2 sm:hidden"></div>
+<body class="font-sans antialiased">
+
+    <div id="toast-container" class="fixed top-4 right-4 z-[2000] flex flex-col gap-2"></div>
+
+    <div class="container mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
+        <header class="flex items-center gap-4 mb-8 no-print">
+            <a href="index.html" class="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-fuchsia-600 transition-colors flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+                <span class="font-bold hidden sm:inline">Меню</span>
+            </a>
+            
+            <div class="flex-1 text-center">
+                <h1 class="text-3xl font-bold text-fuchsia-700 dark:text-fuchsia-500">Імпорт даних</h1>
+                <p class="text-fuchsia-600 dark:text-fuchsia-400 text-sm font-bold mt-1 uppercase tracking-wide">Аналітика та Звіти</p>
+            </div>
+            
+            <!-- Download Icon -->
+            <div class="p-2 text-fuchsia-500">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+            </div>
+
+            <button id="themeToggle" class="p-3 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
         </header>
 
-        <main>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- Чек лист -->
-                <a href="checklist.html?view=start" class="link-card group">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-emerald-500 transition-colors">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <h2>Чек-лист</h2>
-                    <p>Загальний контроль зміни</p>
-                </a>
-
-                <!-- Варки соусу -->
-                <a href="sauce_boiling.html" class="link-card group">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-orange-500 transition-colors">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v2m-4-2v2m8-2v2M4 8h16a1 1 0 0 1 1 1v2a9 9 0 1 1-18 0V9a1 1 0 0 1 1-1z" />
-                    </svg>
-                    <h2>Варки соусу</h2>
-                    <p>Контроль параметрів соусу</p>
-                </a>
-
-                <!-- Етикетування -->
-                <a href="labeling.html" class="link-card group">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-blue-500 transition-colors">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a22.53 22.53 0 005.246-5.246c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
-                    </svg>
-                    <h2>Етикетування</h2>
-                    <p>Звірка етикетки та пакування</p>
-                </a>
-
-                <!-- Фасування (АКТИВНЕ) -->
-                <a href="packing.html" class="link-card group">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-indigo-500 transition-colors">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 3h6v3H9z" /> <!-- Cap -->
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6v2a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V6" /> <!-- Neck -->
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 10h10v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V10z" /> <!-- Body -->
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 15h10" /> <!-- Label line -->
-                    </svg>
-                    <h2>Фасування</h2>
-                    <p>Контроль ваги, герметичності та процесу фасування</p>
-                </a>
-
-                <!-- Мийки -->
-                <a href="cleaning.html" class="link-card group">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-cyan-500 transition-colors">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
-                    </svg>
-                    <h2>Мийки</h2>
-                    <p>Контроль якості миття обладнання та приміщень</p>
-                </a>
-
-                <!-- Лаб. Контроль ХВО -->
-                <a href="water_control.html" class="link-card group">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-sky-500 transition-colors">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l-3.6 4.8a2.25 2.25 0 0 0 1.8 3.6h8.1a2.25 2.25 0 0 0 1.8-3.6l-3.6-4.8V3.75h-4.5v6z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.75h4.5" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6v9a2.25 2.25 0 0 1-2.25 2.25h0a2.25 2.25 0 0 1-2.25-2.25V6" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6h4.5" />
-                    </svg>
-                    <h2>Лаб. Контроль ХВО</h2>
-                    <p>Аналіз води та водопідготовка</p>
-                </a>
-
-                <!-- Імпорт данних (АКТИВНА КНОПКА) -->
-                <a href="import_data.html" class="link-card group">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-fuchsia-500 transition-colors">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                    </svg>
-                    <h2>Імпорт даних</h2>
-                    <p>Завантаження зовнішніх даних</p>
-                </a>
-
-                <!-- Довідкова інформація -->
-                <a href="https://sites.google.com/view/forstaf" target="_blank" class="link-card group">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="group-hover:text-indigo-500 transition-colors">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                    </svg>
-                    <h2>Довідкова інформація</h2>
-                    <p>Стандарти, специфікації та інструкції</p>
-                </a>
+        <!-- Filters Section -->
+        <div class="card p-6 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 mb-8 no-print">
+            <h3 class="text-lg font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                Параметри пошуку
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Дата з</label>
+                    <input type="date" id="filter-date-start" class="bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Дата по</label>
+                    <input type="date" id="filter-date-end" class="bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Контролер</label>
+                    <select id="filter-employee" class="bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3">
+                        <option value="all">Всі контролери</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Розділ</label>
+                    <select id="filter-section" class="bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3">
+                        <option value="all">Всі розділи</option>
+                        <option value="checklist">Чек-лист</option>
+                        <option value="sauce_boiling">Варки соусу</option>
+                        <option value="labeling">Етикетування</option>
+                        <option value="packing">Фасування</option>
+                        <option value="cleaning">Мийки</option>
+                        <option value="hvo_control">Лаб. Контроль ХВО</option>
+                    </select>
+                </div>
             </div>
-        </main>
+
+            <div class="mt-6 flex justify-end">
+                <button onclick="fetchData()" class="bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-colors flex items-center gap-2">
+                    <span id="btn-text">Завантажити звіт</span>
+                    <div id="btn-spinner" class="spinner hidden border-white border-l-transparent w-5 h-5"></div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsArea" class="hidden">
+            <div class="flex justify-between items-center mb-4 no-print">
+                <h2 class="text-2xl font-bold text-slate-700 dark:text-slate-200">Результати звіту</h2>
+                <button onclick="window.print()" class="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-1 font-bold">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    Друк
+                </button>
+            </div>
+
+            <div class="card rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-slate-700 uppercase bg-slate-100 dark:bg-slate-700 dark:text-slate-400">
+                            <tr>
+                                <th class="px-6 py-3">Дата/Час</th>
+                                <th class="px-6 py-3">Контролер</th>
+                                <th class="px-6 py-3">Розділ</th>
+                                <th class="px-6 py-3">Короткий зміст / Статус</th>
+                                <th class="px-6 py-3 text-center no-print">Дії</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody" class="divide-y divide-slate-200 dark:divide-slate-700">
+                            <!-- Rows will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="emptyState" class="hidden p-8 text-center text-slate-500">
+                    Даних не знайдено за вказаними параметрами.
+                </div>
+            </div>
+        </div>
+
     </div>
+
+    <!-- Modal for Full Report -->
+    <div id="reportModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
+        <div class="card p-6 rounded-lg shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700 relative">
+            <button onclick="document.getElementById('reportModal').classList.add('hidden'); document.getElementById('reportModal').classList.remove('flex')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h3 class="text-xl font-bold mb-4 pr-8" id="modalTitle">Деталі звіту</h3>
+            <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg overflow-y-auto border border-slate-200 dark:border-slate-700 font-mono text-sm whitespace-pre-wrap flex-1" id="modalContent"></div>
+            <div class="mt-4 flex justify-end">
+                <button onclick="document.getElementById('reportModal').classList.add('hidden'); document.getElementById('reportModal').classList.remove('flex')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white font-bold py-2 px-6 rounded-lg transition-colors">Закрити</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const dateElement = document.getElementById('current-date');
-            const dateElementMobile = document.getElementById('current-date-mobile');
-            const now = new Date();
-            const options = { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' };
-            const formattedDate = new Intl.DateTimeFormat('uk-UA', options).format(now);
-            const capitalizedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
-            if (dateElement) dateElement.textContent = capitalizedDate;
-            if (dateElementMobile) dateElementMobile.textContent = capitalizedDate;
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyg9z5S63_kl-Yxgnho4f5zjT_cCBFizOBp6eWDWQODEZLD0su5YhKAggmETVXgbPbF/exec";
+        const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
+
+        // Init
+        const empSel = document.getElementById('filter-employee');
+        employees.forEach(e => empSel.add(new Option(e, e)));
+
+        // Set default dates (Today)
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('filter-date-start').value = today;
+        document.getElementById('filter-date-end').value = today;
+
+        // Theme Toggle
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
         });
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `bg-white dark:bg-slate-700 border-l-4 border-fuchsia-500 p-4 rounded-lg shadow-xl flex items-center max-w-sm text-fuchsia-700 dark:text-fuchsia-400 border border-slate-200 dark:border-slate-600 animate-fade-in-right`;
+            toast.innerHTML = `<span class="font-medium text-sm">${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        async function fetchData() {
+            const btnText = document.getElementById('btn-text');
+            const btnSpinner = document.getElementById('btn-spinner');
+            
+            btnText.classList.add('hidden');
+            btnSpinner.classList.remove('hidden');
+
+            const filters = {
+                action: 'getData', // Signal for backend (if supported)
+                dateStart: document.getElementById('filter-date-start').value,
+                dateEnd: document.getElementById('filter-date-end').value,
+                employee: document.getElementById('filter-employee').value,
+                section: document.getElementById('filter-section').value
+            };
+
+            // DEMO DATA GENERATOR (Оскільки бекенд, ймовірно, ще не вміє повертати дані)
+            // Видаліть цей блок, якщо ваш Google Script оновлено для обробки 'getData'
+            const mockData = generateMockData(filters); 
+            
+            try {
+                // REAL FETCH ATTEMPT
+                // Uncomment this when backend is ready
+                /*
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST', // Google Apps Script Web Apps usually allow GET or POST. POST is safer for payload.
+                    mode: 'no-cors', // 'no-cors' returns opaque response, so we can't read JSON. 
+                                     // For reading, you usually need valid CORS or JSONP.
+                    // NOTE: Without CORS configured on GAS, we cannot read the response in browser.
+                    // For this demo, we use the mock data below.
+                    body: JSON.stringify(filters)
+                });
+                */
+
+                // Simulated delay
+                await new Promise(r => setTimeout(r, 1000));
+                
+                renderTable(mockData);
+                document.getElementById('resultsArea').classList.remove('hidden');
+                showToast(`Знайдено записів: ${mockData.length}`);
+
+            } catch (e) {
+                console.error(e);
+                showToast("Помилка отримання даних");
+            } finally {
+                btnText.classList.remove('hidden');
+                btnSpinner.classList.add('hidden');
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('dataTableBody');
+            const emptyState = document.getElementById('emptyState');
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = "bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors border-b border-slate-100 dark:border-slate-700";
+                
+                let statusBadge = '';
+                if(row.status.includes('FAIL') || row.status.includes('Не')) {
+                    statusBadge = `<span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-300">Проблема</span>`;
+                } else {
+                    statusBadge = `<span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">OK</span>`;
+                }
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-medium whitespace-nowrap text-slate-900 dark:text-white">
+                        ${row.time}
+                    </td>
+                    <td class="px-6 py-4 text-slate-500 dark:text-slate-400">
+                        ${row.employee}
+                    </td>
+                    <td class="px-6 py-4 text-slate-500 dark:text-slate-400">
+                        ${translateSection(row.section)}
+                    </td>
+                    <td class="px-6 py-4 text-slate-500 dark:text-slate-400">
+                        <div class="flex items-center gap-2">
+                            ${statusBadge}
+                            <span class="truncate max-w-[200px]">${row.summary}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-center no-print">
+                        <button onclick="openReport('${encodeURIComponent(row.report)}')" class="text-fuchsia-600 hover:text-fuchsia-900 dark:text-fuchsia-400 dark:hover:text-fuchsia-300 font-bold text-sm">
+                            Переглянути
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openReport(encodedReport) {
+            const report = decodeURIComponent(encodedReport);
+            document.getElementById('modalContent').innerText = report;
+            document.getElementById('reportModal').classList.remove('hidden');
+            document.getElementById('reportModal').classList.add('flex');
+        }
+
+        function translateSection(sec) {
+            const map = {
+                'checklist': 'Чек-лист',
+                'sauce_boiling': 'Варки соусу',
+                'labeling': 'Етикетування',
+                'packing': 'Фасування',
+                'cleaning': 'Мийки',
+                'hvo_control': 'ХВО'
+            };
+            return map[sec] || sec;
+        }
+
+        // --- MOCK DATA GENERATOR (Для демонстрації) ---
+        function generateMockData(filters) {
+            const data = [];
+            const count = Math.floor(Math.random() * 5) + 3; // 3-8 items
+            
+            for(let i=0; i<count; i++) {
+                // Filter logic simulation
+                if(filters.employee !== 'all' && filters.employee !== employees[0]) continue; // simplified
+                
+                const type = filters.section === 'all' ? ['checklist', 'packing', 'sauce_boiling'][Math.floor(Math.random()*3)] : filters.section;
+                
+                data.push({
+                    time: new Date().toLocaleDateString('uk-UA') + " " + new Date().toLocaleTimeString('uk-UA'),
+                    employee: employees[Math.floor(Math.random() * employees.length)],
+                    section: type,
+                    status: Math.random() > 0.8 ? "FAIL" : "OK",
+                    summary: type === 'packing' ? "Лінія А, Соєвий..." : "Зміна прийнята...",
+                    report: `ДЕМОНСТРАЦІЙНИЙ ЗВІТ\n------------------\nТип: ${type}\nСтатус: ${Math.random() > 0.8 ? "Є зауваження" : "Норма"}\n\nЦе приклад того, як виглядатиме звіт, коли backend буде налаштовано на віддачу історії.`
+                });
+            }
+            return data;
+        }
     </script>
 </body>
 </html>
