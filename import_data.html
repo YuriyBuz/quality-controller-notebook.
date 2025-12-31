@@ -20,13 +20,17 @@
         .card { background-color: var(--card-bg); transition: background-color 0.3s ease; }
         
         input, select {
-            background-color: transparent;
+            background-color: transparent !important;
+            border: 2px solid #cbd5e1 !important;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
             width: 100%;
             color: inherit;
         }
+        .dark input, .dark select { border-color: #475569 !important; }
         
         /* Focus ring color for Fuchsia theme */
-        input:focus, select:focus { outline: none; border-color: #c026d3; box-shadow: 0 0 0 2px rgba(192, 38, 211, 0.2); }
+        input:focus, select:focus { outline: none; border-color: #c026d3 !important; box-shadow: 0 0 0 2px rgba(192, 38, 211, 0.2); }
         
         .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #c026d3; animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -72,30 +76,27 @@
         </header>
 
         <!-- Filters Section -->
-        <div class="card p-6 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 mb-8 no-print">
-            <h3 class="text-lg font-bold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
-                Параметри пошуку
-            </h3>
+        <div class="card p-8 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 mb-8 no-print">
+            <h3 class="text-sm font-bold text-fuchsia-800 dark:text-fuchsia-400 uppercase mb-6 border-b border-fuchsia-200 dark:border-slate-600 pb-2">Параметри пошуку</h3>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Дата з</label>
-                    <input type="date" id="filter-date-start" class="bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3">
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Дата з</label>
+                    <input type="date" id="filter-date-start">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Дата по</label>
-                    <input type="date" id="filter-date-end" class="bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3">
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Дата по</label>
+                    <input type="date" id="filter-date-end">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Контролер</label>
-                    <select id="filter-employee" class="bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3">
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер</label>
+                    <select id="filter-employee">
                         <option value="all">Всі контролери</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Розділ</label>
-                    <select id="filter-section" class="bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3">
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Розділ</label>
+                    <select id="filter-section">
                         <option value="all">Всі розділи</option>
                         <option value="checklist">Чек-лист</option>
                         <option value="sauce_boiling">Варки соусу</option>
@@ -107,8 +108,8 @@
                 </div>
             </div>
 
-            <div class="mt-6 flex justify-end">
-                <button onclick="fetchData()" class="bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-colors flex items-center gap-2">
+            <div class="mt-8 flex justify-end">
+                <button onclick="fetchData()" class="bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all active:scale-95 flex items-center gap-2 text-lg">
                     <span id="btn-text">Завантажити звіт</span>
                     <div id="btn-spinner" class="spinner hidden border-white border-l-transparent w-5 h-5"></div>
                 </button>
@@ -116,25 +117,30 @@
         </div>
 
         <!-- Results Section -->
-        <div id="resultsArea" class="hidden">
-            <div class="flex justify-between items-center mb-4 no-print">
-                <h2 class="text-2xl font-bold text-slate-700 dark:text-slate-200">Результати звіту</h2>
-                <button onclick="window.print()" class="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-1 font-bold">
+        <div id="resultsArea" class="hidden space-y-4">
+            <div class="flex justify-between items-center mb-2 no-print">
+                <h2 class="text-2xl font-bold text-slate-700 dark:text-slate-200">Результати</h2>
+                <button onclick="window.print()" class="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-1 font-bold transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                     Друк
                 </button>
             </div>
 
             <div class="card rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <!-- Clean Header for Table -->
+                <div class="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-4 flex justify-between items-center">
+                    <span class="font-bold text-slate-600 dark:text-slate-300 uppercase text-sm">Знайдено записів: <span id="recordCount" class="text-fuchsia-600 dark:text-fuchsia-400">0</span></span>
+                </div>
+
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left">
-                        <thead class="text-xs text-slate-700 uppercase bg-slate-100 dark:bg-slate-700 dark:text-slate-400">
+                        <thead class="text-xs uppercase bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400">
                             <tr>
-                                <th class="px-6 py-3">Дата/Час</th>
-                                <th class="px-6 py-3">Контролер</th>
-                                <th class="px-6 py-3">Розділ</th>
-                                <th class="px-6 py-3">Короткий зміст / Статус</th>
-                                <th class="px-6 py-3 text-center no-print">Дії</th>
+                                <th class="px-6 py-4">Дата/Час</th>
+                                <th class="px-6 py-4">Контролер</th>
+                                <th class="px-6 py-4">Розділ</th>
+                                <th class="px-6 py-4">Короткий зміст / Статус</th>
+                                <th class="px-6 py-4 text-center no-print">Дії</th>
                             </tr>
                         </thead>
                         <tbody id="dataTableBody" class="divide-y divide-slate-200 dark:divide-slate-700">
@@ -142,8 +148,9 @@
                         </tbody>
                     </table>
                 </div>
-                <div id="emptyState" class="hidden p-8 text-center text-slate-500">
-                    Даних не знайдено за вказаними параметрами.
+                <div id="emptyState" class="hidden p-12 text-center text-slate-500 dark:text-slate-400 flex flex-col items-center">
+                    <svg class="w-12 h-12 mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>Даних не знайдено за вказаними параметрами.</span>
                 </div>
             </div>
         </div>
@@ -153,32 +160,28 @@
     <!-- Modal for Full Report -->
     <div id="reportModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
         <div class="card p-6 rounded-lg shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700 relative">
-            <button onclick="document.getElementById('reportModal').classList.add('hidden'); document.getElementById('reportModal').classList.remove('flex')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+            <button onclick="document.getElementById('reportModal').classList.add('hidden'); document.getElementById('reportModal').classList.remove('flex')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
-            <h3 class="text-xl font-bold mb-4 pr-8" id="modalTitle">Деталі звіту</h3>
-            <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg overflow-y-auto border border-slate-200 dark:border-slate-700 font-mono text-sm whitespace-pre-wrap flex-1" id="modalContent"></div>
-            <div class="mt-4 flex justify-end">
-                <button onclick="document.getElementById('reportModal').classList.add('hidden'); document.getElementById('reportModal').classList.remove('flex')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white font-bold py-2 px-6 rounded-lg transition-colors">Закрити</button>
+            <h3 class="text-xl font-bold mb-6 pr-8 text-fuchsia-700 dark:text-fuchsia-400 border-b border-slate-200 dark:border-slate-700 pb-2">Деталі звіту</h3>
+            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto border border-slate-200 dark:border-slate-700 font-mono text-sm whitespace-pre-wrap flex-1 shadow-inner text-slate-700 dark:text-slate-300" id="modalContent"></div>
+            <div class="mt-6 flex justify-end">
+                <button onclick="document.getElementById('reportModal').classList.add('hidden'); document.getElementById('reportModal').classList.remove('flex')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-sm">Закрити</button>
             </div>
         </div>
     </div>
 
     <script>
-        // NEW SCRIPT URL
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzsxJU02BRlR5g_d3JIgVBHlTJydcXywicaZpqc-QQYwPN07z5iWsd7C6XzKQpiSC7a/exec";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwtN3ZNBAsj3XE-99NuX_iLaZDCqGtmM6baNfXDylPM1qqbasGeNGLfdc4vc73f5GPl/exec";
         const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
 
-        // Init
         const empSel = document.getElementById('filter-employee');
         employees.forEach(e => empSel.add(new Option(e, e)));
 
-        // Set default dates (Today)
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('filter-date-start').value = today;
         document.getElementById('filter-date-end').value = today;
 
-        // Theme Toggle
         document.getElementById('themeToggle').addEventListener('click', () => {
             document.documentElement.classList.toggle('dark');
             localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
@@ -190,10 +193,13 @@
         function showToast(message) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = `bg-white dark:bg-slate-700 border-l-4 border-fuchsia-500 p-4 rounded-lg shadow-xl flex items-center max-w-sm text-fuchsia-700 dark:text-fuchsia-400 border border-slate-200 dark:border-slate-600 animate-fade-in-right`;
+            toast.className = `bg-white dark:bg-slate-700 border-l-4 border-fuchsia-500 p-4 rounded-lg shadow-xl flex items-center max-w-sm text-fuchsia-700 dark:text-fuchsia-400 border border-slate-200 dark:border-slate-600 animate-fade-in-right transform transition-all duration-300 translate-x-0`;
             toast.innerHTML = `<span class="font-medium text-sm">${message}</span>`;
             container.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+            setTimeout(() => { 
+                toast.classList.add('opacity-0', 'translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
         async function fetchData() {
@@ -226,7 +232,13 @@
                 
                 renderTable(data);
                 document.getElementById('resultsArea').classList.remove('hidden');
-                showToast(`Знайдено записів: ${data.length}`);
+                document.getElementById('recordCount').innerText = data ? data.length : 0;
+                
+                if (data && data.length > 0) {
+                    showToast(`Знайдено записів: ${data.length}`);
+                } else {
+                    showToast("Записів не знайдено");
+                }
 
             } catch (e) {
                 console.error(e);
@@ -248,9 +260,9 @@
             if (!data || data.length === 0) {
                 emptyState.classList.remove('hidden');
                 if(data && data.result === 'error') {
-                     emptyState.innerText = "Помилка сервера: " + data.error;
+                     emptyState.innerHTML = `<span class="text-red-500 font-bold">Помилка сервера: ${data.error}</span>`;
                 } else {
-                     emptyState.innerText = "Даних не знайдено за вказаними параметрами.";
+                     emptyState.innerHTML = `<svg class="w-12 h-12 mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span>Даних не знайдено за вказаними параметрами.</span>`;
                 }
                 return;
             } else {
@@ -259,33 +271,33 @@
 
             data.forEach(row => {
                 const tr = document.createElement('tr');
-                tr.className = "bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors border-b border-slate-100 dark:border-slate-700";
+                tr.className = "bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-100 dark:border-slate-700/50 last:border-0";
                 
                 let statusBadge = '';
                 if(row.status.includes('FAIL') || row.status.includes('Не') || row.status.includes('Incomplete')) {
-                    statusBadge = `<span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-300">Проблема</span>`;
+                    statusBadge = `<span class="bg-red-100 text-red-800 text-xs font-bold px-2.5 py-1 rounded-full dark:bg-red-900/30 dark:text-red-300 flex items-center gap-1 w-fit"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>Проблема</span>`;
                 } else {
-                    statusBadge = `<span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">OK</span>`;
+                    statusBadge = `<span class="bg-green-100 text-green-800 text-xs font-bold px-2.5 py-1 rounded-full dark:bg-green-900/30 dark:text-green-300 flex items-center gap-1 w-fit"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>OK</span>`;
                 }
 
                 tr.innerHTML = `
-                    <td class="px-6 py-4 font-medium whitespace-nowrap text-slate-900 dark:text-white">
+                    <td class="px-6 py-4 font-medium whitespace-nowrap text-slate-700 dark:text-slate-300">
                         ${row.time}
                     </td>
-                    <td class="px-6 py-4 text-slate-500 dark:text-slate-400">
+                    <td class="px-6 py-4 text-slate-600 dark:text-slate-300 font-medium">
                         ${row.employee}
                     </td>
                     <td class="px-6 py-4 text-slate-500 dark:text-slate-400">
-                        ${translateSection(row.section)}
+                        <span class="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">${translateSection(row.section)}</span>
                     </td>
                     <td class="px-6 py-4 text-slate-500 dark:text-slate-400">
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-col gap-1">
                             ${statusBadge}
-                            <span class="truncate max-w-[200px]">${row.summary}</span>
+                            <span class="truncate max-w-[200px] text-xs opacity-75" title="${row.summary}">${row.summary}</span>
                         </div>
                     </td>
                     <td class="px-6 py-4 text-center no-print">
-                        <button onclick="openReport('${encodeURIComponent(row.report)}')" class="text-fuchsia-600 hover:text-fuchsia-900 dark:text-fuchsia-400 dark:hover:text-fuchsia-300 font-bold text-sm">
+                        <button onclick="openReport('${encodeURIComponent(row.report)}')" class="text-fuchsia-600 hover:text-fuchsia-800 dark:text-fuchsia-400 dark:hover:text-fuchsia-300 font-bold text-sm bg-fuchsia-50 dark:bg-fuchsia-900/20 px-3 py-1.5 rounded-lg transition-colors border border-fuchsia-100 dark:border-fuchsia-800 hover:border-fuchsia-300">
                             Переглянути
                         </button>
                     </td>
