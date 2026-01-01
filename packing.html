@@ -38,6 +38,11 @@
         
         .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 50; }
         .input-alert { border-color: #ef4444 !important; background-color: rgba(239, 68, 68, 0.05) !important; }
+
+        /* Styles for photo gallery */
+        .photo-preview-item { position: relative; width: 100%; padding-top: 100%; /* 1:1 Aspect Ratio */ }
+        .photo-preview-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; }
+        .photo-remove-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10; }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -78,7 +83,7 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
                 <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер</label>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер *</label>
                     <select id="employeeSelect" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors" required>
                         <option value="" disabled selected>Оберіть...</option>
                     </select>
@@ -90,7 +95,7 @@
             </div>
 
             <div class="mt-4">
-                 <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Лінія / Машина</label>
+                 <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Лінія / Машина *</label>
                  <select id="pck-line" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors" required>
                     <option value="" disabled selected>Оберіть...</option>
                     <option value="Line A">Лінія A</option>
@@ -102,34 +107,33 @@
                 </select>
             </div>
 
-            <!-- New Selection Logic -->
             <div class="bg-indigo-50 dark:bg-slate-800/80 p-5 rounded-lg border border-indigo-100 dark:border-slate-700 space-y-6">
                 <h3 class="text-sm font-bold text-indigo-800 dark:text-indigo-400 uppercase mb-4 border-b border-indigo-200 dark:border-slate-600 pb-2">Вибір продукції</h3>
 
-                <!-- 1. Product Code/Name (From Sauce Boiling) -->
+                <!-- 1. Product Code/Name -->
                 <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">1. Продукт (Код/Назва)</label>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">1. Продукт (Код/Назва) *</label>
                     <input type="text" id="pck-product-code" list="products-code-list" placeholder="Почніть вводити назву або код..." class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 text-lg transition-colors" autocomplete="off">
                     <datalist id="products-code-list"></datalist>
                 </div>
 
                 <!-- 2. Batch -->
                 <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">2. № Партії</label>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">2. № Партії *</label>
                     <input type="text" id="pck-batch" placeholder="L..." class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 text-lg transition-colors">
                 </div>
 
-                <!-- 3. TM (From Labeling) -->
+                <!-- 3. TM -->
                 <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">3. ТМ (Торгова Марка)</label>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">3. ТМ (Торгова Марка) *</label>
                     <select id="pck-tm" class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 text-lg transition-colors" onchange="updateTMProduct()" required>
                         <option value="" disabled selected>Оберіть ТМ...</option>
                     </select>
                 </div>
 
-                <!-- 4. Product SKU (From Labeling based on TM) -->
+                <!-- 4. Product SKU -->
                 <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">4. Продукт (SKU)</label>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">4. Продукт (SKU) *</label>
                     <select id="pck-sku" class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 text-lg transition-colors" required>
                         <option value="" disabled selected>Спочатку оберіть ТМ...</option>
                     </select>
@@ -137,7 +141,7 @@
             </div>
 
             <div>
-                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Вага/об'єм (фактична), г</label>
+                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Вага/об'єм (фактична), г *</label>
                 <input type="number" step="0.1" id="pck-weight" placeholder="0.0" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors">
             </div>
 
@@ -147,36 +151,60 @@
                 
                 <div class="space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <label class="text-base font-medium text-slate-700 dark:text-slate-200">Герметичність пакування</label>
-                        <select id="check-seal" class="w-full sm:w-1/2 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors" onchange="checkStatus(this)">
+                        <label class="text-base font-medium text-slate-700 dark:text-slate-200">Герметичність пакування *</label>
+                        <select id="check-seal" class="w-full sm:w-1/2 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors" onchange="checkStatus(this)" required>
+                            <option value="" disabled selected>Оберіть...</option>
                             <option value="OK">✅ Відповідає</option>
                             <option value="FAIL">❌ Порушена</option>
                         </select>
                     </div>
 
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <label class="text-base font-medium text-slate-700 dark:text-slate-200">Маркування дати (друк)</label>
-                        <select id="check-print" class="w-full sm:w-1/2 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors" onchange="checkStatus(this)">
+                        <label class="text-base font-medium text-slate-700 dark:text-slate-200">Маркування дати (друк) *</label>
+                        <select id="check-print" class="w-full sm:w-1/2 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors" onchange="checkStatus(this)" required>
+                            <option value="" disabled selected>Оберіть...</option>
                             <option value="OK">✅ Чітке</option>
                             <option value="FAIL">❌ Нечитабельне/Відсутнє</option>
                         </select>
                     </div>
 
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <label class="text-base font-medium text-slate-700 dark:text-slate-200">Зовнішній вигляд (чистота)</label>
-                        <select id="check-appearance" class="w-full sm:w-1/2 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors" onchange="checkStatus(this)">
+                        <label class="text-base font-medium text-slate-700 dark:text-slate-200">Зовнішній вигляд (чистота) *</label>
+                        <select id="check-appearance" class="w-full sm:w-1/2 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors" onchange="checkStatus(this)" required>
+                            <option value="" disabled selected>Оберіть...</option>
                             <option value="OK">✅ Чисто</option>
                             <option value="FAIL">❌ Бруд/Деформація</option>
                         </select>
                     </div>
                     
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <label class="text-base font-medium text-slate-700 dark:text-slate-200">Кришка / Ковпачок</label>
-                        <select id="check-cap" class="w-full sm:w-1/2 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors" onchange="checkStatus(this)">
+                        <label class="text-base font-medium text-slate-700 dark:text-slate-200">Кришка / Ковпачок *</label>
+                        <select id="check-cap" class="w-full sm:w-1/2 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors" onchange="checkStatus(this)" required>
+                            <option value="" disabled selected>Оберіть...</option>
                             <option value="OK">✅ В нормі</option>
                             <option value="FAIL">❌ Перекіс/Недокрут</option>
                         </select>
                     </div>
+                </div>
+            </div>
+
+            <!-- MULTIPLE PHOTO UPLOAD SECTION -->
+            <div class="bg-indigo-50 dark:bg-slate-800 p-4 rounded-lg border border-indigo-200 dark:border-slate-700">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h4 class="font-bold text-sm mb-1 text-slate-700 dark:text-slate-200">Фото звіт</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Можна додати декілька фото</p>
+                    </div>
+                    <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow flex items-center gap-2 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <span>Обрати фото</span>
+                        <input type="file" id="photo-upload" accept="image/*" multiple class="hidden" onchange="handleFiles(this)">
+                    </label>
+                </div>
+                
+                <!-- Gallery Grid -->
+                <div id="gallery-container" class="grid grid-cols-3 gap-2 hidden">
+                    <!-- Preview items will be added here -->
                 </div>
             </div>
 
@@ -215,7 +243,9 @@
     </div>
 
     <script>
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzsxJU02BRlR5g_d3JIgVBHlTJydcXywicaZpqc-QQYwPN07z5iWsd7C6XzKQpiSC7a/exec";
+        // АКТУАЛЬНЕ ПОСИЛАННЯ (Quality Food Line)
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzpnmNV3NWXAeW8n0esIUA_JG8Re4zr7q6DIoHJq8yxBSMLWpf0aJkJRLiWJiqlTtmY/exec";
+        
         const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
         
         // --- DATA FROM SAUCE BOILING (Варки соусу) ---
@@ -437,6 +467,56 @@
             setTimeout(() => { toast.classList.add('translate-x-full'); setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
+        // FILES LOGIC
+        let uploadedFiles = [];
+
+        function handleFiles(input) {
+            const files = input.files;
+            if (files && files.length > 0) {
+                const container = document.getElementById('gallery-container');
+                container.classList.remove('hidden');
+
+                Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const base64 = e.target.result;
+                        uploadedFiles.push({
+                            name: file.name,
+                            type: file.type,
+                            data: base64
+                        });
+                        
+                        const index = uploadedFiles.length - 1;
+                        const div = document.createElement('div');
+                        div.className = 'photo-preview-item';
+                        div.innerHTML = `
+                            <img src="${base64}">
+                            <div class="photo-remove-btn" onclick="removeFile(this, '${base64}')">✕</div>
+                        `;
+                        container.appendChild(div);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+            input.value = '';
+        }
+
+        function removeFile(btnElement, dataContent) {
+            const parent = btnElement.parentElement;
+            parent.remove();
+            uploadedFiles = uploadedFiles.filter(f => f.data !== dataContent);
+            if(uploadedFiles.length === 0) {
+                document.getElementById('gallery-container').classList.add('hidden');
+            }
+        }
+
+        function clearGallery() {
+            uploadedFiles = [];
+            const container = document.getElementById('gallery-container');
+            container.innerHTML = '';
+            container.classList.add('hidden');
+        }
+
         // Reset Logic
         function resetForm() {
             document.getElementById('confirmResetModal').classList.remove('hidden');
@@ -446,17 +526,13 @@
         function performReset() {
             document.querySelectorAll('input, textarea').forEach(el => el.value = '');
             document.querySelectorAll('select').forEach(el => {
-                if (el.id.startsWith('check-')) {
-                    el.value = 'OK';
-                    el.classList.remove('input-alert');
-                } else {
-                    el.value = '';
-                }
+                el.value = ""; // Reset to empty/default placeholder
+                el.classList.remove('input-alert');
             });
             
             // Restore ONLY time default
             document.getElementById('pck-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
-            document.querySelectorAll('.input-alert').forEach(el => el.classList.remove('input-alert'));
+            clearGallery();
             
             document.getElementById('confirmResetModal').classList.add('hidden');
             document.getElementById('confirmResetModal').classList.remove('flex');
@@ -485,20 +561,29 @@
             const prodCode = document.getElementById('pck-product-code').value;
             const sku = document.getElementById('pck-sku').value;
             const tm = document.getElementById('pck-tm').value;
+            const batch = document.getElementById('pck-batch').value;
             const weight = document.getElementById('pck-weight').value;
             
-            if(!emp) { showToast("Оберіть контролера!", true); return; }
-            if(!line) { showToast("Оберіть лінію!", true); return; }
-            if(!prodCode) { showToast("Вкажіть продукт (Код/Назва)!", true); return; }
-            if(!tm) { showToast("Оберіть ТМ!", true); return; }
-            if(!sku) { showToast("Оберіть SKU!", true); return; }
-            if(!weight) { showToast("Вкажіть вагу!", true); return; }
-
             // Checks
             const seal = document.getElementById('check-seal').value;
             const print = document.getElementById('check-print').value;
             const appearance = document.getElementById('check-appearance').value;
             const cap = document.getElementById('check-cap').value;
+
+            // ВАЛІДАЦІЯ: Перевірка обов'язкових полів і статусів
+            if(!emp) { showToast("Оберіть контролера!", true); return; }
+            if(!line) { showToast("Оберіть лінію!", true); return; }
+            if(!prodCode) { showToast("Вкажіть продукт (Код/Назва)!", true); return; }
+            if(!batch) { showToast("Вкажіть номер партії!", true); return; }
+            if(!tm) { showToast("Оберіть ТМ!", true); return; }
+            if(!sku) { showToast("Оберіть SKU!", true); return; }
+            if(!weight) { showToast("Вкажіть вагу!", true); return; }
+            
+            // Валідація контрольних точок (вони порожні за замовчуванням)
+            if(!seal) { showToast("Перевірте герметичність!", true); return; }
+            if(!print) { showToast("Перевірте маркування!", true); return; }
+            if(!appearance) { showToast("Перевірте зовнішній вигляд!", true); return; }
+            if(!cap) { showToast("Перевірте кришку!", true); return; }
 
             // Alerts logic
             let alerts = "";
@@ -518,7 +603,7 @@
 📦 Продукт (Варка): ${prodCode}
 🏷️ ТМ: ${tm}
 📑 Продукт (SKU): ${sku}
-🔢 Партія: ${document.getElementById('pck-batch').value || '-'}
+🔢 Партія: ${batch}
 ⚖️ Вага: ${weight} г
 
 🔍 Контроль якості:
@@ -526,6 +611,8 @@
    • Маркування: ${print === 'OK' ? 'OK' : '❌ FAIL'}
    • Зовнішній вигляд: ${appearance === 'OK' ? 'OK' : '❌ FAIL'}
    • Кришка: ${cap === 'OK' ? 'OK' : '❌ FAIL'}
+
+📷 Фото: ${uploadedFiles.length} шт.
 ${alerts}
 
 💬 Коментар: ${document.getElementById('pck-comment').value}
@@ -542,13 +629,14 @@ ${alerts}
                 productCode: prodCode,
                 tm: tm,
                 sku: sku,
-                batch: document.getElementById('pck-batch').value,
+                batch: batch,
                 weight: weight,
                 seal: seal,
                 print: print,
                 appearance: appearance,
                 cap: cap,
-                comment: document.getElementById('pck-comment').value
+                comment: document.getElementById('pck-comment').value,
+                files: uploadedFiles // ARRAY OF FILES
             };
 
             document.getElementById('reportPreview').innerText = report;
@@ -570,6 +658,7 @@ ${alerts}
             status.innerText = "Відправка...";
 
             try {
+                // Відправка ТІЛЬКИ на сервер
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
@@ -580,14 +669,11 @@ ${alerts}
                 status.innerText = "✅ Дані відправлено (черга)!";
                 status.classList.add('text-emerald-600');
                 
-                const recipients = "Dyndarnastia@gmail.com,Buznitskiy7@gmail.com";
-                const subject = encodeURIComponent("Звіт QC: Фасування");
-                const body = encodeURIComponent(pendingData.report);
-
                 setTimeout(() => {
                     closeSendModal();
-                    window.location.href = `mailto:${recipients}?subject=${subject}&body=${body}`;
+                    clearGallery();
                 }, 1500);
+
             } catch(e) {
                 status.innerText = "❌ Помилка з'єднання";
                 status.classList.add('text-red-500');
