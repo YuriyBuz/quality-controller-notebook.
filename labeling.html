@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Варки соусу | QC Master</title>
+    <title>Етикетування | QC Master</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -19,41 +19,18 @@
         body { background-color: var(--bg-color); color: var(--text); padding-bottom: 2rem; transition: background-color 0.3s ease; }
         .card { background-color: var(--card-bg); transition: background-color 0.3s ease; }
         
-        /* INPUT STYLES */
-        input, select {
-            background-color: transparent !important;
-            border: 2px solid #cbd5e1 !important;
-            padding: 1.3rem 1rem !important;
-            border-radius: 0.5rem !important;
+        input, select, textarea {
+            background-color: transparent;
             width: 100%;
-            font-size: 1.125rem !important;
             color: inherit;
-            transition: border-color 0.2s;
-            appearance: none;
         }
-        .dark input, .dark select { border-color: #475569 !important; background-color: #1e293b !important; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
         
-        input:focus, select:focus { outline: none; border-color: #f97316 !important; box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2); }
-        
-        datalist { max-height: 200px; overflow-y: auto; }
-        
-        .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #f97316; animation: spin 1s linear infinite; }
+        .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #3b82f6; animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         
         .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 50; }
-        
         .input-alert { border-color: #ef4444 !important; background-color: rgba(239, 68, 68, 0.05) !important; }
-        
-        .ph-alert {
-            background-color: #fee2e2 !important; 
-            border-color: #ef4444 !important;
-            color: #991b1b !important;
-        }
-        .dark .ph-alert {
-            background-color: #7f1d1d !important;
-            border-color: #ef4444 !important;
-            color: #fecaca !important;
-        }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -62,178 +39,268 @@
 
     <div class="container mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
         <header class="flex items-center gap-4 mb-8">
-            <a href="index.html" class="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-orange-600 transition-colors flex items-center gap-2">
+            <a href="index.html" class="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 transition-colors flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
                 <span class="font-bold hidden sm:inline">Меню</span>
             </a>
             
             <div class="flex-1 text-center">
-                <h1 class="text-3xl font-bold text-orange-700 dark:text-orange-500">Варки соусу</h1>
-                <p class="text-orange-600 dark:text-orange-400 text-sm font-bold mt-1 uppercase tracking-wide">Лабораторний контроль</p>
+                <h1 class="text-3xl font-bold text-blue-700 dark:text-blue-500">Етикетування</h1>
+                <p class="text-blue-600 dark:text-blue-400 text-sm font-bold mt-1 uppercase tracking-wide">Контроль пакування</p>
             </div>
             
-            <div class="p-2 text-orange-500">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 4v2m-4-2v2m8-2v2M4 8h16a1 1 0 0 1 1 1v2a9 9 0 1 1-18 0V9a1 1 0 0 1 1-1z" />
-                </svg>
-            </div>
-
             <button id="themeToggle" class="p-3 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
             </button>
         </header>
 
-        <div class="card p-8 rounded-lg shadow-lg border border-orange-100 dark:border-slate-700 space-y-6 relative">
-            
-            <button onclick="resetForm()" class="absolute top-4 right-4 text-xs font-bold text-orange-600 hover:text-orange-800 bg-orange-100 hover:bg-orange-200 px-3 py-1.5 rounded-lg transition-colors dark:bg-orange-900/30 dark:text-orange-300 border border-transparent hover:border-orange-300">
-                Скинути
-            </button>
+        <div class="card p-8 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 space-y-6 relative">
+            <button onclick="resetForm()" class="absolute top-4 right-4 text-xs font-bold text-orange-600 hover:text-orange-800 bg-orange-100 hover:bg-orange-200 px-3 py-1.5 rounded-lg transition-colors dark:bg-orange-900/30 dark:text-orange-300 border border-transparent hover:border-orange-300">Скинути</button>
 
-            <div class="mt-4">
-                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер</label>
-                <select id="employeeSelect" class="rounded-lg"><option value="">Оберіть...</option></select>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
+                <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер</label><select id="employeeSelect" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors"><option value="">Оберіть...</option></select></div>
                 <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Час</label>
-                    <input type="time" id="tst-time" class="rounded-lg">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Варник</label>
-                    <select id="tst-cookName" class="rounded-lg">
-                        <option value="">Оберіть...</option>
-                        <option value="Загура Іван Борисович">Загура Іван Борисович</option>
-                        <option value="Солдатова Ірина Володимирівна">Солдатова Ірина Володимирівна</option>
-                        <option value="Садиріна Ольга Анатоліївна">Садиріна Ольга Анатоліївна</option>
-                        <option value="Козурак Іван Миколайович">Козурак Іван Миколайович</option>
-                        <option value="Кораблін Дмитро Русланович">Кораблін Дмитро Русланович</option>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Машина/Лінія</label>
+                    <select id="lb-machine" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors">
+                        <option value="Машина А">Машина "А"</option>
+                        <option value="Машина B">Машина "B"</option>
+                        <option value="Машина C">Машина "C"</option>
+                        <option value="Машина D">Машина "D"</option>
+                        <option value="Машина E">Машина "E"</option>
+                        <option value="Doy Pack">Машина "Doy Pack"</option>
+                        <option value="Ручне">Машина "Ручне"</option>
                     </select>
                 </div>
             </div>
 
-            <div>
-                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Продукт (Код/Назва)</label>
-                <input type="text" id="tst-product" list="products-list" placeholder="Введіть код або назву..." autocomplete="off" class="rounded-lg">
-                <datalist id="products-list"></datalist>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                 <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">ТМ (Торгова Марка)</label><select id="lb-tm" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors" onchange="updateProducts()"><option value="">Оберіть...</option></select></div>
+                 <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Продукт</label><select id="lb-product" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors"><option value="">Спочатку ТМ...</option></select></div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">№ Завдання</label>
-                    <input type="number" id="tst-task" placeholder="12345" class="rounded-lg">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Дата варки</label>
-                    <input type="date" id="tst-cookDate" class="rounded-lg">
-                </div>
+                <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Час</label><input type="time" id="lb-time" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors"></div>
+                <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Завдання (№)</label><input type="text" id="lb-task" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors"></div>
             </div>
             
-            <div class="bg-orange-500 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md">Органолептика</div>
+            <div class="bg-blue-600 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md mb-4">Параметри маркування</div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <select id="tst-color" class="rounded-lg" onchange="checkStatus(this)"><option value="" disabled selected>Колір...</option><option value="+">✅ Відповідає</option><option value="-">❌ Брак</option></select>
-                <select id="tst-aroma" class="rounded-lg" onchange="checkStatus(this)"><option value="" disabled selected>Аромат...</option><option value="+">✅ Відповідає</option><option value="-">❌ Брак</option></select>
-                <select id="tst-taste" class="rounded-lg" onchange="checkStatus(this)"><option value="" disabled selected>Смак...</option><option value="+">✅ Відповідає</option><option value="-">❌ Брак</option></select>
-                <select id="tst-consist" class="rounded-lg" onchange="checkStatus(this)"><option value="" disabled selected>Консистенція...</option><option value="+">✅ Відповідає</option><option value="-">❌ Брак</option></select>
+                <div><label class="block text-xs font-bold text-slate-500 mb-1">Дата на етикетці</label><input type="date" id="lb-date" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600"></div>
+                <div><label class="block text-xs font-bold text-slate-500 mb-1">Партія (Batch)</label><input type="text" id="lb-batch" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" placeholder="L..."></div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Термозбіжна плівка розмір</label>
+                    <select id="lb-width" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600">
+                        <option value="">Оберіть...</option>
+                        <option value="300/300">300/300</option>
+                        <option value="350/350">350/350</option>
+                        <option value="300/350">300/350</option>
+                        <option value="350/300">350/300</option>
+                        <option value="400/350">400/350</option>
+                        <option value="350/400">350/400</option>
+                    </select>
+                </div>
+                <div><label class="block text-xs font-bold text-slate-500 mb-1">Температура (Тунель)</label><input type="number" id="lb-temp" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" placeholder="°C"></div>
             </div>
-            
-            <div class="bg-orange-500 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md">Фізико-хімія</div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Сухі розчинні речовини, °Bx (20°C)</label>
-                    <input type="number" step="0.1" id="tst-dry" class="rounded-lg">
+
+            <div class="bg-blue-600 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md mb-4 mt-6">Контрольні точки</div>
+            <div class="space-y-4">
+                
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2">
+                    <label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">1. Чистота пляшок (перед етикет.)</label>
+                    <select id="lb-sanitary" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)">
+                        <option value="❌ НЕ ОК" selected>❌ НІ</option>
+                        <option value="✅ ОК">✅ ОК</option>
+                    </select>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Bostwick, cm/30 sec (20 °C)</label>
-                    <input type="number" id="tst-visc" class="rounded-lg">
+
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2">
+                    <label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">2. Відповідність нанесення етикеток</label>
+                    <select id="check-label-app" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)">
+                        <option value="❌" selected>❌ НІ</option>
+                        <option value="✅">✅ ОК</option>
+                    </select>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">pH</label>
-                    <input type="number" step="0.01" id="tst-ph" oninput="validatePH(this)" class="rounded-lg">
-                    <p id="ph-warning" class="hidden text-xs font-bold text-red-600 mt-1 animate-pulse">⚠️ Увага: низька кислотність!</p>
+
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2">
+                    <label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">3. Якість формування пака</label>
+                    <select id="check-pack-quality" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)">
+                        <option value="❌" selected>❌ НІ</option>
+                        <option value="✅">✅ ОК</option>
+                    </select>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Центрифугування</label>
-                    <select id="tst-stab" class="rounded-lg" onchange="checkStatus(this)"><option value="" disabled selected>...</option><option value="+">✅ Стійка</option><option value="-">⚠️ Не стійка</option></select>
+
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2">
+                    <label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">4. Відповідність стікеру і дати</label>
+                    <select id="check-sticker-date" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)">
+                        <option value="❌" selected>❌ НІ</option>
+                        <option value="✅">✅ ОК</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2">
+                    <label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">5. Відповідність розкладки в ряду</label>
+                    <select id="check-row-layout" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)">
+                        <option value="❌" selected>❌ НІ</option>
+                        <option value="✅">✅ ОК</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center justify-between gap-4">
+                    <label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">6. Відповідність палетування</label>
+                    <select id="check-palletizing" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)">
+                        <option value="❌" selected>❌ НІ</option>
+                        <option value="✅">✅ ОК</option>
+                    </select>
                 </div>
             </div>
 
-            <button onclick="initiateSend()" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2 text-lg">
-                <span>📤 Відправити дані</span>
-            </button>
+            <div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg flex items-center justify-between border border-slate-200 dark:border-slate-700">
+                <div>
+                    <h4 class="font-bold text-sm mb-1 text-slate-700 dark:text-slate-200">Фото звіт</h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Прикріпіть фото (буде надіслано в таблицю)</p>
+                </div>
+                <label class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow flex items-center gap-2 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    <span>Додати фото</span>
+                    <input type="file" id="photo-upload" accept="image/*" capture="environment" class="hidden" onchange="handlePhoto(this)">
+                </label>
+            </div>
+            <div id="photo-preview-container" class="hidden relative">
+                <img id="photo-preview" class="w-full h-48 object-cover rounded-lg border-2 border-blue-200">
+                <button onclick="clearPhoto()" class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 shadow hover:bg-red-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>
+
+            <textarea id="lb-comment" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg focus:outline-none focus:border-blue-500 transition-colors" rows="2" placeholder="Коментар..."></textarea>
+
+            <button onclick="initiateSend()" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2 text-lg"><span>📤 Відправити дані</span></button>
         </div>
     </div>
 
-    <div id="confirmResetModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
-        <div class="card p-8 rounded-lg shadow-2xl max-w-sm w-full border border-slate-200 dark:border-slate-700">
-            <h3 class="font-bold text-xl mb-3 text-center">Скидання</h3>
-            <p class="mb-8 text-base text-center text-slate-500 dark:text-slate-400">Ви дійсно бажаєте очистити форму?</p>
-            <div class="flex justify-center gap-4">
-                <button onclick="document.getElementById('confirmResetModal').classList.add('hidden')" class="px-6 py-3 bg-slate-100 dark:bg-slate-700 rounded-lg font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors text-lg">Ні</button>
-                <button onclick="performReset()" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold shadow-lg transition-colors text-lg">Так</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
-        <div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700">
-            <h3 class="text-2xl font-bold mb-4 text-center">Підтвердження</h3>
-            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto mb-6 border border-slate-200 dark:border-slate-700 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div>
-            <p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p>
-            <div id="sendActions" class="flex flex-col gap-3">
-                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg transition-all active:scale-[0.98] text-lg">✅ Підтвердити</button>
-                <button onclick="closeSendModal()" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 font-bold py-4 rounded-lg transition-colors text-lg">Скасувати</button>
-            </div>
-            <div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div>
-        </div>
-    </div>
+    <div id="confirmationModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50"><div class="card p-8 rounded-lg shadow-2xl max-w-sm w-full"><h3 class="font-bold text-xl mb-3 text-center">Скидання</h3><p class="mb-8 text-center text-slate-500">Очистити всю форму?</p><div class="flex justify-center gap-4"><button onclick="closeModal('confirmationModal')" class="px-6 py-3 bg-slate-100 rounded-lg font-bold">Ні</button><button onclick="performReset()" class="px-6 py-3 bg-red-600 text-white rounded-lg font-bold">Так</button></div></div></div>
+    <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50"><div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]"><h3 class="text-2xl font-bold mb-4 text-center">Підтвердження</h3><div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto mb-6 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div><p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p><div id="sendActions" class="flex flex-col gap-3"><button id="confirmSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg text-lg">✅ Підтвердити</button><button onclick="closeModal('sendModal')" class="w-full bg-transparent border-2 border-slate-300 hover:bg-slate-100 text-slate-500 font-bold py-4 rounded-lg text-lg">Скасувати</button></div><div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div></div></div>
 
     <script>
-        // НОВЕ URL (перевірене, від qualityfoodlineproduction)
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwxWqGfbQ0je1QbyWo1--MDJRg-4yFu6GO3JNGWJL7-swy68Pc2cuGnJ3kgsS_RDEUX/exec";
+        // НОВЕ ПРАВИЛЬНЕ ПОСИЛАННЯ
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwQSDuCSFHsK6JYtha-oI-FKvySpkZ44q3nb0ICRdtGfCM9OpLPCKqIc21gND9v-arr/exec";
         
         const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
-        const products = [
-             "1101 Соєвий Bonsai", "1102 Соєвий Bonsai Prem", "1103 Соєвий YKI", "1104 Соєвий Bonsai Prof",
-            "1105 Соєвий Чумак", "1106 Соєвий METRO Chef", "1107 ТАМАРИ Bonsai", "1108 Теріякі Bonsai",
-            "1109 УНАГІ Bonsai", "1110 ЯКІТОРІ Bonsai", "1111 Теріякі Bonsai Prem", "1112 Теріякі густий YKI",
-            "1113 Теріякі з медом Bonsai", "1114 Теріякі рідкий YKI", "1115 Теріякі Чумак", "1116 Для Суши Bonsai",
-            "1117 Бальзамик Bonsai Prem", "1118 Горіховий Bonsai Prem", "1119 Соєвий Bonsai Prof (Custom Edition)", "1120 Для Суши Bonsai Prem",
-            "1121 Соєвий (O)", "1122 Соєвий Ketjap", "1123 Устричний Bonsai", "1124 Соєвий Солодкий Теріякі",
-            "1125 Соус соєвий Теріякі SESAME & GINGER PERI PERI", "1126 Соус соєвий Теріякі SWEET CHILI PERI PERI",
-            "1127 Соус соєвий Унагі SWEET & SOUR PERI PERI", "1128 Соус соєвий SOY & WHEAT PERI PERI", "1129 Маринад соєвий №1",
-            "1130 Маринад соєвий №7", "1131 Соус Теріякі Домінос", "1132 Соус соєвий /(Суши Тайм)", "1133 Соєвий густий",
-            "1134 Соус соєвий_PL", "1201 Кисло-солодкий Peri Peri", "1202 Гостро-солодкий Peri Peri", "1203 Журавлинний Peri Peri",
-            "1204 Ожиновий Peri Peri", "1205 Hot Chili PL", "1206 Sweet Chili Peri Peri, Bonsai Prem", "1207 Гранатовий Наршараб Peri Peri",
-            "1208 Для ЛокшиниWOK Peri Peri", "1209 Жовто-гарячий Peri Peri", "1210 Солодкий Чилі YKI", "1211 Манго-Чилі Peri Peri",
-            "1212 Пряні трави Peri Peri", "1213 Солодкий Чилі Чумак", "1214 Солодкий Чилі Bonsai", "1216 Солодкий Чилі(SE) Bonsai Prem",
-            "1217 Sweet Chili PL (PD)", "1218 Sweet Chili PL", "1219 Ткемалі Peri Peri", "1220 Кімчі Premium", "1221 Сацебелі Peri Peri",
-            "1301 Аризона Барбекю Peri Peri", "1302 Болоньезе Peri Peri", "1303 З в’яленими томатами Peri Peri", "1304 Кетчуп Peri Peri",
-            "1305 Болоньєзе YKI", "1307 Для ПІЦИ Bonsai Prof", "1308 Кетчуп Лагідний YKI", "1310 Кетчуп Чілі YKI",
-            "1312 PL_Соус Томатний (PD)", "1314 PL_Соус №95 Томатний", "1315 PL_Томатна паста 1000 гр", "1401 Original Salateria",
-            "1402 Бальзаміко Fresh Salateria", "1403 З кунжутною олією Salateria", "1404 З кунжутом Salateria", "1405 Медово-гірчична Fresh Salateria",
-            "1501 Кунжутний PP, BProf, Salat", "1502 Сирний Bonsai Prof", "1503 Тартар Peri Peri", "1504 Цезар Peri Peri",
-            "1505 Сирний Bonsai Prof, Peri Peri", "1506 ПЕСТО ROSSO", "1507 ПЕСТО", "1508 ПЕСТО PL", "1509 Майонез original 73%",
-            "1510 PL_Вершковий (PD)", "1601 Наповнювач Вишневий PL", "1602 Наповнювач Лісова ягода PL", "1701 Концентрований компот яблучно-грушевий",
-            "1702 Концентрований компот яблучно-вишневий", "1703 Концентрований компот яблучно-малиновий", "1704 Концентрований компот абрикосово-персиковий",
-            "1801 В’ялені томати"
-        ];
+        const productDatabase = {
+            "Bonsai": [
+                {id: "3102", name: "Bonsai соус соєвий Класичний 235 мл"}, {id: "3103", name: "Bonsai соус соєвий Класичний 500 мл"}, {id: "3115", name: "Bonsai соус соєвий 750 мл"},
+                {id: "3104", name: "Bonsai соус соєвий Класичний 890 мл"}, {id: "3101", name: "Bonsai соус соєвий Класичний 1000 мл (20531)"}, {id: "3108", name: "Bonsai соус соєвий ТЕРІЯКІ з часником та имбирем (густий) 235 мл"},
+                {id: "3109", name: "Bonsai соус соєвий УНАГІ кисло-солодкий (Густий) 240 мл"}, {id: "3105", name: "Bonsai соус соєвий ДЛЯ СУШІ з водоростями КОМБУ 235 мл"}, {id: "3111", name: "Bonsai соус соєвий ЯКІТОРІ з устрицями та кунжутом (густий) 235 мл"},
+                {id: "3106", name: "Bonsai соус соєвий ТАМАРІ з натур. медом 235 мл"}, {id: "3112", name: "Bonsai соус солодкий Теріякі 235 мл"}, {id: "3113", name: "Bonsai соус Солодкий Чилі 260 гр"},
+                {id: "3110", name: "Bonsai соус соєвий УНАГІ кисло-солодкий 500 мл"}, {id: "3116", name: "Bonsai соус соєвий Теріякі 500 мл"}, {id: "3107", name: "Bonsai соус соєвий ТЕРІЯКІ з натуральним медом 500 мл"},
+                {id: "3114", name: "Bonsai соус Солодкий Чилі 550 гр"}, {id: "3120", name: "Bonsai соус соєвий Класичний (густий) дой-пак 200 гр"}, {id: "3117", name: "Bonsai соус соєвий ТЕРІЯКІ з часником та имбирем (густий) дой-пак 200 гр"},
+                {id: "3119", name: "Bonsai соус соєвий УНАГІ кисло-солодкий (густий) дой-пак 200 гр"}, {id: "3118", name: "Bonsai соус солодкий Теріякі (густий) дой-пак 200 гр"}, {id: "3121", name: "Bonsai соус Солодкий Чилі (густий) дой-пак 200гр"}
+            ],
+            "Bonsai Premium": [
+                {id: "3202", name: "Bonsai Premium соус cоєвий Ketjap Manis 570 г"}, {id: "3201", name: "Bonsai Premium соус cоєвий Бальзамічний 250 мл"}, {id: "3203", name: "Bonsai Premium соус cоєвий Класичний 1000 мл"},
+                {id: "3211", name: "Bonsai Premium соус cоєвий Класичний 20 л"}, {id: "3204", name: "Bonsai Premium соус cоєвий Класичний 250 мл"}, {id: "3205", name: "Bonsai Premium соус cоєвий Теріякі 250 мл"},
+                {id: "3206", name: "Bonsai Premium соус ГОРІХОВИЙ 500 гр"}, {id: "3207", name: "Bonsai Premium соус Гранатовий (НАРШАРАБ) 350гр"}, {id: "3209", name: "Bonsai Premium соус НАРШАРАБ 1300 гр"},
+                {id: "3208", name: "Bonsai Premium соус солодкий чилі 1100 гр"}
+            ],
+            "Bonsai Professional": [
+                {id: "3305", name: "Bonsai professional соус БОЛОНЬЄЗЕ (Італ. кухня) 1000 мл"}, {id: "3301", name: "Bonsai professional соус ГОСТРО-СОЛОДКИЙ (Китай. кухня) 1000 мл"}, {id: "3307", name: "Bonsai professional соус Для піци 1000 гр"},
+                {id: "3308", name: "Bonsai professional соус КИСЛО-СОЛОДКИЙ (Китай. кухня) 1000 мл"}, {id: "3309", name: "Bonsai professional соус Кімчі 1100 гр"}, {id: "3310", name: "Bonsai professional соус КУНЖУТНИЙ (густий) 1000 мл"},
+                {id: "3311", name: "Bonsai professional соус Сирний 1 кг/відро"}, {id: "3312", name: "Bonsai professional соус соєвий Класичний 1000 мл (концентрат 1:1)"}, {id: "3313", name: "Bonsai professional соус соєвий класичний 5000 мл ПЕТ (Концентрат 1:1)"},
+                {id: "3314", name: "Bonsai professional соус соєвий Класичний каністра 20 л New"}, {id: "3315", name: "Bonsai professional соус соєвий ТЕРІЯКІ (густий) 1000 мл"}, {id: "3316", name: "Bonsai professional соус соєвий ЯКІТОРІ (густий) 1000 мл"},
+                {id: "3317", name: "Bonsai professional соус солодкий ТЕРІЯКІ (густий) 1000 мл"}, {id: "3318", name: "Bonsai professional соус Солодкий Чилі 5700 гр ПЕТ"}, {id: "3319", name: "Bonsai professional соус УНАГІ (густий) 1000 мл"},
+                {id: "3320", name: "Bonsai professional Соус УСТРИЧНИЙ (густий) 1000 мл"}
+            ],
+            "Peri Peri": [
+                {id: "3401", name: "Peri Peri соус Аризона BBQ (Американська кухня) 320 г"}, {id: "3402", name: "Peri Peri соус Болоньєзе (Італ.кухня) 310 г"}, {id: "3403", name: "Peri Peri соус Гостро-солодкий (Китай.кухня) 320 г"},
+                {id: "3404", name: "Peri Peri соус Гранатовий (НАРШАРАБ) 255 г"}, {id: "3405", name: "Peri Peri соус для Локшини WOK (Кантонська кухня) 320 г"}, {id: "3425", name: "Peri Peri соус Жовто-гарячий (Тайська кухня) 310 г"},
+                {id: "3426", name: "Peri Peri соус Журавлинний (Англійська кухня) 330 г"}, {id: "3406", name: "Peri Peri соус З в’яленими томатами (Італійська кухня) 310 г"}, {id: "3407", name: "Peri Peri соус Кетчуп (Американська кухня) 320 г"},
+                {id: "3408", name: "Peri Peri соус Кисло-солодкий (Китай.кухня) 320 г"}, {id: "3409", name: "Peri Peri соус Кунжутний (Японська кухня) 310 г"}, {id: "3410", name: "Peri Peri соус Манго-Чилі (Тайська кухня) 320 г"},
+                {id: "3411", name: "Peri Peri соус Ожиновий з перцем Халапеньйо (Мексиканська кухня) 330 г"}, {id: "3424", name: "Peri Peri соус Цезар (Американська кухня) 300 г"}, {id: "3422", name: "Peri Peri соус Ткемалі (Грузинська кухня) 320 г"},
+                {id: "3414", name: "Peri Peri соус Пряні трави (Італійська кухня) 310 г"}, {id: "3415", name: "Peri Peri соус Сацебелі (Грузинська кухня) 320 г"}, {id: "3418", name: "Peri Peri соус Солодкий-Чилі (Тайська кухня) 320 г"},
+                {id: "3419", name: "Peri Peri соус ТАРТАР (Французька кухня) 280 г"}, {id: "3420", name: "Peri Peri соус ТЕРІЯКІ sesame & ginger 180 мл"}, {id: "3421", name: "Peri Peri соус ТЕРІЯКІ sweet chili 180 мл"},
+                {id: "3417", name: "Peri Peri соус соєвий soy & wheat 180 мл"}, {id: "3423", name: "Peri Peri соус УНАГІ sweet & sour 180 мл"}, {id: "3412", name: "Peri Peri соус ПЕСТО 200 г"},
+                {id: "3413", name: "Peri Peri соус ПЕСТО ROSSO 200 г"}
+            ],
+            "6 ЛІТРІВ": [
+                {id: "1", name: "6 ЛІТРІВ концентрований компот абрикосово-персиковий 1000 мл"}, {id: "2", name: "6 ЛІТРІВ концентрований компот яблучно-вишневий 1000 мл"}, {id: "3", name: "6 ЛІТРІВ концентрований компот яблучно-грушевий 1000 мл"},
+                {id: "4", name: "6 ЛІТРІВ концентрований компот яблучно-малиновий 1000 мл"}
+            ],
+            "Salateria": [
+                {id: "31001", name: "Salateria Fresh Салатна заправка Медово-Гірчична 335 г"}, {id: "31002", name: "Salateria Fresh Салатна заправка Цезар 320 г"}, {id: "31003", name: "Salateria Fresh Салатна заправка Бальзаміко 335 г"},
+                {id: "3501", name: "Salateria Салатна заправка Original 360 г"}, {id: "3502", name: "Salateria Салатна заправка бальзамічна 360 г"}, {id: "3503", name: "Salateria Салатна заправка КУНЖУТНА 320 г"},
+                {id: "3504", name: "Salateria Салатна заправка соєва з кунжутною олією 360 г"}, {id: "3505", name: "Salateria Салатна заправка соєва з кунжутом 360 г"}
+            ],
+            "Special Edition": [
+                {id: "3141", name: "SOY SAUCE соус соєвий Класичний special edition 1000 мл"}
+            ],
+            "YKI": [
+                {id: "3601", name: "YKI соус cоєвий 1000 мл"}, {id: "3602", name: "YKI соус cоєвий 205 мл"}, {id: "3603", name: "YKI соус cоєвий 470 мл"}, {id: "3604", name: "YKI соус cоєвий 890 мл"},
+                {id: "3605", name: "YKI соус Болоньєзе (Італійська кухня) 220 гр"}, {id: "3606", name: "YKI соус Болоньєзе (Італійська кухня) 530 гр"}, {id: "3607", name: "YKI соус Гостро-солодкий (Китайська кухня) 525 гр"},
+                {id: "3608", name: "YKI соус Кисло-солодкий (Китайська кухня) 525 гр"}, {id: "3609", name: "YKI соус соєвий ТЕРІЯКІ (густий) 205 мл"}, {id: "3610", name: "YKI соус соєвий ТЕРІЯКІ 205 мл"},
+                {id: "3611", name: "YKI соус соєвий ТЕРІЯКІ з часником та імбиром (густий) 470 мл"}, {id: "3612", name: "YKI соус соєвий УНАГІ 205 мл"}, {id: "3614", name: "YKI соус Солодкий Чилі 225 гр"},
+                {id: "3613", name: "YKI соус Солодкий-Чилі (Тайська кухня) 540 гр"}
+            ]
+        };
 
         const empSel = document.getElementById('employeeSelect');
         employees.forEach(e => empSel.add(new Option(e, e)));
-        const dl = document.getElementById('products-list');
-        products.forEach(p => { const opt = document.createElement('option'); opt.value = p; dl.appendChild(opt); });
-        
-        // Init Defaults
-        document.getElementById('tst-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
-        document.getElementById('tst-cookDate').valueAsDate = new Date();
+        const tmSel = document.getElementById('lb-tm');
+        Object.keys(productDatabase).forEach(tm => tmSel.add(new Option(tm, tm)));
 
-        // Restore User
+        let base64Photo = null;
+
+        function updateProducts() {
+            const tm = tmSel.value;
+            const prodSel = document.getElementById('lb-product');
+            prodSel.innerHTML = '<option value="">Оберіть...</option>';
+            if (productDatabase[tm]) {
+                productDatabase[tm].forEach(p => prodSel.add(new Option(`${p.id} - ${p.name}`, `${p.id} - ${p.name}`)));
+            }
+        }
+
+        function handlePhoto(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    base64Photo = e.target.result;
+                    document.getElementById('photo-preview').src = base64Photo;
+                    document.getElementById('photo-preview-container').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function clearPhoto() {
+            base64Photo = null;
+            document.getElementById('photo-upload').value = '';
+            document.getElementById('photo-preview-container').classList.add('hidden');
+        }
+
+        function checkStatus(el) {
+            if (el.value === 'Не відповідає' || el.value === '❌' || el.value.includes('❌')) el.classList.add('input-alert');
+            else el.classList.remove('input-alert');
+        }
+
+        function resetForm() { document.getElementById('confirmationModal').classList.remove('hidden'); document.getElementById('confirmationModal').classList.add('flex'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+        
+        function performReset() {
+             document.querySelectorAll('input, textarea').forEach(el => el.value = '');
+             document.querySelectorAll('select').forEach(el => { 
+                 if(el.id.startsWith('check-') || el.id === 'lb-sanitary') el.value = '❌'; 
+                 else el.value = el.options[0].value; 
+                 el.classList.remove('input-alert'); 
+             });
+             document.getElementById('lb-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
+             clearPhoto();
+             closeModal('confirmationModal');
+        }
+
+        document.getElementById('lb-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
+        
         const saved = localStorage.getItem('qc_user');
         if(saved) empSel.value = saved;
         empSel.onchange = () => localStorage.setItem('qc_user', empSel.value);
 
-        // Theme Toggle
         document.getElementById('themeToggle').addEventListener('click', () => {
             document.documentElement.classList.toggle('dark');
             localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
@@ -242,183 +309,106 @@
             document.documentElement.classList.add('dark');
         }
 
-        // Validate pH
-        function validatePH(input) {
-            const val = parseFloat(input.value);
-            const warning = document.getElementById('ph-warning');
-            if (val > 4.5) {
-                input.classList.add('ph-alert');
-                warning.classList.remove('hidden');
-                showToast('Увага: Низька кислотність (pH > 4.5)', true);
-            } else {
-                input.classList.remove('ph-alert');
-                warning.classList.add('hidden');
-            }
-        }
-
-        // Visual Validation
-        function checkStatus(el) {
-            if (el.value.includes('-') || el.value.includes('Не')) {
-                el.classList.add('input-alert');
-            } else {
-                el.classList.remove('input-alert');
-            }
-        }
-
-        function showToast(message, isError = false) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast bg-white dark:bg-slate-700 border-l-4 p-4 rounded-lg shadow-xl flex items-center max-w-sm transform transition-all duration-300 translate-x-full border border-slate-200 dark:border-slate-600`;
-            if (isError) {
-                toast.classList.add('border-red-500', 'text-red-700', 'dark:text-red-400');
-                toast.innerHTML = `<span class="mr-2 text-xl">🚫</span> <span class="font-medium text-sm">${message}</span>`;
-            } else {
-                toast.classList.add('border-emerald-500', 'text-emerald-700', 'dark:text-emerald-400');
-                toast.innerHTML = `<span class="mr-2 text-xl">✅</span> <span class="font-medium text-sm">${message}</span>`;
-            }
-            container.appendChild(toast);
-            requestAnimationFrame(() => { toast.classList.remove('translate-x-full'); });
-            setTimeout(() => { toast.classList.add('translate-x-full'); setTimeout(() => toast.remove(), 300); }, 3000);
-        }
-
-        // Reset Logic
-        function resetForm() {
-            document.getElementById('confirmResetModal').classList.remove('hidden');
-            document.getElementById('confirmResetModal').classList.add('flex');
-        }
-
-        function performReset() {
-            document.querySelectorAll('input, select').forEach(el => {
-                 el.value = '';
-                 el.classList.remove('input-alert');
-            });
-            // Restore defaults
-            document.getElementById('tst-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
-            document.getElementById('tst-cookDate').valueAsDate = new Date();
-            
-            document.getElementById('confirmResetModal').classList.add('hidden');
-            document.getElementById('confirmResetModal').classList.remove('flex');
-            showToast("Форму очищено");
-        }
-
         let pendingData = null;
-
         function initiateSend() {
             const emp = empSel.value;
-            const cook = document.getElementById('tst-cookName').value;
-            const prod = document.getElementById('tst-product').value;
-            
-            if(!emp || !cook || !prod) { showToast("Оберіть контролера та варника!", true); return; }
+            const machine = document.getElementById('lb-machine').value;
+            const tm = document.getElementById('lb-tm').value;
+            const prod = document.getElementById('lb-product').value;
+            if(!emp || !tm || !prod) { alert("Заповніть основні поля!"); return; }
 
-            const color = document.getElementById('tst-color').value || '-';
-            const aroma = document.getElementById('tst-aroma').value || '-';
-            const taste = document.getElementById('tst-taste').value || '-';
-            const consist = document.getElementById('tst-consist').value || '-';
-            const ph = parseFloat(document.getElementById('tst-ph').value);
-            const stab = document.getElementById('tst-stab').value || '-';
+            const sanitary = document.getElementById('lb-sanitary').value;
+            const labelApp = document.getElementById('check-label-app').value;
+            const packQual = document.getElementById('check-pack-quality').value;
+            const sticker = document.getElementById('check-sticker-date').value;
+            const rowLayout = document.getElementById('check-row-layout').value;
+            const pallet = document.getElementById('check-palletizing').value;
             
             let alerts = "";
-            if (ph > 4.5) alerts += "\n🔴 УВАГА: ВИСОКИЙ pH (> 4.5)";
-            if (color === '-') alerts += "\n🔴 УВАГА: Невідповідність кольору";
-            if (aroma === '-') alerts += "\n🔴 УВАГА: Невідповідність запаху";
-            if (taste === '-') alerts += "\n🔴 УВАГА: Невідповідність смаку";
-            if (consist === '-') alerts += "\n🔴 УВАГА: Невідповідність консистенції";
-            if (stab === '-') alerts += "\n🔴 УВАГА: Не стійка емульсія";
-            
-            let headerIcon = alerts ? "⚠️" : "🟢";
-            const report = `${headerIcon} ЗВІТ QC Master: Варки соусу
+            if(sanitary.includes('❌') || labelApp.includes('❌') || packQual.includes('❌') || sticker.includes('❌') || rowLayout.includes('❌') || pallet.includes('❌')) alerts += "\n🔴 Є ВІДХИЛЕННЯ!";
+
+            const report = `🏷️ ЗВІТ QC: Етикетування
 ===========================
 👤 Контролер: ${emp}
-🕒 Час: ${document.getElementById('tst-time').value}
-👨‍🍳 Варник: ${cook}
+⚙️ Лінія: ${machine}
 📦 Продукт: ${prod}
-🔢 Завдання: ${document.getElementById('tst-task').value}
-📅 Дата варки: ${document.getElementById('tst-cookDate').value}
+🆔 Партія: ${document.getElementById('lb-batch').value || '-'}
+📅 Дата: ${document.getElementById('lb-date').value || '-'}
 
-👅 Органолептика:
-   • Колір: ${color}
-   • Аромат: ${aroma}
-   • Смак: ${taste}
-   • Консистенція: ${consist}
+📏 Плівка: ${document.getElementById('lb-width').value}
 
-🧪 Фізико-хімія:
-   • Сухі: ${document.getElementById('tst-dry').value}%
-   • Bostwick: ${document.getElementById('tst-visc').value}
-   • pH: ${document.getElementById('tst-ph').value}
-   • Центрифугування: ${stab}
+🔍 Контроль:
+   • Чистота пляшок: ${sanitary}
+   • Нанесення: ${labelApp}
+   • Пак: ${packQual}
+   • Стікер/Дата: ${sticker}
+   • Розкладка: ${rowLayout}
+   • Палетування: ${pallet}
+
+📷 Фото: ${base64Photo ? 'Прикріплено' : 'Відсутнє'}
 ${alerts}
 ===========================`;
 
             pendingData = {
-                type: "sauce",
-                time: new Date().toLocaleString('uk-UA'),
-                employee: emp,
-                section: "Варки соусу",
+                type: 'labeling', time: new Date().toLocaleString('uk-UA'),
+                employee: emp, machine: machine, tm: tm, product: prod,
+                task: document.getElementById('lb-task').value,
+                sanitary: sanitary,
+                labelDate: document.getElementById('lb-date').value,
+                batch: document.getElementById('lb-batch').value,
+                width: document.getElementById('lb-width').value, 
+                temp: document.getElementById('lb-temp').value,
+                checkLabel: labelApp, checkPack: packQual,
+                checkSticker: sticker, checkLayout: rowLayout, checkPallet: pallet,
+                comment: document.getElementById('lb-comment').value,
                 report: report,
-                // Fields
-                cook: cook,
-                product: prod,
-                task: document.getElementById('tst-task').value,
-                cookDate: document.getElementById('tst-cookDate').value,
-                color: color,
-                aroma: aroma,
-                taste: taste,
-                consist: consist,
-                dry: document.getElementById('tst-dry').value,
-                visc: document.getElementById('tst-visc').value,
-                ph: document.getElementById('tst-ph').value,
-                stability: stab
+                photo: base64Photo 
             };
 
             document.getElementById('reportPreview').innerText = report;
             document.getElementById('sendStatus').innerText = "";
             document.getElementById('sendActions').style.display = 'flex';
             document.getElementById('sendSpinner').classList.add('hidden');
-            
             document.getElementById('sendModal').classList.remove('hidden');
             document.getElementById('sendModal').classList.add('flex');
         }
 
         async function executeSend() {
-            const actions = document.getElementById('sendActions');
-            const spinner = document.getElementById('sendSpinner');
+            const actions = document.getElementById('sendActions'); 
+            const spinner = document.getElementById('sendSpinner'); 
             const status = document.getElementById('sendStatus');
-
-            actions.style.display = 'none';
-            spinner.classList.remove('hidden');
+            
+            actions.style.display = 'none'; 
+            spinner.classList.remove('hidden'); 
             status.innerText = "Відправка...";
-
+            
             try {
-                // Відправка ТІЛЬКИ на сервер Google
-                await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(pendingData)
+                // ТІЛЬКИ СЕРВЕРНА ВІДПРАВКА
+                await fetch(GOOGLE_SCRIPT_URL, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(pendingData) 
                 });
                 
-                status.innerText = "✅ Дані відправлено (черга)!";
+                status.innerText = "✅ Дані відправлено (черга)!"; 
                 status.classList.add('text-emerald-600');
                 
-                // Просто закриваємо вікно через 1.5 сек
+                // Просто закриваємо вікно і очищаємо фото
                 setTimeout(() => {
-                    closeSendModal();
+                    closeModal('sendModal');
+                    if(base64Photo) clearPhoto();
                 }, 1500);
-
-            } catch(e) {
-                status.innerText = "❌ Помилка з'єднання";
-                status.classList.add('text-red-500');
-                actions.style.display = 'flex';
-                spinner.classList.add('hidden');
+                
+            } catch(e) { 
+                status.innerText = "❌ Помилка з'єднання"; 
+                status.classList.add('text-red-500'); 
+                actions.style.display = 'flex'; 
+                spinner.classList.add('hidden'); 
             }
         }
-
-        function closeSendModal() {
-            document.getElementById('sendModal').classList.add('hidden');
-            document.getElementById('sendModal').classList.remove('flex');
-        }
         
-        document.getElementById('doSendBtn').onclick = executeSend;
+        document.getElementById('confirmSendBtn').onclick = executeSend;
     </script>
 </body>
 </html>
