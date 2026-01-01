@@ -100,7 +100,7 @@
     <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50"><div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]"><h3 class="text-2xl font-bold mb-4 text-center">Підтвердження</h3><div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto mb-6 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div><p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p><div id="sendActions" class="flex flex-col gap-3"><button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg text-lg">✅ Підтвердити</button><button onclick="closeModal('sendModal')" class="w-full bg-transparent border-2 border-slate-300 hover:bg-slate-100 text-slate-500 font-bold py-4 rounded-lg text-lg">Скасувати</button></div><div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div></div></div>
 
     <script>
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwtN3ZNBAsj3XE-99NuX_iLaZDCqGtmM6baNfXDylPM1qqbasGeNGLfdc4vc73f5GPl/exec";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzoChS_W73edAjNbE1yhsB_P3sKq7UI1Ai6LilEFXxWI5zFntG2OxPdHwIADecqraTA/exec";
         const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
         const empSel = document.getElementById('employeeSelect');
         employees.forEach(e => empSel.add(new Option(e, e)));
@@ -204,5 +204,6 @@ ${alerts}
     </script>
 </body>
 </html>
+
 
 
