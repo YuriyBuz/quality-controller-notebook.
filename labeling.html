@@ -31,6 +31,11 @@
         
         .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 50; }
         .input-alert { border-color: #ef4444 !important; background-color: rgba(239, 68, 68, 0.05) !important; }
+        
+        /* Styles for photo gallery */
+        .photo-preview-item { position: relative; width: 100%; padding-top: 100%; /* 1:1 Aspect Ratio */ }
+        .photo-preview-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; }
+        .photo-remove-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -104,70 +109,29 @@
 
             <div class="bg-blue-600 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md mb-4 mt-6">Контрольні точки</div>
             <div class="space-y-4">
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">1. Чистота пляшок (перед етикет.)</label><select id="lb-sanitary" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)"><option value="❌ НЕ ОК" selected>❌ НІ</option><option value="✅ ОК">✅ ОК</option></select></div>
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">2. Відповідність нанесення етикеток</label><select id="check-label-app" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)"><option value="❌" selected>❌ НІ</option><option value="✅">✅ ОК</option></select></div>
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">3. Якість формування пака</label><select id="check-pack-quality" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)"><option value="❌" selected>❌ НІ</option><option value="✅">✅ ОК</option></select></div>
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">4. Відповідність стікеру і дати</label><select id="check-sticker-date" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)"><option value="❌" selected>❌ НІ</option><option value="✅">✅ ОК</option></select></div>
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">5. Відповідність розкладки в ряду</label><select id="check-row-layout" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)"><option value="❌" selected>❌ НІ</option><option value="✅">✅ ОК</option></select></div>
+                <div class="flex items-center justify-between gap-4"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">6. Відповідність палетування</label><select id="check-palletizing" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)"><option value="❌" selected>❌ НІ</option><option value="✅">✅ ОК</option></select></div>
+            </div>
+
+            <div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h4 class="font-bold text-sm mb-1 text-slate-700 dark:text-slate-200">Фото звіт</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Можна додати декілька фото</p>
+                    </div>
+                    <label class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow flex items-center gap-2 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <span>Обрати фото</span>
+                        <input type="file" id="photo-upload" accept="image/*" multiple class="hidden" onchange="handleFiles(this)">
+                    </label>
+                </div>
                 
-                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2">
-                    <label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">1. Чистота пляшок (перед етикет.)</label>
-                    <select id="lb-sanitary" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)">
-                        <option value="❌ НЕ ОК" selected>❌ НІ</option>
-                        <option value="✅ ОК">✅ ОК</option>
-                    </select>
-                </div>
-
-                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2">
-                    <label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">2. Відповідність нанесення етикеток</label>
-                    <select id="check-label-app" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)">
-                        <option value="❌" selected>❌ НІ</option>
-                        <option value="✅">✅ ОК</option>
-                    </select>
-                </div>
-
-                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2">
-                    <label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">3. Якість формування пака</label>
-                    <select id="check-pack-quality" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)">
-                        <option value="❌" selected>❌ НІ</option>
-                        <option value="✅">✅ ОК</option>
-                    </select>
-                </div>
-
-                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2">
-                    <label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">4. Відповідність стікеру і дати</label>
-                    <select id="check-sticker-date" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)">
-                        <option value="❌" selected>❌ НІ</option>
-                        <option value="✅">✅ ОК</option>
-                    </select>
-                </div>
-
-                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2">
-                    <label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">5. Відповідність розкладки в ряду</label>
-                    <select id="check-row-layout" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)">
-                        <option value="❌" selected>❌ НІ</option>
-                        <option value="✅">✅ ОК</option>
-                    </select>
-                </div>
-
-                <div class="flex items-center justify-between gap-4">
-                    <label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">6. Відповідність палетування</label>
-                    <select id="check-palletizing" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)">
-                        <option value="❌" selected>❌ НІ</option>
-                        <option value="✅">✅ ОК</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg flex items-center justify-between border border-slate-200 dark:border-slate-700">
-                <div>
-                    <h4 class="font-bold text-sm mb-1 text-slate-700 dark:text-slate-200">Фото звіт</h4>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Прикріпіть фото (буде надіслано в таблицю)</p>
-                </div>
-                <label class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow flex items-center gap-2 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    <span>Додати фото</span>
-                    <input type="file" id="photo-upload" accept="image/*" capture="environment" class="hidden" onchange="handlePhoto(this)">
-                </label>
-            </div>
-            <div id="photo-preview-container" class="hidden relative">
-                <img id="photo-preview" class="w-full h-48 object-cover rounded-lg border-2 border-blue-200">
-                <button onclick="clearPhoto()" class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 shadow hover:bg-red-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                <div id="gallery-container" class="grid grid-cols-3 gap-2 hidden">
+                    </div>
             </div>
 
             <textarea id="lb-comment" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg focus:outline-none focus:border-blue-500 transition-colors" rows="2" placeholder="Коментар..."></textarea>
@@ -180,8 +144,8 @@
     <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50"><div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]"><h3 class="text-2xl font-bold mb-4 text-center">Підтвердження</h3><div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto mb-6 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div><p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p><div id="sendActions" class="flex flex-col gap-3"><button id="confirmSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg text-lg">✅ Підтвердити</button><button onclick="closeModal('sendModal')" class="w-full bg-transparent border-2 border-slate-300 hover:bg-slate-100 text-slate-500 font-bold py-4 rounded-lg text-lg">Скасувати</button></div><div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div></div></div>
 
     <script>
-        // НОВЕ ПРАВИЛЬНЕ ПОСИЛАННЯ
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwQSDuCSFHsK6JYtha-oI-FKvySpkZ44q3nb0ICRdtGfCM9OpLPCKqIc21gND9v-arr/exec";
+        // АКТУАЛЬНЕ URL (Quality Food Line)
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzpnmNV3NWXAeW8n0esIUA_JG8Re4zr7q6DIoHJq8yxBSMLWpf0aJkJRLiWJiqlTtmY/exec";
         
         const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
         const productDatabase = {
@@ -245,7 +209,7 @@
         const tmSel = document.getElementById('lb-tm');
         Object.keys(productDatabase).forEach(tm => tmSel.add(new Option(tm, tm)));
 
-        let base64Photo = null;
+        let uploadedFiles = []; // Array to store multiple files
 
         function updateProducts() {
             const tm = tmSel.value;
@@ -256,23 +220,65 @@
             }
         }
 
-        function handlePhoto(input) {
-            const file = input.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    base64Photo = e.target.result;
-                    document.getElementById('photo-preview').src = base64Photo;
-                    document.getElementById('photo-preview-container').classList.remove('hidden');
-                };
-                reader.readAsDataURL(file);
+        function handleFiles(input) {
+            const files = input.files;
+            if (files && files.length > 0) {
+                const container = document.getElementById('gallery-container');
+                container.classList.remove('hidden');
+
+                Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const base64 = e.target.result;
+                        // Push to storage
+                        uploadedFiles.push({
+                            name: file.name,
+                            type: file.type,
+                            data: base64
+                        });
+                        
+                        // Render Preview
+                        const index = uploadedFiles.length - 1;
+                        const div = document.createElement('div');
+                        div.className = 'photo-preview-item';
+                        div.innerHTML = `
+                            <img src="${base64}">
+                            <div class="photo-remove-btn" onclick="removeFile(${index}, this)">✕</div>
+                        `;
+                        container.appendChild(div);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+            // Reset input so same files can be selected again if needed
+            input.value = '';
+        }
+
+        function removeFile(index, btnElement) {
+            // Remove from array (mark as null to keep indexes consistent or use filter)
+            // Easier approach: just hide element and exclude from send, but filter is cleaner.
+            // For simplicity in this structure: we reconstruct array or better:
+            
+            // NOTE: Simple removal logic implies UI might desync if we rely on index.
+            // Better to remove the visual element and from array by matching content, 
+            // but for simple usage:
+            const parent = btnElement.parentElement;
+            parent.remove();
+            
+            // Find in array (matching src)
+            const src = parent.querySelector('img').src;
+            uploadedFiles = uploadedFiles.filter(f => f.data !== src);
+            
+            if(uploadedFiles.length === 0) {
+                document.getElementById('gallery-container').classList.add('hidden');
             }
         }
 
-        function clearPhoto() {
-            base64Photo = null;
-            document.getElementById('photo-upload').value = '';
-            document.getElementById('photo-preview-container').classList.add('hidden');
+        function clearGallery() {
+            uploadedFiles = [];
+            const container = document.getElementById('gallery-container');
+            container.innerHTML = '';
+            container.classList.add('hidden');
         }
 
         function checkStatus(el) {
@@ -291,7 +297,7 @@
                  el.classList.remove('input-alert'); 
              });
              document.getElementById('lb-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
-             clearPhoto();
+             clearGallery();
              closeModal('confirmationModal');
         }
 
@@ -345,7 +351,7 @@
    • Розкладка: ${rowLayout}
    • Палетування: ${pallet}
 
-📷 Фото: ${base64Photo ? 'Прикріплено' : 'Відсутнє'}
+📷 Фото: ${uploadedFiles.length} шт.
 ${alerts}
 ===========================`;
 
@@ -362,7 +368,7 @@ ${alerts}
                 checkSticker: sticker, checkLayout: rowLayout, checkPallet: pallet,
                 comment: document.getElementById('lb-comment').value,
                 report: report,
-                photo: base64Photo 
+                files: uploadedFiles // Send Array of files
             };
 
             document.getElementById('reportPreview').innerText = report;
@@ -383,7 +389,6 @@ ${alerts}
             status.innerText = "Відправка...";
             
             try {
-                // ТІЛЬКИ СЕРВЕРНА ВІДПРАВКА
                 await fetch(GOOGLE_SCRIPT_URL, { 
                     method: 'POST', 
                     mode: 'no-cors', 
@@ -394,10 +399,9 @@ ${alerts}
                 status.innerText = "✅ Дані відправлено (черга)!"; 
                 status.classList.add('text-emerald-600');
                 
-                // Просто закриваємо вікно і очищаємо фото
                 setTimeout(() => {
                     closeModal('sendModal');
-                    if(base64Photo) clearPhoto();
+                    clearGallery();
                 }, 1500);
                 
             } catch(e) { 
