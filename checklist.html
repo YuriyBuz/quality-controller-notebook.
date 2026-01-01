@@ -11,173 +11,47 @@
             theme: {
                 extend: {
                     colors: {
-                        slate: {
-                            50: '#f8fafc',
-                            100: '#f1f5f9',
-                            200: '#e2e8f0',
-                            300: '#cbd5e1',
-                            400: '#94a3b8',
-                            500: '#64748b',
-                            600: '#475569',
-                            700: '#334155',
-                            800: '#1e293b',
-                            900: '#0f172a',
-                        }
+                        slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 800: '#1e293b', 900: '#0f172a' }
                     }
                 }
             }
         }
     </script>
     <style>
-        /* Base Variables for Theming */
-        :root {
-            --bg-color: #f8fafc;
-            --card-bg-color: #ffffff;
-            --text-color: #1e293b;
-            --text-muted-color: #64748b;
-            --item-bg-color: #f1f5f9;
-            --item-hover-bg-color: #e2e8f0;
-            --border-color: #e2e8f0;
-        }
-
-        .dark {
-            --bg-color: #0f172a;
-            --card-bg-color: #1e293b;
-            --text-color: #f1f5f9;
-            --text-muted-color: #94a3b8;
-            --item-bg-color: #334155;
-            --item-hover-bg-color: #475569;
-            --border-color: #334155;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            -webkit-tap-highlight-color: transparent;
-            padding-bottom: 6rem; /* Space for footer */
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-
-        .card {
-            background-color: var(--card-bg-color);
-            transition: background-color 0.3s ease;
-        }
-
-        /* Checklist Item Styles */
-        .checklist-item {
-            background-color: var(--item-bg-color);
-            border: 1px solid var(--border-color);
-            transition: all 0.2s ease;
-        }
-
-        .checklist-item:hover {
-            background-color: var(--item-hover-bg-color);
-        }
-
-        .checklist-item.completed {
-            background-color: rgba(16, 185, 129, 0.1);
-            border-color: #10b981;
-        }
-
-        .checklist-item.completed .task-text {
-            text-decoration: line-through;
-            color: var(--text-muted-color);
-        }
-
-        .checkbox-icon {
-            width: 1.5rem;
-            height: 1.5rem;
-            border: 2px solid #cbd5e1;
-            border-radius: 0.375rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            background: var(--card-bg-color);
-            transition: all 0.2s;
-        }
-
-        .checklist-item.completed .checkbox-icon {
-            background-color: #10b981;
-            border-color: #10b981;
-        }
-
-        .checklist-item.completed .checkbox-icon::after {
-            content: '✔';
-            color: white;
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        /* Problem & Info States */
-        .checklist-item.has-problem {
-            border-color: #ef4444;
-            background-color: rgba(239, 68, 68, 0.05);
-        }
+        :root { --bg-color: #f8fafc; --card-bg-color: #ffffff; --text-color: #1e293b; --text-muted-color: #64748b; --item-bg-color: #f1f5f9; --item-hover-bg-color: #e2e8f0; --border-color: #e2e8f0; }
+        .dark { --bg-color: #0f172a; --card-bg-color: #1e293b; --text-color: #f1f5f9; --text-muted-color: #94a3b8; --item-bg-color: #334155; --item-hover-bg-color: #475569; --border-color: #334155; }
+        body { background-color: var(--bg-color); color: var(--text-color); -webkit-tap-highlight-color: transparent; padding-bottom: 6rem; transition: background-color 0.3s ease, color 0.3s ease; }
+        .card { background-color: var(--card-bg-color); transition: background-color 0.3s ease; }
         
-        .checklist-item.has-info {
-            border-color: #3b82f6;
-            background-color: rgba(59, 130, 246, 0.05);
-        }
-
-        /* Navigation Buttons */
-        .nav-button {
-            background-color: var(--card-bg-color);
-            color: var(--text-muted-color);
-            border: 1px solid var(--border-color);
-            transition: all 0.3s;
-        }
-        .nav-button:hover {
-            background-color: var(--item-hover-bg-color);
-        }
-        .nav-button.active {
-            background-color: #059669;
-            color: white;
-            border-color: #059669;
-            box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.2);
-        }
-
-        /* Input Styling Fixes */
-        input, select, textarea {
-            background-color: var(--card-bg-color) !important;
-            color: var(--text-color) !important;
-            border: 1px solid var(--border-color) !important;
-            transition: border-color 0.2s, ring 0.2s;
-        }
+        .checklist-item { background-color: var(--item-bg-color); border: 1px solid var(--border-color); transition: all 0.2s ease; }
+        .checklist-item:hover { background-color: var(--item-hover-bg-color); }
+        .checklist-item.completed { background-color: rgba(16, 185, 129, 0.1); border-color: #10b981; }
+        .checklist-item.completed .task-text { text-decoration: line-through; color: var(--text-muted-color); }
         
-        input:focus, select:focus, textarea:focus {
-            border-color: #10b981 !important;
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
-        }
-
-        .modal-overlay {
-            background-color: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(2px);
-            z-index: 1000;
-        }
-
-        .comment-text {
-            font-size: 0.875rem;
-            color: var(--text-muted-color);
-            margin-top: 0.5rem;
-            padding-left: 2.25rem;
-            font-style: italic;
-        }
+        .checkbox-icon { width: 1.8rem; height: 1.8rem; border: 2px solid #cbd5e1; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--card-bg-color); transition: all 0.2s; }
+        .checklist-item.completed .checkbox-icon { background-color: #10b981; border-color: #10b981; }
+        .checklist-item.completed .checkbox-icon::after { content: '✔'; color: white; font-size: 16px; font-weight: bold; }
         
+        .checklist-item.has-problem { border-color: #ef4444; background-color: rgba(239, 68, 68, 0.05); }
+        .checklist-item.has-info { border-color: #3b82f6; background-color: rgba(59, 130, 246, 0.05); }
+        
+        .nav-button { background-color: var(--card-bg-color); color: var(--text-muted-color); border: 1px solid var(--border-color); transition: all 0.3s; }
+        .nav-button:hover { background-color: var(--item-hover-bg-color); }
+        .nav-button.active { background-color: #059669; color: white; border-color: #059669; box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.2); }
+        
+        input, select, textarea { background-color: var(--card-bg-color) !important; color: var(--text-color) !important; border: 1px solid var(--border-color) !important; transition: border-color 0.2s, ring 0.2s; }
+        input:focus, select:focus, textarea:focus { border-color: #10b981 !important; outline: none; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); }
+        
+        .modal-overlay { background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(2px); z-index: 1000; }
+        .comment-text { font-size: 0.875rem; color: var(--text-muted-color); margin-top: 0.5rem; padding-left: 2.5rem; font-style: italic; }
         .comment-text.alert { color: #ef4444; font-weight: 600; }
         .comment-text.info { color: #3b82f6; font-weight: 600; }
-        
-        .spinner {
-            border: 3px solid rgba(0,0,0,0.1);
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            border-left-color: #10b981;
-            animation: spin 1s linear infinite;
-        }
-        
+        .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #10b981; animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .photo-preview-item { position: relative; width: 100%; padding-top: 100%; }
+        .photo-preview-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; border: 1px solid var(--border-color); }
+        .photo-remove-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10; font-size: 12px; font-weight: bold; }
     </style>
 </head>
 <body class="font-sans antialiased selection:bg-emerald-100 selection:text-emerald-900">
@@ -209,26 +83,26 @@
 
         <!-- Employee Selection -->
         <div class="mb-6 card p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-            <label class="block text-sm font-bold mb-2 text-muted">Контролер якості:</label>
+            <label class="block text-sm font-bold mb-2 text-muted">Контролер якості: <span class="text-red-500">*</span></label>
             <select id="employeeSelect" class="block w-full p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm font-medium">
                 <option value="">Оберіть зі списку...</option>
             </select>
             <p id="employeeSelectionHint" class="text-red-500 text-xs mt-2 hidden font-bold flex items-center gap-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                Будь ласка, оберіть своє ім'я!
+                Це поле обов'язкове!
             </p>
         </div>
 
         <!-- Navigation Tabs -->
         <nav class="grid grid-cols-3 gap-2 mb-6 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
-            <button data-view="start" class="nav-button active py-2 px-1 rounded-lg font-bold text-xs sm:text-sm text-center transition-all duration-300 transform active:scale-95">
-                Початок<br><span class="text-[10px] font-normal opacity-75 leading-tight block mt-0.5">звіт надіслати до 10:00</span>
+            <button data-view="start" class="nav-button active py-3 px-1 rounded-lg font-bold text-xs sm:text-sm text-center transition-all duration-300 transform active:scale-95">
+                Початок<br><span class="text-[10px] font-normal opacity-75 leading-tight block mt-0.5">звіт до 10:00</span>
             </button>
-            <button data-view="during" class="nav-button py-2 px-1 rounded-lg font-bold text-xs sm:text-sm text-center transition-all duration-300 transform active:scale-95">
-                Зміна<br><span class="text-[10px] font-normal opacity-75 leading-tight block mt-0.5">звіт надіслати до 20:00</span>
+            <button data-view="during" class="nav-button py-3 px-1 rounded-lg font-bold text-xs sm:text-sm text-center transition-all duration-300 transform active:scale-95">
+                Зміна<br><span class="text-[10px] font-normal opacity-75 leading-tight block mt-0.5">звіт до 20:00</span>
             </button>
-            <button data-view="end" class="nav-button py-2 px-1 rounded-lg font-bold text-xs sm:text-sm text-center transition-all duration-300 transform active:scale-95">
-                Кінець<br><span class="text-[10px] font-normal opacity-75 leading-tight block mt-0.5">звіт надіслати до 20:00</span>
+            <button data-view="end" class="nav-button py-3 px-1 rounded-lg font-bold text-xs sm:text-sm text-center transition-all duration-300 transform active:scale-95">
+                Кінець<br><span class="text-[10px] font-normal opacity-75 leading-tight block mt-0.5">звіт до 20:00</span>
             </button>
         </nav>
 
@@ -243,7 +117,7 @@
                         </h2>
                         <button id="resetStartBtn" class="px-3 py-1.5 bg-orange-500 text-white text-xs sm:text-sm font-bold rounded-lg hover:bg-orange-600 transition-colors shadow-sm active:scale-95">Скинути</button>
                     </div>
-                    <ul class="space-y-3" id="list-start"></ul>
+                    <ul id="list-start"></ul>
                 </div>
             </section>
 
@@ -256,7 +130,7 @@
                         </h2>
                         <button id="resetDuringBtn" class="px-3 py-1.5 bg-orange-500 text-white text-xs sm:text-sm font-bold rounded-lg hover:bg-orange-600 transition-colors shadow-sm active:scale-95">Скинути</button>
                     </div>
-                    <ul class="space-y-3" id="list-during"></ul>
+                    <ul id="list-during"></ul>
                 </div>
             </section>
 
@@ -269,7 +143,7 @@
                         </h2>
                         <button id="resetEndBtn" class="px-3 py-1.5 bg-orange-500 text-white text-xs sm:text-sm font-bold rounded-lg hover:bg-orange-600 transition-colors shadow-sm active:scale-95">Скинути</button>
                     </div>
-                    <ul class="space-y-3" id="list-end"></ul>
+                    <ul id="list-end"></ul>
                 </div>
             </section>
         </main>
@@ -342,7 +216,7 @@
     </div>
 
     <script>
-        // АКТУАЛЬНЕ ПОСИЛАННЯ (ПЕРЕВІРЕНО)
+        // АКТУАЛЬНЕ ПОСИЛАННЯ (Перевірено для Чек-листа)
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzzA5vo5jW6xAd5vOKROQ6qLNOx0nwcYtd-SWxdR0ghDslyNCsAa0QuYODzjyj7x7Q3/exec";
 
         const checklistItems = {
@@ -372,6 +246,9 @@
         const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
         employees.forEach(e => empSel.add(new Option(e, e)));
         
+        // FILES STORAGE
+        const uploadedFiles = { start: [], during: [], end: [] };
+
         let pendingReportData = null;
         let confirmCallback = null;
         let activeCommentId = null;
@@ -380,7 +257,6 @@
             initApp();
         });
 
-        // Event handler assignment for confirm button
         document.getElementById('confirmSendBtn').onclick = executeSend;
 
         function showToast(message, isError = false) {
@@ -402,7 +278,6 @@
             }, 3000);
         }
 
-        // Generic Confirm Modal
         function customConfirm(text, onConfirm) {
             document.getElementById('genericConfirmText').innerText = text;
             const modal = document.getElementById('genericConfirmModal');
@@ -452,7 +327,7 @@
         function renderChecklist(section) {
             const ul = document.getElementById(`list-${section}`);
             
-            ul.innerHTML = checklistItems[section].map(item => {
+            const listHtml = checklistItems[section].map(item => {
                 let actionBtn = `<button class="action-btn ml-2 p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors text-muted" data-id="${item.id}" data-type="comment" title="Коментар">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
                 </button>`;
@@ -465,14 +340,92 @@
                     formHtml = `<div id="form-${item.id}" class="hidden mt-3 p-4 border rounded-xl bg-white dark:bg-slate-800 dark:border-slate-700 shadow-inner"><div class="text-xs font-bold mb-2 text-muted uppercase">${item.btn}</div>${inputs}<div class="flex justify-end gap-2 mt-2"><button class="form-cancel px-3 py-1.5 bg-transparent border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-bold text-muted hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" data-id="${item.id}">Скасувати</button><button class="form-save px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors shadow-md" data-id="${item.id}">Зберегти</button></div></div>`;
                 }
 
-                return `<li id="${item.id}" class="checklist-item p-3 sm:p-4 rounded-xl flex flex-col cursor-pointer select-none"><div class="flex items-center justify-between w-full"><div class="flex items-center flex-1 check-trigger" data-id="${item.id}"><div class="checkbox-icon mr-3 sm:mr-4"></div><span class="task-text text-sm sm:text-base font-medium">${item.text}</span></div>${actionBtn}</div>${formHtml}<div class="comment-text hidden"></div></li>`;
+                // ВИПРАВЛЕНО: gap-6 замість mr-3, щоб гарантовано розсунути чекбокс і текст
+                return `<li id="${item.id}" class="checklist-item p-4 sm:p-5 rounded-xl flex flex-col cursor-pointer select-none"><div class="flex items-center justify-between w-full"><div class="flex items-center flex-1 check-trigger gap-6" data-id="${item.id}"><div class="checkbox-icon"></div><span class="task-text text-sm sm:text-base font-medium leading-snug">${item.text}</span></div>${actionBtn}</div>${formHtml}<div class="comment-text hidden"></div></li>`;
             }).join('');
 
-            const sendBtnHtml = `<button onclick="prepareReport('${section}')" class="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg"><span>📤 Відправити звіт (${section === 'start' ? 'Початок' : (section === 'during' ? 'Зміна' : 'Кінець')})</span></button>`;
-            const btnContainer = document.createElement('div');
-            btnContainer.innerHTML = sendBtnHtml;
-            ul.parentNode.appendChild(btnContainer);
+            // Photo Upload HTML Block
+            const photoHtml = `
+                <div class="mt-8 bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <h4 class="font-bold text-xs text-slate-700 dark:text-slate-200 uppercase">Фото звіт</h4>
+                            <p class="text-[10px] text-muted">Додайте фото при потребі</p>
+                        </div>
+                        <label class="cursor-pointer bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 text-slate-700 dark:text-slate-200 font-bold py-1.5 px-3 rounded-lg shadow-sm text-xs flex items-center gap-1 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            <span>+ Фото</span>
+                            <input type="file" accept="image/*" multiple class="hidden" onchange="handleFiles(this, '${section}')">
+                        </label>
+                    </div>
+                    <div id="gallery-${section}" class="grid grid-cols-4 gap-3 hidden"></div>
+                </div>
+            `;
+
+            const sendBtnHtml = `<button onclick="prepareReport('${section}')" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg"><span>📤 Відправити звіт (${section === 'start' ? 'Початок' : (section === 'during' ? 'Зміна' : 'Кінець')})</span></button>`;
+            
+            const container = document.createElement('div');
+            // ОСНОВНЕ ВИПРАВЛЕННЯ: Додано gap-6 до контейнера
+            container.className = "flex flex-col gap-6";
+            container.innerHTML = listHtml + photoHtml + sendBtnHtml;
+            ul.innerHTML = ''; // Clear and append container
+            ul.appendChild(container);
         }
+
+        // --- FILE HANDLING LOGIC ---
+        function handleFiles(input, section) {
+            const files = input.files;
+            if (files && files.length > 0) {
+                const container = document.getElementById(`gallery-${section}`);
+                container.classList.remove('hidden');
+
+                Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const base64 = e.target.result;
+                        // Push to storage
+                        uploadedFiles[section].push({
+                            name: file.name,
+                            type: file.type,
+                            data: base64
+                        });
+                        
+                        // Render Preview
+                        const div = document.createElement('div');
+                        div.className = 'photo-preview-item';
+                        div.innerHTML = `
+                            <img src="${base64}">
+                            <div class="photo-remove-btn" onclick="removeFile(this, '${section}', '${base64}')">✕</div>
+                        `;
+                        container.appendChild(div);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+            input.value = '';
+        }
+
+        function removeFile(btnElement, section, dataContent) {
+            const parent = btnElement.parentElement;
+            parent.remove();
+            uploadedFiles[section] = uploadedFiles[section].filter(f => f.data !== dataContent);
+            
+            const container = document.getElementById(`gallery-${section}`);
+            if(uploadedFiles[section].length === 0) {
+                container.classList.add('hidden');
+            }
+        }
+
+        function clearSectionGallery(section) {
+            uploadedFiles[section] = [];
+            const container = document.getElementById(`gallery-${section}`);
+            if(container) {
+                container.innerHTML = '';
+                container.classList.add('hidden');
+            }
+        }
+
+        // --- MAIN LOGIC ---
 
         function handleClick(e) {
             if (e.target.closest('.nav-button')) {
@@ -483,9 +436,9 @@
                 e.target.closest('.nav-button').classList.add('active');
             }
             
-            if (e.target.id === 'resetStartBtn') resetSection('startShiftSection');
-            if (e.target.id === 'resetDuringBtn') resetSection('duringShiftSection');
-            if (e.target.id === 'resetEndBtn') resetSection('endShiftSection');
+            if (e.target.id === 'resetStartBtn') resetSection('start');
+            if (e.target.id === 'resetDuringBtn') resetSection('during');
+            if (e.target.id === 'resetEndBtn') resetSection('end');
 
             if (e.target.closest('.check-trigger')) {
                 if (!validateEmployee()) return;
@@ -521,7 +474,18 @@
         }
 
         function handleInput(e) { if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) saveState(); }
-        function validateEmployee() { const select = document.getElementById('employeeSelect'); if (!select.value) { showToast("Оберіть ім'я контролера!", true); document.getElementById('employeeSelectionHint').classList.remove('hidden'); select.focus(); return false; } document.getElementById('employeeSelectionHint').classList.add('hidden'); return true; }
+        
+        function validateEmployee() { 
+            const select = document.getElementById('employeeSelect'); 
+            if (!select.value) { 
+                showToast("Спочатку оберіть ім'я контролера!", true); 
+                document.getElementById('employeeSelectionHint').classList.remove('hidden'); 
+                select.focus(); 
+                return false; 
+            } 
+            document.getElementById('employeeSelectionHint').classList.add('hidden'); 
+            return true; 
+        }
 
         function toggleItem(id) {
             const el = document.getElementById(id);
@@ -567,9 +531,9 @@
             saveState();
         }
 
-        function resetSection(id) {
+        function resetSection(sectionName) {
             customConfirm('Ви дійсно бажаєте очистити всі поля в цьому розділі?', () => {
-                const section = document.getElementById(id);
+                const section = document.getElementById(`${sectionName}ShiftSection`);
                 section.querySelectorAll('.checklist-item').forEach(el => {
                     el.classList.remove('completed', 'has-problem', 'has-info');
                     const c = el.querySelector('.comment-text');
@@ -578,25 +542,26 @@
                     const f = el.querySelector('[id^="form-"]');
                     if(f) f.classList.add('hidden');
                 });
+                
+                // Clear photos
+                clearSectionGallery(sectionName);
+                
                 saveState();
                 showToast("Розділ успішно очищено");
             });
         }
 
         function prepareReport(section) {
-            if(!empSel.value) { alert("Оберіть контролера!"); return; }
-            let report = "";
+            if(!empSel.value) { showToast("Помилка: Оберіть контролера!", true); return; }
             
             const titles = { 'start': 'Початок зміни', 'during': 'Протягом зміни', 'end': 'Кінець зміни' };
             const title = titles[section];
             
-            // Format date for display: 29.12.2025 0:02:23
             const now = new Date();
             const dateStr = ('0' + now.getDate()).slice(-2) + '.' + ('0' + (now.getMonth() + 1)).slice(-2) + '.' + now.getFullYear() + ' ' + 
                             now.getHours() + ':' + ('0' + now.getMinutes()).slice(-2) + ':' + ('0' + now.getSeconds()).slice(-2);
 
-            // Header for report
-            report += `📝 Чек-лист: ${title}\n`;
+            let report = `📝 Чек-лист: ${title}\n`;
             report += `👤 Контролер: ${empSel.value}\n`;
             report += `📅 Дата: ${dateStr}\n`;
             report += "----------------------------------------\n";
@@ -606,7 +571,7 @@
             let doneItems = 0;
 
             listItems.forEach(el => {
-                const txt = el.querySelector('span').innerText;
+                const txt = el.querySelector('.task-text').innerText;
                 const isCompleted = el.classList.contains('completed');
                 if(isCompleted) doneItems++;
                 const status = isCompleted ? "✅" : "❌";
@@ -615,14 +580,22 @@
                 report += `${status} | ${txt}${comment}\n`;
             });
             
+            // Get files for this section
+            const files = uploadedFiles[section];
+            if(files.length > 0) {
+                report += `\n📷 Фото: ${files.length} шт.\n`;
+            }
+            
             pendingReportData = { 
                 type: 'checklist', 
                 employee: empSel.value, 
                 stage: title, 
                 done: doneItems,
                 total: totalItems,
-                report: report, // MUST match what script expects
-                reportText: report 
+                report: report, // For email body
+                reportText: report, // Legacy support
+                files: files, // Array of files for email
+                photo: files.length > 0 ? files[0].data : "" // Single photo for spreadsheet
             };
             
             document.getElementById('confirmationText').innerText = report;
@@ -647,7 +620,7 @@
                 await fetch(GOOGLE_SCRIPT_URL, { 
                     method: 'POST', 
                     mode: 'no-cors', 
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify(pendingReportData) 
                 });
                 
@@ -657,6 +630,8 @@
                 
                 setTimeout(() => { 
                     closeModal('confirmationModal'); 
+                    // Optional: Reset section photos after successful send?
+                    // clearSectionGallery(currentSection...); // Requires tracking currentSection context if needed
                 }, 2000);
             } catch(e) { 
                 console.error(e);
@@ -719,9 +694,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
