@@ -1,208 +1,243 @@
-function doPost(e) {
-  var lock = LockService.getScriptLock();
-  lock.tryLock(10000);
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чек Лист | FoodLine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class', theme: { extend: { colors: { slate: { 50: '#f8fafc', 800: '#1e293b', 900: '#0f172a' } } } } }</script>
+    <style>
+        :root { --bg-color: #f8fafc; --card-bg: #fff; --text: #1e293b; }
+        .dark { --bg-color: #0f172a; --card-bg: #1e293b; --text: #f1f5f9; }
+        body { background-color: var(--bg-color); color: var(--text); padding-bottom: 6rem; transition: 0.3s; }
+        .card { background-color: var(--card-bg); transition: 0.3s; }
+        .checklist-item { border: 1px solid #e2e8f0; transition: 0.2s; }
+        .dark .checklist-item { border-color: #334155; }
+        .checklist-item.completed { background-color: rgba(16, 185, 129, 0.1); border-color: #10b981; }
+        .checkbox-icon { width: 1.5rem; height: 1.5rem; border: 2px solid #cbd5e1; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; }
+        .checklist-item.completed .checkbox-icon { background-color: #10b981; border-color: #10b981; }
+        .checklist-item.completed .checkbox-icon::after { content: '✔'; color: white; font-size: 14px; font-weight: bold; }
+        .nav-button.active { background-color: #059669; color: white; }
+        .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(2px); z-index: 50; }
+        .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #10b981; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="font-sans antialiased">
+    <div id="toast-container" class="fixed top-4 right-4 z-[2000] flex flex-col gap-2"></div>
+    <div class="container mx-auto max-w-3xl p-4">
+        <header class="relative text-center mb-6 flex items-center justify-between">
+             <!-- Left: Menu Link -->
+            <a href="index.html" class="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-emerald-600 transition-colors flex items-center gap-2">
+                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
+                <span class="hidden sm:inline font-medium">Меню</span>
+            </a>
 
-  try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var rawData;
-    
-    try {
-      rawData = JSON.parse(e.postData.contents);
-    } catch (error) {
-      return ContentService.createTextOutput(JSON.stringify({ "result": "error", "error": "Invalid JSON" })).setMimeType(ContentService.MimeType.JSON);
-    }
+            <!-- Center: Title -->
+            <div class="text-center">
+                <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-100">Чек Лист</h1>
+                <p class="text-emerald-600 dark:text-emerald-400 text-sm font-bold mt-1 uppercase tracking-wide">Загальний контроль зміни</p>
+            </div>
 
-    // === 1. ОТРИМАННЯ ДАНИХ (READ) ===
-    if (rawData.action === 'getData') {
-       var data = handleGetData(ss, rawData);
-       return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
-    }
+            <!-- Right: Theme Toggle -->
+            <button id="themeToggle" class="p-2 rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-emerald-600 transition-colors">
+                <!-- Sun Icon -->
+                <svg class="w-6 h-6 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                <!-- Moon Icon -->
+                <svg class="w-6 h-6 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
+        </header>
 
-    // === 2. ЗАПИС ДАНИХ (WRITE) ===
-    var timestamp = new Date();
-    var sheetName = "";
-    var rowData = [];
+        <div class="mb-6 card p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+            <label class="block text-sm font-bold mb-2">Контролер якості:</label>
+            <select id="employeeSelect" class="w-full p-3 border rounded-xl bg-transparent"><option value="">Оберіть...</option></select>
+        </div>
 
-    // Визначаємо куди писати
-    if (rawData.type === 'sauce') {
-      sheetName = "Sauce";
-      rowData = [timestamp, rawData.time, rawData.employee, rawData.cook, rawData.product, rawData.task, rawData.cookDate, rawData.color, rawData.aroma, rawData.taste, rawData.consist, rawData.dry, rawData.visc, rawData.ph, rawData.stability];
-    } else if (rawData.type === 'labeling') {
-      sheetName = "Labeling";
-      rowData = [timestamp, rawData.time, rawData.employee, rawData.machine, rawData.tm, rawData.product, rawData.task, rawData.sanitary, rawData.labelDate, rawData.batch, rawData.width, rawData.temp, rawData.checkLabel, rawData.checkPack, rawData.checkSticker, rawData.checkLayout, rawData.checkPallet, rawData.comment, rawData.photo];
-    } else if (rawData.type === 'cleaning') {
-      sheetName = "Cleaning";
-      rowData = [timestamp, rawData.date, rawData.time, rawData.employee, rawData.equipType, rawData.equipObj, rawData.ext, rawData.int, rawData.agg, rawData.resp, rawData.signature];
-    } else if (rawData.type === 'checklist') {
-      sheetName = "Checklist";
-      rowData = [timestamp, rawData.employee, rawData.stage, rawData.done, rawData.total, rawData.reportText];
-    } else if (rawData.type === 'packing') {
-      sheetName = "Packing";
-      rowData = [timestamp, rawData.time, rawData.employee, rawData.line, rawData.productCode, rawData.tm, rawData.sku, rawData.batch, rawData.weight, rawData.seal, rawData.print, rawData.appearance, rawData.cap, rawData.comment];
-    } else if (rawData.type === 'hvo_control') {
-      sheetName = "HVO";
-      rowData = [timestamp, rawData.timeVal, rawData.employee, rawData.systemStatus, rawData.salt1, rawData.salt2, rawData.rotSoft, rawData.rotPure, rawData.hardness, rawData.iron, rawData.manganese, rawData.ph, rawData.report];
-    }
+        <nav class="grid grid-cols-3 gap-2 mb-6 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+            <button data-view="start" class="nav-button active py-2 px-1 rounded-lg font-bold text-sm">Початок</button>
+            <button data-view="during" class="nav-button py-2 px-1 rounded-lg font-bold text-sm">Зміна</button>
+            <button data-view="end" class="nav-button py-2 px-1 rounded-lg font-bold text-sm">Кінець</button>
+        </nav>
 
-    // Запис в таблицю
-    if (sheetName) {
-      var sheet = getOrCreateSheet(ss, sheetName);
-      var cleanRow = rowData.map(function(item) { return sanitize(item); });
-      sheet.appendRow(cleanRow);
-    }
+        <main>
+            <section id="startShiftSection" class="view-section">
+                <div class="card p-4 rounded-xl shadow border border-slate-200 dark:border-slate-700">
+                    <div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold text-emerald-600">Початок зміни</h2><button onclick="resetSection('startShiftSection')" class="text-xs bg-orange-500 text-white px-3 py-1 rounded">Скинути</button></div>
+                    <ul class="space-y-3" id="list-start"></ul>
+                </div>
+            </section>
+            <section id="duringShiftSection" class="view-section hidden">
+                <div class="card p-4 rounded-xl shadow border border-slate-200 dark:border-slate-700">
+                    <div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold text-blue-600">Протягом зміни</h2><button onclick="resetSection('duringShiftSection')" class="text-xs bg-orange-500 text-white px-3 py-1 rounded">Скинути</button></div>
+                    <ul class="space-y-3" id="list-during"></ul>
+                </div>
+            </section>
+            <section id="endShiftSection" class="view-section hidden">
+                <div class="card p-4 rounded-xl shadow border border-slate-200 dark:border-slate-700">
+                    <div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold text-sky-600">Кінець зміни</h2><button onclick="resetSection('endShiftSection')" class="text-xs bg-orange-500 text-white px-3 py-1 rounded">Скинути</button></div>
+                    <ul class="space-y-3" id="list-end"></ul>
+                </div>
+            </section>
+        </main>
+    </div>
 
-    // === 3. ВІДПРАВКА EMAIL (SERVER-SIDE) ===
-    // Список отримувачів через кому
-    var emailRecipients = "Buznitskiy7@gmail.com";
-    
-    var subject = "Звіт QC: " + (rawData.section || rawData.type || sheetName);
-    var body = rawData.report || ("Новий запис у таблиці " + sheetName + ".\nЧас: " + timestamp);
-    
-    var emailOptions = {
-      name: "QC Master Bot"
-    };
+    <!-- Modals -->
+    <div id="confirmationModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
+        <div class="card p-6 rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[85vh]">
+            <h3 class="text-xl font-bold mb-4 text-center">Підтвердження</h3>
+            <div id="confirmationText" class="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg overflow-y-auto mb-4 text-xs font-mono whitespace-pre-wrap flex-1"></div>
+            <p id="sendMsg" class="text-center font-bold mb-2 min-h-[1.5em] text-emerald-600"></p>
+            <div id="modalActions" class="flex flex-col gap-2">
+                <button id="confirmSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg">✅ Надіслати</button>
+                <button onclick="closeModal('confirmationModal')" class="w-full border border-slate-300 py-3 rounded-lg font-bold">Скасувати</button>
+            </div>
+            <div id="modalSpinner" class="hidden py-4 flex justify-center"><div class="spinner"></div></div>
+        </div>
+    </div>
 
-    // Обробка вкладення (фото), якщо є (Base64)
-    if (rawData.photo && rawData.photo.indexOf('base64') > -1) {
-      var blobs = [];
-      try {
-        var base64Data = rawData.photo.split(',')[1];
-        var decoded = Utilities.base64Decode(base64Data);
-        var blob = Utilities.newBlob(decoded, 'image/jpeg', 'photo_report.jpg');
-        blobs.push(blob);
-        emailOptions.attachments = blobs;
-      } catch (e) {
-        body += "\n\n[Помилка прикріплення фото: " + e.toString() + "]";
-      }
-    }
+    <script>
+        // АКТУАЛЬНЕ ПОСИЛАННЯ
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzsIu2W6F_lv0r0nkzJYzimq84w-JQUxnczc7PK5BL3huvP_-4YGH--di0HmO2LM_n8/exec";
+        
+        const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
+        const checklistItems = {
+            start: [
+                { id: 'start-1-1', text: 'Перевірити чистоту та справність обладнання в лабораторії.', type: 'normal' },
+                { id: 'start-1-2', text: 'Перевірити температуру соусів після нічного охолодження (t ≤ 24°C).', type: 'problem', btn: '⚠️ Відхилення', fields: ['№ Котла', 'Соус', 'Темп °C'] },
+                { id: 'start-1-4', text: 'Перевірити журнал заміни фільтрів фільтра на ВК-1.', type: 'normal' }
+            ],
+            during: [
+                { id: 'during-1-1', text: 'Перевірити гігієну персоналу (одяг, шапочки, прикраси).', type: 'normal' },
+                { id: 'during-1-2', text: 'Перевірити підготовлену сировину на дільницю підготовки сировини на відповідність і безпечність (сторонні домішки, консерванти, пакування, зберігання).', type: 'normal' },
+                { id: 'during-1-3', text: 'Провести експрес-тест показників водопідготовки (ХВО).', type: 'problem', btn: '⚠️ Відхилення', fields: ['Показник', 'Значення'] },
+                { id: 'during-1-4', text: 'Провести поточний контроль безпечності процесу.', type: 'problem', btn: '⚠️ Проблема', fields: ['Опис порушення'] },
+                { id: 'during-1-5', text: 'Виконати додаткові завдання керівника.', type: 'normal' },
+                { id: 'during-1-6', text: 'Видати консерванти варникам під підпис.', type: 'info', btn: '📝 Записати', fields: ['Варник', 'Консервант', 'Кількість'] }
+            ],
+            end: [
+                { id: 'end-1-1', text: 'Провести необхідні заміри для ВСІХ варок перед постановкою на охолодження.', type: 'normal' },
+                { id: 'end-1-2', text: 'Повернути залишки консервантів та інших ТМЦ в лабораторію.', type: 'normal' },
+                { id: 'end-1-3', text: 'Перевірити санітарний стан цеху.', type: 'problem', btn: '⚠️ Незадовільно', fields: ['Опис проблеми'] },
+                { id: 'end-1-4', text: 'Заповнити звіт про недоліки та результати зміни.', type: 'normal' },
+                { id: 'end-1-5', text: 'Перевірити цілісність скла та пластику (відсутність бою).', type: 'normal' }
+            ]
+        };
 
-    try {
-        // Відправка листа
-        MailApp.sendEmail(emailRecipients, subject, body, emailOptions);
-    } catch (emailError) {
-        console.error("Email send failed: " + emailError.toString());
-        // Продовжуємо виконання, навіть якщо лист не пішов, щоб повернути успіх клієнту
-    }
+        const empSel = document.getElementById('employeeSelect');
+        employees.forEach(e => empSel.add(new Option(e, e)));
+        
+        let pendingReportData = null;
 
-    return ContentService.createTextOutput(JSON.stringify({ "result": "success" })).setMimeType(ContentService.MimeType.JSON);
-
-  } catch (e) {
-    return ContentService.createTextOutput(JSON.stringify({ "result": "error", "error": e.toString() })).setMimeType(ContentService.MimeType.JSON);
-  } finally {
-    lock.releaseLock();
-  }
-}
-
-// === ФУНКЦІЯ ОТРИМАННЯ ДАНИХ (READ) ===
-function handleGetData(ss, filters) {
-  var results = [];
-  var limit = 50; 
-  
-  var sheetsConfig = {
-    'checklist': {
-      name: 'Checklist', colDate: 0, colEmp: 1,  
-      mapRow: function(row) { return { time: formatDate(row[0]), employee: row[1], section: 'checklist', status: (row[3] == row[4]) ? 'OK' : 'Incomplete', summary: row[2] + " (" + row[3] + "/" + row[4] + ")", report: row[5] }; }
-    },
-    'sauce_boiling': {
-      name: 'Sauce', colDate: 0, colEmp: 2,
-      mapRow: function(row) { return { time: formatDate(row[0]), employee: row[2], section: 'sauce_boiling', status: 'OK', summary: row[4] + " (" + row[3] + ")", report: createReportText('Варки соусу', row, ['Час:1','Варник:3','Продукт:4','Завдання:5','Дата варки:6','Колір:7','Аромат:8','Смак:9','Консистенція:10','Сухі:11','Вязкість:12','pH:13','Стійкість:14']) }; }
-    },
-    'labeling': {
-      name: 'Labeling', colDate: 0, colEmp: 2,
-      mapRow: function(row) {
-        var status = (String(row).indexOf('❌') !== -1 || String(row).indexOf('FAIL') !== -1) ? 'FAIL' : 'OK';
-        // row[18] - це колонка з фото (Base64), якщо вона існує в таблиці
-        return { time: formatDate(row[0]), employee: row[2], section: 'labeling', status: status, summary: row[5] + " (" + row[3] + ")", report: createReportText('Етикетування', row, ['Час:1','Машина:3','ТМ:4','Продукт:5','Завдання:6','Санітарія:7','Дата етикетки:8','Партія:9','Плівка:10','Температура:11','Етикетка:12','Пак:13','Стікер:14','Розкладка:15','Палетування:16','Коментар:17']), photo: row[18] };
-      }
-    },
-    'packing': {
-      name: 'Packing', colDate: 0, colEmp: 2,
-      mapRow: function(row) {
-        var status = String(row).indexOf('FAIL') !== -1 ? 'FAIL' : 'OK';
-        return { time: formatDate(row[0]), employee: row[2], section: 'packing', status: status, summary: row[6] + " (" + row[3] + ")", report: createReportText('Фасування', row, ['Час:1','Лінія:3','Код:4','ТМ:5','SKU:6','Партія:7','Вага:8','Герметичність:9','Маркування:10','Вигляд:11','Кришка:12','Коментар:13']) }; 
-      }
-    },
-    'cleaning': {
-      name: 'Cleaning', colDate: 0, colEmp: 3,
-      mapRow: function(row) {
-        return { time: formatDate(row[0]), employee: row[3], section: 'cleaning', status: 'OK', summary: row[4] + " - " + row[5], report: createReportText('Мийки', row, ['Дата:1','Час:2','Тип:4','Обєкт:5','Зовнішнє:6','Внутрішнє:7','Агрегати:8','Відповідальний:9']) };
-      }
-    },
-    'hvo_control': {
-      name: 'HVO', colDate: 0, colEmp: 2,
-      mapRow: function(row) {
-        return { time: formatDate(row[0]), employee: row[2], section: 'hvo_control', status: String(row[3]).indexOf('Не') !== -1 ? 'FAIL' : 'OK', summary: "Статус: " + row[3], report: row[12] };
-      }
-    }
-  };
-
-  var start = new Date(filters.dateStart); start.setHours(0,0,0,0);
-  var end = new Date(filters.dateEnd); end.setHours(23,59,59,999);
-  var empFilter = filters.employee;
-  var sectionFilter = filters.section;
-
-  var sectionsToScan = (sectionFilter === 'all') ? Object.keys(sheetsConfig) : [sectionFilter];
-
-  sectionsToScan.forEach(function(key) {
-    if (results.length >= limit || !sheetsConfig[key]) return;
-    var config = sheetsConfig[key];
-    var sheet = ss.getSheetByName(config.name);
-    if (!sheet) return;
-
-    var lastRow = sheet.getLastRow();
-    if (lastRow < 2) return; 
-
-    var startRow = Math.max(2, lastRow - 50); 
-    var data = sheet.getRange(startRow, 1, lastRow - startRow + 1, sheet.getLastColumn()).getValues();
-
-    for (var i = data.length - 1; i >= 0; i--) {
-      var row = data[i];
-      var rowDate = new Date(row[config.colDate]);
-      var rowEmp = row[config.colEmp];
-
-      if (rowDate >= start && rowDate <= end) {
-        if (empFilter === 'all' || rowEmp === empFilter) {
-          results.push(config.mapRow(row));
-          if (results.length >= limit) break;
+        function init() {
+            renderChecklist('start'); renderChecklist('during'); renderChecklist('end');
+            document.body.addEventListener('click', handleClick);
+            document.getElementById('themeToggle').onclick = () => { document.documentElement.classList.toggle('dark'); };
+            document.getElementById('confirmSendBtn').onclick = executeSend; // Прив'язка кнопки
         }
-      }
-    }
-  });
 
-  results.sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
-  return results;
-}
+        function renderChecklist(section) {
+            const ul = document.getElementById(`list-${section}`);
+            ul.innerHTML = checklistItems[section].map(item => `
+                <li id="${item.id}" class="checklist-item p-3 rounded-xl flex flex-col cursor-pointer bg-slate-50 dark:bg-slate-800">
+                    <div class="flex items-center justify-between check-trigger" data-id="${item.id}">
+                        <div class="flex items-center"><div class="checkbox-icon mr-3"></div><span class="text-sm font-medium">${item.text}</span></div>
+                    </div>
+                </li>`).join('');
+            const btn = document.createElement('div');
+            btn.innerHTML = `<button onclick="prepareReport('${section}')" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-colors">📤 Відправити звіт</button>`;
+            ul.parentNode.appendChild(btn);
+        }
 
-// Helper to reconstruct report text if not stored directly
-function createReportText(title, row, mapping) {
-  var text = "📝 ЗВІТ QC: " + title + "\n===========================\n";
-  mapping.forEach(function(map) {
-    var parts = map.split(':');
-    var label = parts[0];
-    var idx = parseInt(parts[1]);
-    var val = row[idx];
-    if(val) text += label + ": " + val + "\n";
-  });
-  return text;
-}
+        function handleClick(e) {
+            if (e.target.closest('.nav-button')) {
+                document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+                document.querySelectorAll('.nav-button').forEach(b => b.classList.remove('active'));
+                const view = e.target.closest('.nav-button').dataset.view;
+                document.getElementById(`${view}ShiftSection`).classList.remove('hidden');
+                e.target.closest('.nav-button').classList.add('active');
+            }
+            if (e.target.closest('.check-trigger')) {
+                const el = document.getElementById(e.target.closest('.check-trigger').dataset.id);
+                el.classList.toggle('completed');
+            }
+        }
 
-function sanitize(value) {
-  if (value === undefined || value === null) return "";
-  var str = String(value);
-  if (str.charAt(0) === '=' || str.charAt(0) === '+' || str.charAt(0) === '-' || str.charAt(0) === '@') return "'" + str;
-  return str;
-}
+        function resetSection(id) {
+            if(confirm('Очистити розділ та контролера?')) {
+                document.getElementById('employeeSelect').value = '';
+                document.getElementById(id).querySelectorAll('.checklist-item').forEach(el => el.classList.remove('completed'));
+            }
+        }
 
-function getOrCreateSheet(ss, name) {
-  var sheet = ss.getSheetByName(name);
-  if (!sheet) sheet = ss.insertSheet(name);
-  return sheet;
-}
+        function prepareReport(section) {
+            if(!empSel.value) { alert("Оберіть контролера!"); return; }
+            let report = "";
+            
+            // Заголовок для пошти
+            report += `📝 Чек-лист: ${section === 'start' ? 'Початок зміни' : (section === 'during' ? 'Протягом зміни' : 'Кінець зміни')}\n`;
+            report += `👤 Контролер: ${empSel.value}\n`;
+            
+            // Форматування дати: 29.12.2025 0:02:23
+            const now = new Date();
+            const dateStr = ('0' + now.getDate()).slice(-2) + '.' + ('0' + (now.getMonth() + 1)).slice(-2) + '.' + now.getFullYear() + ' ' + 
+                            now.getHours() + ':' + ('0' + now.getMinutes()).slice(-2) + ':' + ('0' + now.getSeconds()).slice(-2);
+            
+            report += `📅 Дата: ${dateStr}\n`;
+            report += "----------------------------------------\n";
 
-function formatDate(dateObj) {
-  if (!dateObj) return "";
-  try {
-    var d = new Date(dateObj);
-    return d.toLocaleDateString('uk-UA') + " " + d.toLocaleTimeString('uk-UA');
-  } catch(e) { return String(dateObj); }
-}
+            document.querySelectorAll(`#list-${section} .checklist-item`).forEach(el => {
+                const txt = el.querySelector('span').innerText;
+                const status = el.classList.contains('completed') ? "✅" : "❌";
+                report += `${status} | ${txt}\n`;
+            });
+            
+            pendingReportData = { 
+                type: 'checklist', 
+                employee: empSel.value, 
+                stage: section, 
+                report: report, 
+                reportText: report 
+            };
+            
+            document.getElementById('confirmationText').innerText = report;
+            document.getElementById('confirmationModal').classList.remove('hidden');
+            document.getElementById('confirmationModal').classList.add('flex');
+            document.getElementById('modalActions').style.display = 'flex';
+            document.getElementById('modalSpinner').classList.add('hidden');
+            document.getElementById('sendMsg').innerText = "";
+        }
+
+        async function executeSend() {
+            document.getElementById('modalActions').style.display = 'none';
+            document.getElementById('modalSpinner').classList.remove('hidden');
+            document.getElementById('sendMsg').innerText = "Відправка...";
+
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(pendingReportData) 
+                });
+                
+                document.getElementById('sendMsg').innerText = "✅ Надіслано успішно!";
+                document.getElementById('sendMsg').classList.remove('text-red-500');
+                document.getElementById('sendMsg').classList.add('text-emerald-600');
+                
+                setTimeout(() => { closeModal('confirmationModal'); }, 2000);
+            } catch(e) { 
+                console.error(e);
+                document.getElementById('sendMsg').innerText = "❌ Помилка";
+                document.getElementById('sendMsg').classList.add('text-red-500');
+                document.getElementById('modalActions').style.display = 'flex';
+                document.getElementById('modalSpinner').classList.add('hidden');
+            }
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+        init();
+    </script>
+</body>
+</html>
