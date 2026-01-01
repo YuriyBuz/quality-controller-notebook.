@@ -342,7 +342,7 @@
     </div>
 
     <script>
-        // *** Оновлений URL скрипта ***
+        // NEW URL
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzoChS_W73edAjNbE1yhsB_P3sKq7UI1Ai6LilEFXxWI5zFntG2OxPdHwIADecqraTA/exec";
 
         const checklistItems = {
@@ -368,18 +368,19 @@
             ]
         };
 
-        const employees = ["Соботович Л.М.", "Огаркова М.В."];
+        const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
         let currentChecklistTab = 'start';
         let activeCommentId = null;
         let pendingReportData = null;
         let confirmCallback = null;
 
-        // Initialization
         document.addEventListener('DOMContentLoaded', () => {
             initApp();
         });
 
-        // Toast Notification
+        // Add explicit handler for the confirmation button
+        document.getElementById('confirmSendBtn').onclick = executeSend;
+
         function showToast(message, isError = false) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -394,13 +395,9 @@
             }
 
             container.appendChild(toast);
-
-            // Animate in
             requestAnimationFrame(() => {
                 toast.classList.remove('translate-x-full');
             });
-
-            // Remove after 3s
             setTimeout(() => {
                 toast.classList.add('translate-x-full');
                 setTimeout(() => {
@@ -409,7 +406,6 @@
             }, 3000);
         }
 
-        // Generic Confirm Modal Logic
         function customConfirm(text, onConfirm) {
             document.getElementById('genericConfirmText').innerText = text;
             const modal = document.getElementById('genericConfirmModal');
@@ -431,39 +427,31 @@
             confirmCallback = null;
         });
 
-        // Theme Toggle Logic
         const themeToggleBtn = document.getElementById('themeToggle');
         themeToggleBtn.addEventListener('click', () => {
             document.documentElement.classList.toggle('dark');
             localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
         });
 
-        // Initialize Application
         function initApp() {
-            // Apply theme
             if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
             }
 
-            // Populate Employee Select
             const sel = document.getElementById('employeeSelect');
             employees.forEach(e => sel.add(new Option(e, e)));
 
-            // Set Date
             const now = new Date();
             const options = { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' };
             const dateStr = new Intl.DateTimeFormat('uk-UA', options).format(now);
             document.getElementById('current-date').innerText = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
 
-            // Render Lists
             renderChecklist('start');
             renderChecklist('during');
             renderChecklist('end');
 
-            // Load State
             loadState();
 
-            // Global Event Delegation
             document.body.addEventListener('click', handleClick);
             document.body.addEventListener('change', handleInput);
         }
@@ -515,7 +503,6 @@
                 `;
             }).join('');
 
-            // Add Send Button
             const sendBtnHtml = `
                 <button onclick="prepareChecklistReport('${section}')" class="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg">
                     <span>📤 Відправити звіт (${section === 'start' ? 'Початок' : (section === 'during' ? 'Зміна' : 'Кінець')})</span>
@@ -526,26 +513,18 @@
             ul.parentNode.appendChild(btnContainer);
         }
 
-        // Central Click Handler
         function handleClick(e) {
-            // Tab Navigation
             if (e.target.closest('.nav-button')) {
                 const btn = e.target.closest('.nav-button');
                 switchView(btn.dataset.view);
             }
-
-            // Reset Buttons
             if (e.target.id === 'resetStartBtn') resetSection('startShiftSection');
             if (e.target.id === 'resetDuringBtn') resetSection('duringShiftSection');
             if (e.target.id === 'resetEndBtn') resetSection('endShiftSection');
-
-            // Checkbox Trigger
             if (e.target.closest('.check-trigger')) {
                 if (!validateEmployee()) return;
                 toggleItem(e.target.closest('.check-trigger').dataset.id);
             }
-
-            // Action Buttons (Form/Comment)
             if (e.target.closest('.action-btn')) {
                 e.stopPropagation();
                 if (!validateEmployee()) return;
@@ -564,25 +543,15 @@
                     modal.classList.add('flex');
                 }
             }
-
-            // Form Actions
             if (e.target.classList.contains('form-cancel')) {
                 const id = e.target.dataset.id;
                 document.getElementById(`form-${id}`).classList.add('hidden');
             }
-            
             if (e.target.classList.contains('form-save')) {
                 saveForm(e.target.dataset.id);
             }
-
-            // Comment Save
             if (e.target.id === 'saveCommentBtn') {
                 saveComment();
-            }
-            
-            // Confirm Send
-            if (e.target.id === 'confirmSendBtn') {
-                executeSend();
             }
         }
 
@@ -608,22 +577,6 @@
         function toggleItem(id) {
             const el = document.getElementById(id);
             el.classList.toggle('completed');
-            
-            // Logic for unchecking
-            if (!el.classList.contains('completed')) {
-                // If unchecking, keep problems/info? Usually yes, but here let's keep it simple.
-            } else {
-                // If checking, clear "problem/info" visual state if it was just a simple check?
-                // Actually, if it has a problem, it remains completed BUT with problem style.
-                // Let's reset styles if it was a normal check
-                if (!el.classList.contains('has-problem') && !el.classList.contains('has-info')) {
-                   // Standard check
-                }
-            }
-            
-            // If item was "problem" and is now unchecked -> remove problem state? 
-            // Better UX: clicking check toggles completion. Problem state is set via form.
-            // If user unchecks a problem item, let's clear the problem status.
             if (!el.classList.contains('completed')) {
                 el.classList.remove('has-problem', 'has-info');
                 const c = el.querySelector('.comment-text');
@@ -632,7 +585,6 @@
                 const f = document.getElementById(`form-${id}`);
                 if(f) f.classList.add('hidden');
             }
-
             saveState();
             updateProgress();
         }
@@ -642,30 +594,23 @@
             const inputs = form.querySelectorAll('input');
             const values = [];
             let isValid = true;
-
             inputs.forEach(input => {
                 if (!input.value) isValid = false;
                 values.push(`[${input.dataset.label}: ${input.value}]`);
             });
-
             if (!isValid) {
                 showToast("Заповніть всі поля!", true);
                 return;
             }
-
             const item = document.getElementById(id);
-            // Determine type by button color in innerHTML (hacky but works with static config)
             const isInfo = item.innerHTML.includes('text-blue-700');
-            
             const c = item.querySelector('.comment-text');
             c.innerText = values.join(' ');
             c.classList.remove('hidden', 'alert', 'info');
             c.classList.add(isInfo ? 'info' : 'alert');
-            
             item.classList.remove('has-problem', 'has-info');
             item.classList.add(isInfo ? 'has-info' : 'has-problem');
-            item.classList.add('completed'); // Auto-complete on form save
-            
+            item.classList.add('completed');
             form.classList.add('hidden');
             saveState();
             updateProgress();
@@ -676,7 +621,6 @@
             const item = document.getElementById(activeCommentId);
             const c = item.querySelector('.comment-text');
             c.innerText = txt;
-            
             if(txt) {
                 c.classList.remove('hidden');
                 item.classList.add('has-info');
@@ -684,7 +628,6 @@
                 c.classList.add('hidden');
                 item.classList.remove('has-info');
             }
-            
             closeModal('commentModal');
             saveState();
         }
@@ -694,9 +637,7 @@
             const listItems = list.querySelectorAll('.checklist-item');
             const totalItems = listItems.length;
             const done = list.querySelectorAll('.completed').length;
-            
             const percent = totalItems > 0 ? (done/totalItems)*100 : 0;
-            
             document.getElementById('progressBar').style.width = `${percent}%`;
             document.getElementById('progressText').innerText = `${done}/${totalItems} завдань`;
         }
@@ -704,10 +645,8 @@
         function switchView(view) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.nav-button').forEach(b => b.classList.remove('active'));
-            
             document.getElementById(`${view}ShiftSection`).classList.remove('hidden');
             document.querySelector(`[data-view="${view}"]`).classList.add('active');
-            
             currentChecklistTab = view;
             updateProgress();
         }
@@ -732,28 +671,24 @@
             });
         }
 
-        // Preparing Report
         function prepareChecklistReport(key) {
             if (!validateEmployee()) return;
-            
             let report = "";
             let problemCount = 0;
             const listItems = document.getElementById(`list-${key}`).querySelectorAll('.checklist-item');
             const totalItems = listItems.length;
             const doneItems = document.getElementById(`list-${key}`).querySelectorAll('.checklist-item.completed').length;
             
-            // Helper date format: DD.MM.YYYY HH:MM:SS
+            // Format Date for Table
             const now = new Date();
-            const dateStr = ('0' + now.getDate()).slice(-2) + '.' + ('0' + (now.getMonth() + 1)).slice(-2) + '.' + now.getFullYear() + ' ' + 
-                            ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2) + ':' + ('0' + now.getSeconds()).slice(-2);
+            const dateFormatted = ('0' + now.getDate()).slice(-2) + '.' + ('0' + (now.getMonth() + 1)).slice(-2) + '.' + now.getFullYear() + ' ' + 
+                                  ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2) + ':' + ('0' + now.getSeconds()).slice(-2);
 
             listItems.forEach(item => {
                 const text = item.querySelector('.task-text').innerText;
                 const status = item.classList.contains('completed') ? (item.classList.contains('has-problem') ? "⚠️" : "✅") : "❌";
                 const comment = item.querySelector('.comment-text').innerText;
-                
                 if (item.classList.contains('has-problem')) problemCount++;
-                
                 report += `${status} | ${text} ${comment ? ' — ' + comment : ''}\n`;
             });
 
@@ -766,46 +701,38 @@
                 stage: title,
                 done: doneItems,
                 total: totalItems,
-                reportText: report, // Keep for backward compatibility if needed
-                time: dateStr,      // Override time with custom format
-                section: `Чек-лист: ${title}`,
-                report: report      // Full report text for email
+                reportText: report, 
+                // Add report field for email body
+                report: `📝 Чек-лист: ${title}\n👤 Контролер: ${document.getElementById('employeeSelect').value}\n📅 Дата: ${dateFormatted}\n\n${report}`,
+                time: dateFormatted
             };
 
-            showConfirmation(report);
-        }
-
-        function showConfirmation(text) {
-            document.getElementById('confirmationText').innerText = text;
-            const modal = document.getElementById('confirmationModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            
+            document.getElementById('confirmationText').innerText = report;
+            document.getElementById('confirmationModal').classList.remove('hidden');
+            document.getElementById('confirmationModal').classList.add('flex');
             document.getElementById('modalActions').style.display = 'flex';
             document.getElementById('modalSpinner').classList.add('hidden');
             document.getElementById('sendMsg').innerText = "";
         }
 
         async function executeSend() {
-            const btnSpinner = document.getElementById('modalSpinner');
             const actions = document.getElementById('modalActions');
+            const spinner = document.getElementById('modalSpinner');
             const msg = document.getElementById('sendMsg');
 
             actions.style.display = 'none';
-            btnSpinner.classList.remove('hidden');
+            spinner.classList.remove('hidden');
             msg.innerText = "Відправка даних...";
 
             try {
-                // Using no-cors mode, we can't read response, but request is sent.
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
-                    cache: 'no-cache',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(pendingReportData)
                 });
                 
-                msg.innerText = "✅ Дані успішно відправлено!";
+                msg.innerText = "✅ Надіслано успішно!";
                 msg.classList.remove('text-red-500');
                 msg.classList.add('text-emerald-600');
                 
@@ -818,24 +745,18 @@
                 msg.innerText = "⚠️ Помилка з'єднання (мережева помилка)";
                 msg.classList.add('text-red-500');
                 actions.style.display = 'flex';
-                btnSpinner.classList.add('hidden');
+                spinner.classList.add('hidden');
             }
         }
 
-        function closeModal(id) {
-            const el = document.getElementById(id);
-            el.classList.add('hidden');
-            el.classList.remove('flex');
-        }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
 
-        // State Management (Local Storage)
         function saveState() {
             const state = {
                 employee: document.getElementById('employeeSelect').value,
                 items: {},
                 inputs: {}
             };
-            
             document.querySelectorAll('.checklist-item').forEach(el => {
                 state.items[el.id] = {
                     completed: el.classList.contains('completed'),
@@ -844,7 +765,6 @@
                     comment: el.querySelector('.comment-text').innerText
                 };
             });
-            
             document.querySelectorAll('input').forEach(el => {
                 if (el.dataset.field !== undefined && el.closest('.checklist-item')) {
                     const parentId = el.closest('.checklist-item').id;
@@ -852,21 +772,17 @@
                     state.inputs[parentId][el.dataset.field] = el.value;
                 }
             });
-
             localStorage.setItem('qcState_Simple_v1', JSON.stringify(state));
         }
 
         function loadState() {
             const raw = localStorage.getItem('qcState_Simple_v1');
             if (!raw) return;
-            
             const state = JSON.parse(raw);
-            
             if (state.employee) {
                 document.getElementById('employeeSelect').value = state.employee;
                 document.getElementById('employeeSelectionHint').classList.add('hidden');
             }
-
             if (state.items) {
                 Object.keys(state.items).forEach(id => {
                     const el = document.getElementById(id);
@@ -882,7 +798,6 @@
                     }
                 });
             }
-
             if (state.inputs) {
                 Object.keys(state.inputs).forEach(parentId => {
                     const vals = state.inputs[parentId];
