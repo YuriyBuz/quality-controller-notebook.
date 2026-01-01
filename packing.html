@@ -25,7 +25,6 @@
             color: inherit;
         }
         
-        /* Focus ring color for Indigo theme */
         input:focus, select:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
         
         /* Styling for empty select */
@@ -40,9 +39,9 @@
         .input-alert { border-color: #ef4444 !important; background-color: rgba(239, 68, 68, 0.05) !important; }
 
         /* Styles for photo gallery */
-        .photo-preview-item { position: relative; width: 100%; padding-top: 100%; /* 1:1 Aspect Ratio */ }
-        .photo-preview-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; }
-        .photo-remove-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10; }
+        .photo-preview-item { position: relative; width: 100%; padding-top: 100%; }
+        .photo-preview-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; border: 1px solid #e2e8f0; }
+        .photo-remove-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10; font-size: 12px; font-weight: bold; }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -61,7 +60,6 @@
                 <p class="text-indigo-600 dark:text-indigo-400 text-sm font-bold mt-1 uppercase tracking-wide">Контроль лінії</p>
             </div>
             
-            <!-- Scale Icon -->
             <div class="p-2 text-indigo-500">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -636,7 +634,9 @@ ${alerts}
                 appearance: appearance,
                 cap: cap,
                 comment: document.getElementById('pck-comment').value,
-                files: uploadedFiles // ARRAY OF FILES
+                files: uploadedFiles, // ARRAY OF FILES
+                // Щоб працювала передача фото в таблицю (legacy, бере перше фото)
+                photo: uploadedFiles.length > 0 ? uploadedFiles[0].data : ""
             };
 
             document.getElementById('reportPreview').innerText = report;
