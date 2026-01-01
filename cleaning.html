@@ -186,7 +186,7 @@
     <!-- Modals -->
     <div id="confirmResetModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50"><div class="card p-8 rounded-lg shadow-2xl max-w-sm w-full"><h3 class="font-bold text-xl mb-3 text-center">Скидання</h3><p class="mb-8 text-center text-slate-500">Очистити всю форму?</p><div class="flex justify-center gap-4"><button onclick="closeModal('confirmResetModal')" class="px-6 py-3 bg-slate-100 rounded-lg font-bold">Ні</button><button onclick="performReset()" class="px-6 py-3 bg-red-600 text-white rounded-lg font-bold">Так</button></div></div></div>
     
-    <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50"><div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]"><h3 class="text-2xl font-bold mb-4 text-center">Підтвердження</h3><div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto mb-6 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div><p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p><div id="sendActions" class="flex flex-col gap-3"><button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg text-lg">✅ Підтвердити</button><button onclick="closeModal('sendModal')" class="w-full bg-transparent border-2 border-slate-300 hover:bg-slate-100 text-slate-500 font-bold py-4 rounded-lg text-lg">Скасувати</button></div><div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div></div></div>
+    <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50"><div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]"><div class="text-center mb-4"><div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-2 text-2xl text-emerald-600">📤</div><h3 class="text-xl font-bold text-slate-800 dark:text-slate-100">Підтвердження відправки</h3><p class="text-sm text-slate-500 dark:text-slate-400">Перевірте введені дані перед відправкою</p></div><div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto mb-6 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div><p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p><div id="sendActions" class="flex flex-col gap-3"><button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg text-lg">✅ Підтвердити</button><button onclick="closeModal('sendModal')" class="w-full bg-transparent border-2 border-slate-300 hover:bg-slate-100 text-slate-500 font-bold py-4 rounded-lg text-lg">Скасувати</button></div><div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div></div></div>
 
     <script>
         // АКТУАЛЬНЕ ПОСИЛАННЯ (Перевірено)
@@ -342,15 +342,26 @@
         const canvas = document.getElementById('signature-pad');
         const ctx = canvas.getContext('2d');
         let isDrawing = false;
+        let hasSignature = false;
 
         function resizeCanvas() { canvas.width = canvas.parentElement.offsetWidth; canvas.height = canvas.parentElement.offsetHeight; }
         window.addEventListener('resize', resizeCanvas); resizeCanvas();
 
         function getPos(e) { const rect = canvas.getBoundingClientRect(); return { x: (e.clientX || e.touches[0].clientX) - rect.left, y: (e.clientY || e.touches[0].clientY) - rect.top }; }
         function startDraw(e) { isDrawing = true; const pos = getPos(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); e.preventDefault(); }
-        function draw(e) { if (!isDrawing) return; const pos = getPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); e.preventDefault(); }
+        function draw(e) { 
+            if (!isDrawing) return; 
+            const pos = getPos(e); 
+            ctx.lineTo(pos.x, pos.y); 
+            ctx.stroke(); 
+            hasSignature = true; 
+            e.preventDefault(); 
+        }
         function stopDraw() { isDrawing = false; }
-        function clearSignature() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+        function clearSignature() { 
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
+            hasSignature = false;
+        }
 
         canvas.addEventListener('mousedown', startDraw); canvas.addEventListener('mousemove', draw); canvas.addEventListener('mouseup', stopDraw); canvas.addEventListener('mouseout', stopDraw);
         canvas.addEventListener('touchstart', startDraw); canvas.addEventListener('touchmove', draw); canvas.addEventListener('touchend', stopDraw);
@@ -379,6 +390,7 @@
             const agg = document.getElementById('check-agg').value;
             
             if(!ext || !int || !agg) { alert("Заповніть результати огляду (Чисто/Брудно)!"); return; }
+            if(!hasSignature) { alert("Будь ласка, підпишіть звіт!"); return; }
 
             let alerts = "";
             if(ext === 'Брудно' || int === 'Брудно' || agg === 'Брудно') alerts += "\n🔴 УВАГА: Виявлено забруднення!";
