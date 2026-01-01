@@ -19,7 +19,6 @@
         body { background-color: var(--bg-color); color: var(--text); padding-bottom: 2rem; transition: background-color 0.3s ease; }
         .card { background-color: var(--card-bg); transition: background-color 0.3s ease; }
         
-        /* UPDATED INPUT STYLES (MATCHING SAUCE BOILING) */
         input, select {
             background-color: transparent !important;
             border: 2px solid #cbd5e1 !important;
@@ -168,8 +167,9 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
             <h3 class="text-xl font-bold mb-6 pr-8 text-fuchsia-700 dark:text-fuchsia-400 border-b border-slate-200 dark:border-slate-700 pb-2">Деталі звіту</h3>
-            <!-- Changed to div with HTML support for rich content -->
-            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto border border-slate-200 dark:border-slate-700 font-mono text-sm flex-1 shadow-inner text-slate-700 dark:text-slate-300" id="modalContent"></div>
+            <!-- Changed to div with whitespace-pre-wrap for text formatting -->
+            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto border border-slate-200 dark:border-slate-700 font-mono text-sm whitespace-pre-wrap flex-1 shadow-inner text-slate-700 dark:text-slate-300" id="modalContent"></div>
+            <div id="modalPhoto" class="mt-4 hidden"></div>
             <div class="mt-6 flex justify-end">
                 <button onclick="document.getElementById('reportModal').classList.add('hidden'); document.getElementById('reportModal').classList.remove('flex')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-sm">Закрити</button>
             </div>
@@ -283,7 +283,7 @@
                 if(row.status.includes('FAIL') || row.status.includes('Не') || row.status.includes('Incomplete')) {
                     statusBadge = `<span class="bg-red-100 text-red-800 text-xs font-bold px-2.5 py-1 rounded-full dark:bg-red-900/30 dark:text-red-300 flex items-center gap-1 w-fit"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>Проблема</span>`;
                 } else {
-                    statusBadge = `<span class="bg-green-100 text-green-800 text-xs font-bold px-2.5 py-1 rounded-full dark:bg-green-900/30 dark:text-green-300 flex items-center gap-1 w-fit"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>OK</span>`;
+                    statusBadge = `<span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full dark:bg-emerald-900 dark:text-emerald-300 flex items-center gap-1 w-fit"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>OK</span>`;
                 }
 
                 tr.innerHTML = `
@@ -312,29 +312,36 @@
             });
         }
 
-        // Updated Function to Render Rich HTML Content
         function openReport(index) {
             if (!currentData || !currentData[index]) return;
             const row = currentData[index];
-            let reportHtml = row.report;
-
-            // Convert plain text report to HTML with icons/bolding
-            // 1. Replace newlines
-            reportHtml = reportHtml.replace(/\n/g, '<br>');
+            const reportText = row.report || "Немає деталей";
             
-            // 2. Bold keys (text before colon)
-            reportHtml = reportHtml.replace(/(.*?):/g, '<strong>$1:</strong>');
-            
-            // 3. Highlight Statuses
-            reportHtml = reportHtml.replace(/FAIL|❌|Не відповідає|Невідповідність/g, '<span class="text-red-600 font-bold">$&</span>');
-            reportHtml = reportHtml.replace(/OK|✅|Відповідає/g, '<span class="text-green-600 font-bold">$&</span>');
+            // Set text content to display raw text with formatting (newlines, emojis)
+            document.getElementById('modalContent').textContent = reportText;
 
-            // 4. Add Image if present (assuming backend might send it in future)
+            // Handle photo
+            const photoContainer = document.getElementById('modalPhoto');
+            photoContainer.innerHTML = '';
+            photoContainer.classList.add('hidden');
+
             if (row.photo) {
-                reportHtml += `<br><br><div class="mt-4 border-t pt-4"><strong class="block mb-2">📷 Фотодоказ:</strong><img src="${row.photo}" class="max-w-full rounded-lg shadow-md border border-slate-200"></div>`;
+                let imgSrc = row.photo;
+                if (!imgSrc.startsWith('data:image')) imgSrc = 'data:image/jpeg;base64,' + imgSrc; 
+                
+                const imgLabel = document.createElement('strong');
+                imgLabel.className = "block mb-2 text-slate-700 dark:text-slate-200 border-t pt-4 mt-4 border-slate-200 dark:border-slate-700";
+                imgLabel.textContent = "📷 Фотодоказ:";
+                
+                const img = document.createElement('img');
+                img.src = imgSrc;
+                img.className = "max-w-full rounded-lg shadow-md border border-slate-200 dark:border-slate-700";
+                
+                photoContainer.appendChild(imgLabel);
+                photoContainer.appendChild(img);
+                photoContainer.classList.remove('hidden');
             }
 
-            document.getElementById('modalContent').innerHTML = reportHtml;
             document.getElementById('reportModal').classList.remove('hidden');
             document.getElementById('reportModal').classList.add('flex');
         }
