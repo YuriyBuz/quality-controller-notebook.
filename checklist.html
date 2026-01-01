@@ -26,10 +26,26 @@
 <body class="font-sans antialiased">
     <div id="toast-container" class="fixed top-4 right-4 z-[2000] flex flex-col gap-2"></div>
     <div class="container mx-auto max-w-3xl p-4">
-        <header class="relative text-center mb-6">
-            <a href="index.html" class="absolute top-0 left-0 p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500">Меню</a>
-            <h1 class="text-2xl font-bold">Чек Лист</h1>
-            <button id="themeToggle" class="absolute top-0 right-0 p-2 rounded-lg bg-white dark:bg-slate-800 shadow-sm text-slate-500">Theme</button>
+        <header class="relative text-center mb-6 flex items-center justify-between">
+             <!-- Left: Menu Link -->
+            <a href="index.html" class="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-emerald-600 transition-colors flex items-center gap-2">
+                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
+                <span class="hidden sm:inline font-medium">Меню</span>
+            </a>
+
+            <!-- Center: Title -->
+            <div class="text-center">
+                <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-100">Чек Лист</h1>
+                <p class="text-emerald-600 dark:text-emerald-400 text-sm font-bold mt-1 uppercase tracking-wide">Загальний контроль зміни</p>
+            </div>
+
+            <!-- Right: Theme Toggle -->
+            <button id="themeToggle" class="p-2 rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-emerald-600 transition-colors">
+                <svg class="w-6 h-6 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                <svg class="w-6 h-6 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
         </header>
 
         <div class="mb-6 card p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
@@ -80,7 +96,8 @@
     </div>
 
     <script>
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwtN3ZNBAsj3XE-99NuX_iLaZDCqGtmM6baNfXDylPM1qqbasGeNGLfdc4vc73f5GPl/exec";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzoChS_W73edAjNbE1yhsB_P3sKq7UI1Ai6LilEFXxWI5zFntG2OxPdHwIADecqraTA/exec";
+        
         const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
         const checklistItems = {
             start: [
@@ -153,12 +170,31 @@
         function prepareReport(section) {
             if(!empSel.value) { alert("Оберіть контролера!"); return; }
             let report = "";
-            document.querySelectorAll(`#list-${section} .checklist-item`).forEach(el => {
+            const stageName = section === 'start' ? 'Початок зміни' : (section === 'during' ? 'Протягом зміни' : 'Кінець зміни');
+            report += `📝 Чек-лист: ${stageName}\n`;
+            report += `👤 Контролер: ${empSel.value}\n`;
+            report += `📅 Дата: ${new Date().toLocaleString('uk-UA')}\n`;
+            report += "----------------------------------------\n";
+            
+            let done = 0;
+            const items = document.querySelectorAll(`#list-${section} .checklist-item`);
+            items.forEach(el => {
                 const txt = el.querySelector('span').innerText;
                 const status = el.classList.contains('completed') ? "✅" : "❌";
+                if(el.classList.contains('completed')) done++;
                 report += `${status} | ${txt}\n`;
             });
-            pendingReportData = { type: 'checklist', employee: empSel.value, stage: section, report: report, reportText: report };
+            
+            pendingReportData = { 
+                type: 'checklist', 
+                employee: empSel.value, 
+                stage: stageName, 
+                done: done, 
+                total: items.length, 
+                report: report, 
+                reportText: report 
+            };
+            
             document.getElementById('confirmationText').innerText = report;
             document.getElementById('confirmationModal').classList.remove('hidden');
             document.getElementById('confirmationModal').classList.add('flex');
