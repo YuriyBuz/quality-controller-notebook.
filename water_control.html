@@ -37,9 +37,12 @@
         @keyframes spin { 100% { transform: rotate(360deg); } }
         
         .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 50; }
-        
-        /* Alerts in inputs */
         .input-alert { border-color: #ef4444 !important; background-color: rgba(239, 68, 68, 0.05) !important; }
+
+        /* Photo Gallery Styles */
+        .photo-preview-item { position: relative; width: 100%; padding-top: 100%; }
+        .photo-preview-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; border: 1px solid #e2e8f0; }
+        .photo-remove-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10; font-size: 12px; font-weight: bold; }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -89,7 +92,7 @@
             </div>
 
             <div class="mt-2">
-                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер</label>
+                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер *</label>
                 <select id="employeeSelect" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors" required>
                     <option value="" disabled selected>Оберіть...</option>
                 </select>
@@ -101,7 +104,7 @@
                     <input type="time" id="hvo-time" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors">
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Загальний стан системи</label>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Загальний стан системи *</label>
                     <select id="hvo-status" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors" required onchange="checkStatus(this)">
                         <option value="" disabled selected>Оберіть стан...</option>
                         <option value="Відповідає">✅ Відповідає</option>
@@ -113,21 +116,28 @@
             <!-- Salt Section -->
             <div class="bg-sky-500 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md mb-4">Таблетована сіль</div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">Бачок №1</label>
-                    <select id="hvo-salt1" class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors" required onchange="checkStatus(this)">
-                        <option value="" disabled selected>Оберіть...</option>
+                <!-- Tank 1 -->
+                <div class="bg-sky-50 dark:bg-slate-800 p-4 rounded-lg border border-sky-100 dark:border-slate-700">
+                    <label class="block text-sm font-bold text-sky-800 dark:text-sky-400 mb-2">Бак регенерації №1</label>
+                    <select id="hvo-salt1" class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 mb-3 transition-colors" required onchange="checkStatus(this)">
+                        <option value="" disabled selected>Рівень солі...</option>
                         <option value="В нормі">В нормі</option>
                         <option value="Не в нормі">⚠️ Не в нормі</option>
                     </select>
+                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Залишок до промивки (м³)</label>
+                    <input type="number" step="0.1" id="hvo-residue1" placeholder="0.0" class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3">
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">Бачок №2</label>
-                    <select id="hvo-salt2" class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors" required onchange="checkStatus(this)">
-                        <option value="" disabled selected>Оберіть...</option>
+
+                <!-- Tank 2 -->
+                <div class="bg-sky-50 dark:bg-slate-800 p-4 rounded-lg border border-sky-100 dark:border-slate-700">
+                    <label class="block text-sm font-bold text-sky-800 dark:text-sky-400 mb-2">Бак регенерації №2</label>
+                    <select id="hvo-salt2" class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 mb-3 transition-colors" required onchange="checkStatus(this)">
+                        <option value="" disabled selected>Рівень солі...</option>
                         <option value="В нормі">В нормі</option>
                         <option value="Не в нормі">⚠️ Не в нормі</option>
                     </select>
+                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Залишок до промивки (м³)</label>
+                    <input type="number" step="0.1" id="hvo-residue2" placeholder="0.0" class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3">
                 </div>
             </div>
 
@@ -135,16 +145,26 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Ротаметр "Пом'якшена"</label>
-                    <input type="text" id="hvo-rot-soft" placeholder="Показник..." class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors">
+                    <input type="number" step="0.1" id="hvo-rot-soft" placeholder="0.0" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors">
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Ротаметр "Чиста"</label>
-                    <input type="text" id="hvo-rot-pure" placeholder="Показник..." class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors">
+                    <input type="number" step="0.1" id="hvo-rot-pure" placeholder="0.0" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors">
                 </div>
             </div>
 
+            <!-- Aeration -->
+            <div>
+                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Аерація води *</label>
+                <select id="hvo-aeration" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors" required onchange="checkStatus(this)">
+                    <option value="" disabled selected>Оберіть стан...</option>
+                    <option value="Працює">✅ Працює</option>
+                    <option value="Не працює">❌ Не працює</option>
+                </select>
+            </div>
+
             <!-- Chemical Indicators -->
-            <div class="bg-sky-500 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md mb-4">Хімічні показники (після ХВО)</div>
+            <div class="bg-sky-500 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md mb-4 mt-2">Хімічні показники (після ХВО)</div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Загальна жорсткість</label>
@@ -164,6 +184,22 @@
                 </div>
             </div>
 
+            <!-- MULTIPLE PHOTO UPLOAD SECTION -->
+            <div class="bg-sky-50 dark:bg-slate-800 p-4 rounded-lg border border-sky-200 dark:border-slate-700">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h4 class="font-bold text-sm mb-1 text-slate-700 dark:text-slate-200">Фото звіт</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Можна додати декілька фото</p>
+                    </div>
+                    <label class="cursor-pointer bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg shadow flex items-center gap-2 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <span>Обрати фото</span>
+                        <input type="file" id="photo-upload" accept="image/*" multiple class="hidden" onchange="handleFiles(this)">
+                    </label>
+                </div>
+                <div id="gallery-container" class="grid grid-cols-3 gap-2 hidden"></div>
+            </div>
+
             <button onclick="initiateSend()" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2 text-lg">
                 <span>📤 Відправити дані</span>
             </button>
@@ -174,7 +210,7 @@
     <div id="confirmResetModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
         <div class="card p-8 rounded-lg shadow-2xl max-w-sm w-full border border-slate-200 dark:border-slate-700">
             <h3 class="font-bold text-xl mb-3 text-center">Скидання</h3>
-            <p class="mb-8 text-base text-center text-slate-500 dark:text-slate-400">Ви дійсно бажаєте очистити форму, включаючи контролера?</p>
+            <p class="mb-8 text-base text-center text-slate-500 dark:text-slate-400">Ви дійсно бажаєте очистити форму?</p>
             <div class="flex justify-center gap-4">
                 <button onclick="document.getElementById('confirmResetModal').classList.add('hidden')" class="px-6 py-3 bg-slate-100 dark:bg-slate-700 rounded-lg font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors text-lg">Ні</button>
                 <button onclick="performReset()" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold shadow-lg transition-colors text-lg">Так</button>
@@ -185,7 +221,11 @@
     <!-- Sending Modal -->
     <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
         <div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700">
-            <h3 class="text-2xl font-bold mb-4 text-center">Підтвердження</h3>
+            <div class="text-center mb-4">
+                <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-2 text-2xl text-emerald-600">📤</div>
+                <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100">Підтвердження відправки</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Перевірте введені дані перед відправкою</p>
+            </div>
             <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto mb-6 border border-slate-200 dark:border-slate-700 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div>
             <p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p>
             <div id="sendActions" class="flex flex-col gap-3">
@@ -197,7 +237,9 @@
     </div>
 
     <script>
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwtN3ZNBAsj3XE-99NuX_iLaZDCqGtmM6baNfXDylPM1qqbasGeNGLfdc4vc73f5GPl/exec";
+        // АКТУАЛЬНЕ ПОСИЛАННЯ (Перевірено)
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzzA5vo5jW6xAd5vOKROQ6qLNOx0nwcYtd-SWxdR0ghDslyNCsAa0QuYODzjyj7x7Q3/exec";
+        
         const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
         
         const empSel = document.getElementById('employeeSelect');
@@ -245,6 +287,43 @@
             setTimeout(() => { toast.classList.add('translate-x-full'); setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
+        // FILES LOGIC
+        let uploadedFiles = [];
+
+        function handleFiles(input) {
+            const files = input.files;
+            if (files && files.length > 0) {
+                const container = document.getElementById('gallery-container');
+                container.classList.remove('hidden');
+
+                Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const base64 = e.target.result;
+                        uploadedFiles.push({ name: file.name, type: file.type, data: base64 });
+                        const div = document.createElement('div');
+                        div.className = 'photo-preview-item';
+                        div.innerHTML = `<img src="${base64}"><div class="photo-remove-btn" onclick="removeFile(this, '${base64}')">✕</div>`;
+                        container.appendChild(div);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+            input.value = '';
+        }
+
+        function removeFile(btnElement, dataContent) {
+            btnElement.parentElement.remove();
+            uploadedFiles = uploadedFiles.filter(f => f.data !== dataContent);
+            if(uploadedFiles.length === 0) document.getElementById('gallery-container').classList.add('hidden');
+        }
+
+        function clearGallery() {
+            uploadedFiles = [];
+            document.getElementById('gallery-container').innerHTML = '';
+            document.getElementById('gallery-container').classList.add('hidden');
+        }
+
         // Reset Logic
         function resetForm() {
             document.getElementById('confirmResetModal').classList.remove('hidden');
@@ -252,10 +331,13 @@
         }
 
         function performReset() {
-            document.querySelectorAll('input, select').forEach(el => {
-                el.value = ''; // Reset everything to empty
+            document.querySelectorAll('input').forEach(el => el.value = '');
+            document.querySelectorAll('select').forEach(el => {
+                el.value = ""; // Reset everything to empty
                 el.classList.remove('input-alert');
             });
+            clearGallery();
+            
             // Restore ONLY time default
             document.getElementById('hvo-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
             
@@ -267,18 +349,16 @@
         // Auto-reset logic (23:00)
         setInterval(() => {
             const now = new Date();
-            // Check if it is 23:00 (checks every 10s, so using minute precision and a day-flag)
             if (now.getHours() === 23 && now.getMinutes() === 0) {
-                const lastRun = localStorage.getItem('last_auto_reset_date');
+                const lastRun = localStorage.getItem('last_auto_reset_hvo');
                 const today = now.toDateString();
-                
                 if (lastRun !== today) {
                     performReset();
-                    localStorage.setItem('last_auto_reset_date', today);
+                    localStorage.setItem('last_auto_reset_hvo', today);
                     showToast("Автоматичне скидання зміни (23:00)");
                 }
             }
-        }, 10000); // Check every 10 seconds
+        }, 10000); 
 
         let pendingData = null;
 
@@ -287,20 +367,22 @@
             const status = document.getElementById('hvo-status').value;
             const salt1 = document.getElementById('hvo-salt1').value;
             const salt2 = document.getElementById('hvo-salt2').value;
+            const aeration = document.getElementById('hvo-aeration').value;
 
-            // Strict Validation for REQUIRED dropdowns
+            // Strict Validation
             if(!emp) { showToast("Оберіть контролера!", true); return; }
             if(!status) { showToast("Оберіть стан системи!", true); return; }
-            if(!salt1) { showToast("Оберіть рівень солі (Бачок 1)!", true); return; }
-            if(!salt2) { showToast("Оберіть рівень солі (Бачок 2)!", true); return; }
+            if(!salt1) { showToast("Оберіть рівень солі (Бак 1)!", true); return; }
+            if(!salt2) { showToast("Оберіть рівень солі (Бак 2)!", true); return; }
+            if(!aeration) { showToast("Вкажіть статус аерації!", true); return; }
             
             // Alerts logic
             let alerts = "";
             if (status.includes('Не')) alerts += "\n🔴 ЗАГАЛЬНИЙ СТАН: НЕ ВІДПОВІДАЄ";
-            if (salt1.includes('Не')) alerts += "\n🔴 Сіль Бачок №1: НЕ В НОРМІ";
-            if (salt2.includes('Не')) alerts += "\n🔴 Сіль Бачок №2: НЕ В НОРМІ";
+            if (salt1.includes('Не')) alerts += "\n🔴 Сіль Бак №1: НЕ В НОРМІ";
+            if (salt2.includes('Не')) alerts += "\n🔴 Сіль Бак №2: НЕ В НОРМІ";
+            if (aeration.includes('Не')) alerts += "\n🔴 Аерація: НЕ ПРАЦЮЄ";
             
-            // pH Alert (optional check)
             const ph = parseFloat(document.getElementById('hvo-ph').value);
             if (ph && (ph < 6 || ph > 9)) alerts += `\n🔴 УВАГА: pH ${ph} (можливе відхилення)`;
 
@@ -311,10 +393,11 @@
 👤 Контролер: ${emp}
 🕒 Час: ${document.getElementById('hvo-time').value}
 🏭 Стан системи: ${status}
+💨 Аерація: ${aeration}
 
 🧂 Таблетована сіль:
-   • Бачок №1: ${salt1}
-   • Бачок №2: ${salt2}
+   • Бак №1: ${salt1} (Залишок: ${document.getElementById('hvo-residue1').value || '0'} м³)
+   • Бак №2: ${salt2} (Залишок: ${document.getElementById('hvo-residue2').value || '0'} м³)
 
 📈 Ротаметри:
    • Пом'якшена: ${document.getElementById('hvo-rot-soft').value || '-'}
@@ -325,6 +408,8 @@
    • Залізо (Fe): ${document.getElementById('hvo-iron').value || '-'}
    • Марганець (Mn): ${document.getElementById('hvo-manganese').value || '-'}
    • pH: ${document.getElementById('hvo-ph').value || '-'}
+
+📷 Фото: ${uploadedFiles.length} шт.
 ${alerts}
 ===========================`;
 
@@ -344,7 +429,9 @@ ${alerts}
                 hardness: document.getElementById('hvo-hardness').value,
                 iron: document.getElementById('hvo-iron').value,
                 manganese: document.getElementById('hvo-manganese').value,
-                ph: document.getElementById('hvo-ph').value
+                ph: document.getElementById('hvo-ph').value,
+                files: uploadedFiles,
+                photo: uploadedFiles.length > 0 ? uploadedFiles[0].data : ""
             };
 
             document.getElementById('reportPreview').innerText = report;
@@ -376,14 +463,10 @@ ${alerts}
                 status.innerText = "✅ Дані відправлено (черга)!";
                 status.classList.add('text-emerald-600');
                 
-                const recipients = "Dyndarnastia@gmail.com,Buznitskiy7@gmail.com";
-                const subject = encodeURIComponent("Звіт QC: Контроль ХВО");
-                const body = encodeURIComponent(pendingData.report);
-
                 setTimeout(() => {
                     closeSendModal();
-                    window.location.href = `mailto:${recipients}?subject=${subject}&body=${body}`;
-                }, 1500);
+                    performReset(); 
+                }, 2000);
             } catch(e) {
                 status.innerText = "❌ Помилка з'єднання";
                 status.classList.add('text-red-500');
