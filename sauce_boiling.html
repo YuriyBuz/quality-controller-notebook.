@@ -35,6 +35,19 @@
         
         input:focus, select:focus { outline: none; border-color: #f97316 !important; box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2); }
         
+        /* Disabled input style */
+        input:disabled, select:disabled {
+            background-color: rgba(148, 163, 184, 0.1) !important;
+            border-color: #e2e8f0 !important;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        /* Empty select styling */
+        select:required:invalid { color: #94a3b8; }
+        option[value=""][disabled] { display: none; }
+        option { color: var(--text); }
+
         datalist { max-height: 200px; overflow-y: auto; }
         
         .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #f97316; animation: spin 1s linear infinite; }
@@ -96,7 +109,7 @@
 
             <div class="mt-4">
                 <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер *</label>
-                <select id="employeeSelect" class="rounded-lg"><option value="">Оберіть...</option></select>
+                <select id="employeeSelect" class="rounded-lg" required><option value="" disabled selected>Оберіть...</option></select>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -106,8 +119,8 @@
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Варник *</label>
-                    <select id="tst-cookName" class="rounded-lg">
-                        <option value="">Оберіть...</option>
+                    <select id="tst-cookName" class="rounded-lg" required>
+                        <option value="" disabled selected>Оберіть...</option>
                         <option value="Загура Іван Борисович">Загура Іван Борисович</option>
                         <option value="Солдатова Ірина Володимирівна">Солдатова Ірина Володимирівна</option>
                         <option value="Садиріна Ольга Анатоліївна">Садиріна Ольга Анатоліївна</option>
@@ -119,14 +132,14 @@
 
             <div>
                 <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Продукт (Код/Назва) *</label>
-                <input type="text" id="tst-product" list="products-list" placeholder="Введіть код або назву..." autocomplete="off" class="rounded-lg">
+                <input type="text" id="tst-product" list="products-list" placeholder="Введіть код або назву..." autocomplete="off" class="rounded-lg" required oninput="checkLiquids()">
                 <datalist id="products-list"></datalist>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">№ Завдання *</label>
-                    <input type="number" id="tst-task" placeholder="12345" class="rounded-lg">
+                    <input type="number" id="tst-task" placeholder="12345" class="rounded-lg" required>
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Дата варки</label>
@@ -136,30 +149,30 @@
             
             <div class="bg-orange-500 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md">Органолептика</div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <select id="tst-color" class="rounded-lg" onchange="checkStatus(this)"><option value="" disabled selected>Колір...</option><option value="+">✅ Відповідає</option><option value="-">❌ Брак</option></select>
-                <select id="tst-aroma" class="rounded-lg" onchange="checkStatus(this)"><option value="" disabled selected>Аромат...</option><option value="+">✅ Відповідає</option><option value="-">❌ Брак</option></select>
-                <select id="tst-taste" class="rounded-lg" onchange="checkStatus(this)"><option value="" disabled selected>Смак...</option><option value="+">✅ Відповідає</option><option value="-">❌ Брак</option></select>
-                <select id="tst-consist" class="rounded-lg" onchange="checkStatus(this)"><option value="" disabled selected>Консистенція...</option><option value="+">✅ Відповідає</option><option value="-">❌ Брак</option></select>
+                <select id="tst-color" class="rounded-lg" onchange="checkStatus(this)" required><option value="" disabled selected>Колір...</option><option value="+">✅ Відповідає</option><option value="-">❌ Брак</option></select>
+                <select id="tst-aroma" class="rounded-lg" onchange="checkStatus(this)" required><option value="" disabled selected>Аромат...</option><option value="+">✅ Відповідає</option><option value="-">❌ Брак</option></select>
+                <select id="tst-taste" class="rounded-lg" onchange="checkStatus(this)" required><option value="" disabled selected>Смак...</option><option value="+">✅ Відповідає</option><option value="-">❌ Брак</option></select>
+                <select id="tst-consist" class="rounded-lg" onchange="checkStatus(this)" required><option value="" disabled selected>Консистенція...</option><option value="+">✅ Відповідає</option><option value="-">❌ Брак</option></select>
             </div>
             
             <div class="bg-orange-500 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md">Фізико-хімія</div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Сухі розчинні речовини, °Bx *</label>
-                    <input type="number" step="0.1" id="tst-dry" class="rounded-lg">
+                    <input type="number" step="0.1" id="tst-dry" class="rounded-lg" required>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Bostwick, cm/30 sec *</label>
-                    <input type="number" id="tst-visc" class="rounded-lg">
+                    <input type="number" id="tst-visc" class="rounded-lg" required>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">pH *</label>
-                    <input type="number" step="0.01" id="tst-ph" oninput="validatePH(this)" class="rounded-lg">
-                    <p id="ph-warning" class="hidden text-xs font-bold text-red-600 mt-1 animate-pulse">⚠️ Увага: високий pH!</p>
+                    <input type="number" step="0.01" id="tst-ph" oninput="validatePH(this)" class="rounded-lg" required>
+                    <p id="ph-warning" class="hidden text-xs font-bold text-red-600 mt-1 animate-pulse">⚠️ Увага: низька кислотність!</p>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Центрифугування</label>
-                    <select id="tst-stab" class="rounded-lg" onchange="checkStatus(this)"><option value="" disabled selected>...</option><option value="+">✅ Стійка</option><option value="-">⚠️ Не стійка</option></select>
+                    <select id="tst-stab" class="rounded-lg" onchange="checkStatus(this)" required><option value="" disabled selected>...</option><option value="+">✅ Стійка</option><option value="-">⚠️ Не стійка</option></select>
                 </div>
             </div>
 
@@ -204,7 +217,8 @@
     <!-- Sending Modal -->
     <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
         <div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700">
-            <h3 class="text-2xl font-bold mb-4 text-center">Підтвердження</h3>
+            <h3 class="text-2xl font-bold mb-4 text-center">Підтвердження відправки</h3>
+            <p class="text-center text-sm text-slate-500 mb-4">Перевірте введені дані перед відправкою</p>
             <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto mb-6 border border-slate-200 dark:border-slate-700 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div>
             <p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p>
             <div id="sendActions" class="flex flex-col gap-3">
@@ -246,6 +260,12 @@
             "1801 В’ялені томати"
         ];
 
+        // Коди рідких продуктів, для яких не потрібні заміри Bostwick та Центрифугування
+        const LIQUID_IDS = [
+            "1101", "1102", "1103", "1104", "1105", "1106", "1114", "1119", 
+            "1121", "1128", "1132", "1134", "1403", "1701", "1702", "1703", "1704"
+        ];
+
         const empSel = document.getElementById('employeeSelect');
         employees.forEach(e => empSel.add(new Option(e, e)));
         const dl = document.getElementById('products-list');
@@ -267,6 +287,37 @@
         });
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
+        }
+
+        // Logic for Liquid Products
+        function checkLiquids() {
+            const val = document.getElementById('tst-product').value;
+            const isLiquid = LIQUID_IDS.some(id => val.startsWith(id));
+            
+            const visc = document.getElementById('tst-visc');
+            const stab = document.getElementById('tst-stab');
+            
+            if (isLiquid) {
+                visc.disabled = true;
+                visc.value = "";
+                visc.placeholder = "Не потрібно";
+                visc.parentElement.classList.add('opacity-50');
+                
+                stab.disabled = true;
+                stab.value = "";
+                stab.parentElement.classList.add('opacity-50');
+                stab.required = false;
+                visc.required = false;
+            } else {
+                visc.disabled = false;
+                visc.placeholder = "";
+                visc.parentElement.classList.remove('opacity-50');
+                
+                stab.disabled = false;
+                stab.parentElement.classList.remove('opacity-50');
+                stab.required = true;
+                visc.required = true;
+            }
         }
 
         // Validate pH
@@ -370,8 +421,11 @@
             document.querySelectorAll('input, select').forEach(el => {
                  el.value = '';
                  el.classList.remove('input-alert');
+                 el.disabled = false; // Enable all back
+                 if(el.parentElement.classList.contains('opacity-50')) el.parentElement.classList.remove('opacity-50');
             });
-            // Restore defaults
+            
+            // Set defaults again
             document.getElementById('tst-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
             document.getElementById('tst-cookDate').valueAsDate = new Date();
             clearGallery();
@@ -392,10 +446,17 @@
             const visc = document.getElementById('tst-visc').value;
             const ph = document.getElementById('tst-ph').value;
             
-            // ВАЛІДАЦІЯ: Перевірка обов'язкових полів
-            if(!emp || !cook || !prod || !task || !dry || !visc || !ph) { 
+            // Check if liquid rules apply
+            const isLiquid = document.getElementById('tst-visc').disabled;
+
+            // ВАЛІДАЦІЯ
+            if(!emp || !cook || !prod || !task || !dry || !ph) { 
                 showToast("Заповніть всі обов'язкові поля!", true); 
                 return; 
+            }
+            if(!isLiquid && !visc) {
+                 showToast("Заповніть в'язкість (Bostwick)!", true);
+                 return;
             }
 
             const color = document.getElementById('tst-color').value || '-';
@@ -403,17 +464,26 @@
             const taste = document.getElementById('tst-taste').value || '-';
             const consist = document.getElementById('tst-consist').value || '-';
             const phVal = parseFloat(ph);
-            const stab = document.getElementById('tst-stab').value || '-';
+            const stab = document.getElementById('tst-stab').value || (isLiquid ? '-' : '?');
             
+            // Validation for selects
+            if(!document.getElementById('tst-color').value) { showToast("Оберіть колір!", true); return; }
+            if(!document.getElementById('tst-aroma').value) { showToast("Оберіть аромат!", true); return; }
+            if(!document.getElementById('tst-taste').value) { showToast("Оберіть смак!", true); return; }
+            if(!document.getElementById('tst-consist').value) { showToast("Оберіть консистенцію!", true); return; }
+            if(!isLiquid && !document.getElementById('tst-stab').value) { showToast("Оберіть стабільність!", true); return; }
+
             let alerts = "";
             if (phVal > 4.5) alerts += "\n🔴 УВАГА: ВИСОКИЙ pH (> 4.5)";
             if (color === '-') alerts += "\n🔴 УВАГА: Невідповідність кольору";
             if (aroma === '-') alerts += "\n🔴 УВАГА: Невідповідність запаху";
             if (taste === '-') alerts += "\n🔴 УВАГА: Невідповідність смаку";
             if (consist === '-') alerts += "\n🔴 УВАГА: Невідповідність консистенції";
-            if (stab === '-') alerts += "\n🔴 УВАГА: Не стійка емульсія";
+            if (!isLiquid && stab === '-') alerts += "\n🔴 УВАГА: Не стійка емульсія";
             
-            let headerIcon = alerts ? "⚠️" : "🟢";
+            let headerIcon = alerts ? "⚠️" : "📤";
+            
+            // New Report Format
             const report = `${headerIcon} ЗВІТ QC Master: Варки соусу
 ===========================
 👤 Контролер: ${emp}
@@ -424,16 +494,16 @@
 📅 Дата варки: ${document.getElementById('tst-cookDate').value}
 
 👅 Органолептика:
-   • Колір: ${color}
-   • Аромат: ${aroma}
-   • Смак: ${taste}
-   • Консистенція: ${consist}
+• Колір: ${color === '+' ? '+' : '-'}
+• Аромат: ${aroma === '+' ? '+' : '-'}
+• Смак: ${taste === '+' ? '+' : '-'}
+• Консистенція: ${consist === '+' ? '+' : '-'}
 
 🧪 Фізико-хімія:
-   • Сухі: ${dry}%
-   • Bostwick: ${visc}
-   • pH: ${ph}
-   • Центрифугування: ${stab}
+• Сухі: ${dry}%
+• Bostwick: ${isLiquid ? 'Не потрібно' : visc}
+• pH: ${ph}
+• Центрифугування: ${isLiquid ? 'Не потрібно' : (stab === '+' ? '+' : '-')}
 
 📷 Фото: ${uploadedFiles.length} шт.
 ${alerts}
@@ -441,7 +511,7 @@ ${alerts}
 
             pendingData = {
                 type: "sauce",
-                time: new Date().toLocaleString('uk-UA'),
+                time: document.getElementById('tst-time').value,
                 employee: emp,
                 section: "Варки соусу",
                 report: report,
@@ -455,10 +525,11 @@ ${alerts}
                 taste: taste,
                 consist: consist,
                 dry: dry,
-                visc: visc,
+                visc: isLiquid ? "N/A" : visc,
                 ph: ph,
-                stability: stab,
-                files: uploadedFiles // NEW ARRAY OF FILES
+                stability: isLiquid ? "N/A" : stab,
+                files: uploadedFiles,
+                photo: uploadedFiles.length > 0 ? uploadedFiles[0].data : ""
             };
 
             document.getElementById('reportPreview').innerText = report;
@@ -480,7 +551,6 @@ ${alerts}
             status.innerText = "Відправка...";
 
             try {
-                // Відправка ТІЛЬКИ на сервер Google
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
@@ -491,10 +561,9 @@ ${alerts}
                 status.innerText = "✅ Дані відправлено (черга)!";
                 status.classList.add('text-emerald-600');
                 
-                // Просто закриваємо вікно через 1.5 сек
                 setTimeout(() => {
                     closeSendModal();
-                    clearGallery();
+                    performReset();
                 }, 1500);
 
             } catch(e) {
@@ -514,7 +583,3 @@ ${alerts}
     </script>
 </body>
 </html>
-
-
-
-
