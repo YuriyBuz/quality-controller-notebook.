@@ -26,6 +26,11 @@
         }
         input:focus, select:focus, textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
         
+        /* Стиль для пустих селектів */
+        select:required:invalid { color: #94a3b8; }
+        option[value=""][disabled] { display: none; }
+        option { color: var(--text); }
+
         .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #3b82f6; animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         
@@ -52,6 +57,13 @@
             <div class="flex-1 text-center">
                 <h1 class="text-3xl font-bold text-blue-700 dark:text-blue-500">Етикетування</h1>
                 <p class="text-blue-600 dark:text-blue-400 text-sm font-bold mt-1 uppercase tracking-wide">Контроль пакування</p>
+            </div>
+            
+             <!-- Label Icon -->
+             <div class="p-2 text-blue-500">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line>
+                </svg>
             </div>
             
             <button id="themeToggle" class="p-3 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
@@ -85,13 +97,13 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Час</label><input type="time" id="lb-time" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors"></div>
-                <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Завдання (№)</label><input type="text" id="lb-task" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors"></div>
+                <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Завдання (№)</label><input type="number" id="lb-task" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors"></div>
             </div>
             
             <div class="bg-blue-600 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md mb-4">Параметри маркування</div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div><label class="block text-xs font-bold text-slate-500 mb-1">Дата на етикетці</label><input type="date" id="lb-date" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600"></div>
-                <div><label class="block text-xs font-bold text-slate-500 mb-1">Партія (Batch)</label><input type="text" id="lb-batch" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" placeholder="L..."></div>
+                <div><label class="block text-xs font-bold text-slate-500 mb-1">Партія (Batch)</label><input type="number" id="lb-batch" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" placeholder="000..."></div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 mb-1">Термозбіжна плівка розмір</label>
                     <select id="lb-width" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600">
@@ -102,6 +114,7 @@
                         <option value="350/300">350/300</option>
                         <option value="400/350">400/350</option>
                         <option value="350/400">350/400</option>
+                        <option value="400/400">400/400</option>
                     </select>
                 </div>
                 <div><label class="block text-xs font-bold text-slate-500 mb-1">Температура (Тунель)</label><input type="number" id="lb-temp" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" placeholder="°C"></div>
@@ -109,12 +122,12 @@
 
             <div class="bg-blue-600 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md mb-4 mt-6">Контрольні точки</div>
             <div class="space-y-4">
-                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">1. Чистота пляшок (перед етикет.)</label><select id="lb-sanitary" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)"><option value="❌ НЕ ОК" selected>❌ НІ</option><option value="✅ ОК">✅ ОК</option></select></div>
-                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">2. Відповідність нанесення етикеток</label><select id="check-label-app" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)"><option value="❌" selected>❌ НІ</option><option value="✅">✅ ОК</option></select></div>
-                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">3. Якість формування пака</label><select id="check-pack-quality" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)"><option value="❌" selected>❌ НІ</option><option value="✅">✅ ОК</option></select></div>
-                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">4. Відповідність стікеру і дати</label><select id="check-sticker-date" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)"><option value="❌" selected>❌ НІ</option><option value="✅">✅ ОК</option></select></div>
-                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">5. Відповідність розкладки в ряду</label><select id="check-row-layout" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)"><option value="❌" selected>❌ НІ</option><option value="✅">✅ ОК</option></select></div>
-                <div class="flex items-center justify-between gap-4"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">6. Відповідність палетування</label><select id="check-palletizing" class="input-alert w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" onchange="checkStatus(this)"><option value="❌" selected>❌ НІ</option><option value="✅">✅ ОК</option></select></div>
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">1. Чистота пляшок (перед етикет.)</label><select id="lb-sanitary" class="w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" required onchange="checkStatus(this)"><option value="" disabled selected>Оберіть...</option><option value="❌ НЕ ОК">❌ НІ</option><option value="✅ ОК">✅ ОК</option></select></div>
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">2. Відповідність нанесення етикеток</label><select id="check-label-app" class="w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" required onchange="checkStatus(this)"><option value="" disabled selected>Оберіть...</option><option value="❌">❌ НІ</option><option value="✅">✅ ОК</option></select></div>
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">3. Якість формування пака</label><select id="check-pack-quality" class="w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" required onchange="checkStatus(this)"><option value="" disabled selected>Оберіть...</option><option value="❌">❌ НІ</option><option value="✅">✅ ОК</option></select></div>
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">4. Відповідність стікеру і дати</label><select id="check-sticker-date" class="w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" required onchange="checkStatus(this)"><option value="" disabled selected>Оберіть...</option><option value="❌">❌ НІ</option><option value="✅">✅ ОК</option></select></div>
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">5. Відповідність розкладки в ряду</label><select id="check-row-layout" class="w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" required onchange="checkStatus(this)"><option value="" disabled selected>Оберіть...</option><option value="❌">❌ НІ</option><option value="✅">✅ ОК</option></select></div>
+                <div class="flex items-center justify-between gap-4"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">6. Відповідність палетування</label><select id="check-palletizing" class="w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" required onchange="checkStatus(this)"><option value="" disabled selected>Оберіть...</option><option value="❌">❌ НІ</option><option value="✅">✅ ОК</option></select></div>
             </div>
 
             <div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -141,7 +154,27 @@
     </div>
 
     <div id="confirmationModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50"><div class="card p-8 rounded-lg shadow-2xl max-w-sm w-full"><h3 class="font-bold text-xl mb-3 text-center">Скидання</h3><p class="mb-8 text-center text-slate-500">Очистити всю форму?</p><div class="flex justify-center gap-4"><button onclick="closeModal('confirmationModal')" class="px-6 py-3 bg-slate-100 rounded-lg font-bold">Ні</button><button onclick="performReset()" class="px-6 py-3 bg-red-600 text-white rounded-lg font-bold">Так</button></div></div></div>
-    <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50"><div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]"><h3 class="text-2xl font-bold mb-4 text-center">Підтвердження</h3><div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto mb-6 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div><p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p><div id="sendActions" class="flex flex-col gap-3"><button id="confirmSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg text-lg">✅ Підтвердити</button><button onclick="closeModal('sendModal')" class="w-full bg-transparent border-2 border-slate-300 hover:bg-slate-100 text-slate-500 font-bold py-4 rounded-lg text-lg">Скасувати</button></div><div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div></div></div>
+    
+    <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
+        <div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
+            <!-- Header for Confirmation -->
+            <div class="text-center mb-4">
+                <div class="text-4xl mb-2">📤</div>
+                <h3 class="text-xl font-bold">Підтвердження відправки</h3>
+                <p class="text-sm text-slate-500">Перевірте введені дані перед відправкою</p>
+            </div>
+            
+            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto mb-6 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div>
+            
+            <p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p>
+            
+            <div id="sendActions" class="flex flex-col gap-3">
+                <button id="confirmSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg text-lg">✅ Підтвердити</button>
+                <button onclick="closeModal('sendModal')" class="w-full bg-transparent border-2 border-slate-300 hover:bg-slate-100 text-slate-500 font-bold py-4 rounded-lg text-lg">Скасувати</button>
+            </div>
+            <div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div>
+        </div>
+    </div>
 
     <script>
         // АКТУАЛЬНЕ URL (Quality Food Line)
@@ -209,7 +242,7 @@
         const tmSel = document.getElementById('lb-tm');
         Object.keys(productDatabase).forEach(tm => tmSel.add(new Option(tm, tm)));
 
-        let uploadedFiles = []; // Array to store multiple files
+        let uploadedFiles = []; 
 
         function updateProducts() {
             const tm = tmSel.value;
@@ -230,14 +263,12 @@
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         const base64 = e.target.result;
-                        // Push to storage
                         uploadedFiles.push({
                             name: file.name,
                             type: file.type,
                             data: base64
                         });
                         
-                        // Render Preview
                         const index = uploadedFiles.length - 1;
                         const div = document.createElement('div');
                         div.className = 'photo-preview-item';
@@ -250,18 +281,10 @@
                     reader.readAsDataURL(file);
                 });
             }
-            // Reset input so same files can be selected again if needed
             input.value = '';
         }
 
         function removeFile(index, btnElement) {
-            // Remove from array (mark as null to keep indexes consistent or use filter)
-            // Easier approach: just hide element and exclude from send, but filter is cleaner.
-            // For simplicity in this structure: we reconstruct array or better:
-            
-            // NOTE: Simple removal logic implies UI might desync if we rely on index.
-            // Better to remove the visual element and from array by matching content, 
-            // but for simple usage:
             const parent = btnElement.parentElement;
             parent.remove();
             
@@ -282,7 +305,7 @@
         }
 
         function checkStatus(el) {
-            if (el.value === 'Не відповідає' || el.value === '❌' || el.value.includes('❌')) el.classList.add('input-alert');
+            if (el.value === '❌ НЕ ОК' || el.value === '❌' || el.value.includes('❌')) el.classList.add('input-alert');
             else el.classList.remove('input-alert');
         }
 
@@ -292,8 +315,7 @@
         function performReset() {
              document.querySelectorAll('input, textarea').forEach(el => el.value = '');
              document.querySelectorAll('select').forEach(el => { 
-                 if(el.id.startsWith('check-') || el.id === 'lb-sanitary') el.value = '❌'; 
-                 else el.value = el.options[0].value; 
+                 el.value = ""; // Скидаємо в порожнє значення ("Оберіть...")
                  el.classList.remove('input-alert'); 
              });
              document.getElementById('lb-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
@@ -321,7 +343,10 @@
             const machine = document.getElementById('lb-machine').value;
             const tm = document.getElementById('lb-tm').value;
             const prod = document.getElementById('lb-product').value;
-            if(!emp || !tm || !prod) { alert("Заповніть основні поля!"); return; }
+            const task = document.getElementById('lb-task').value;
+            const batch = document.getElementById('lb-batch').value;
+            
+            if(!emp || !tm || !prod || !task || !batch) { alert("Заповніть основні поля (ТМ, Продукт, Завдання, Партія)!"); return; }
 
             const sanitary = document.getElementById('lb-sanitary').value;
             const labelApp = document.getElementById('check-label-app').value;
@@ -330,45 +355,65 @@
             const rowLayout = document.getElementById('check-row-layout').value;
             const pallet = document.getElementById('check-palletizing').value;
             
+            // Перевірка, чи вибрані контрольні точки
+            if (!sanitary || !labelApp || !packQual || !sticker || !rowLayout || !pallet) {
+                alert("Будь ласка, проставте всі контрольні точки (ОК/НІ)!");
+                return;
+            }
+            
             let alerts = "";
-            if(sanitary.includes('❌') || labelApp.includes('❌') || packQual.includes('❌') || sticker.includes('❌') || rowLayout.includes('❌') || pallet.includes('❌')) alerts += "\n🔴 Є ВІДХИЛЕННЯ!";
+            if(sanitary.includes('❌')) alerts += "\n🔴 УВАГА: Брудні пляшки!";
+            if(labelApp.includes('❌')) alerts += "\n🔴 УВАГА: Дефект етикетки!";
+            if(packQual.includes('❌')) alerts += "\n🔴 УВАГА: Дефект пакування!";
+            if(sticker.includes('❌')) alerts += "\n🔴 УВАГА: Помилка стікера/дати!";
+            if(rowLayout.includes('❌')) alerts += "\n🔴 УВАГА: Помилка розкладки!";
+            if(pallet.includes('❌')) alerts += "\n🔴 УВАГА: Помилка палетування!";
 
-            const report = `🏷️ ЗВІТ QC: Етикетування
+            let headerIcon = alerts ? "⚠️" : "🏷️";
+
+            // Генерація звіту у новому форматі
+            const report = `${headerIcon} ЗВІТ QC Master: Етикетування
 ===========================
 👤 Контролер: ${emp}
-⚙️ Лінія: ${machine}
+🕒 Час: ${document.getElementById('lb-time').value}
+⚙️ Машина: ${machine}
 📦 Продукт: ${prod}
-🆔 Партія: ${document.getElementById('lb-batch').value || '-'}
-📅 Дата: ${document.getElementById('lb-date').value || '-'}
+🔢 Завдання: ${task}
+🔢 Партія: ${batch}
+📅 Дата етикетки: ${document.getElementById('lb-date').value || '-'}
 
-📏 Плівка: ${document.getElementById('lb-width').value}
+📏 Плівка: ${document.getElementById('lb-width').value || '-'}
+🌡️ Температура: ${document.getElementById('lb-temp').value || '-'} °C
 
 🔍 Контроль:
-   • Чистота пляшок: ${sanitary}
-   • Нанесення: ${labelApp}
-   • Пак: ${packQual}
-   • Стікер/Дата: ${sticker}
-   • Розкладка: ${rowLayout}
-   • Палетування: ${pallet}
+   • Чистота пляшок: ${sanitary.includes('ОК') ? '+' : '-'}
+   • Нанесення: ${labelApp.includes('✅') ? '+' : '-'}
+   • Якість пака: ${packQual.includes('✅') ? '+' : '-'}
+   • Стікер/Дата: ${sticker.includes('✅') ? '+' : '-'}
+   • Розкладка: ${rowLayout.includes('✅') ? '+' : '-'}
+   • Палетування: ${pallet.includes('✅') ? '+' : '-'}
 
 📷 Фото: ${uploadedFiles.length} шт.
+
+💬 Коментар: ${document.getElementById('lb-comment').value}
 ${alerts}
 ===========================`;
 
             pendingData = {
                 type: 'labeling', time: new Date().toLocaleString('uk-UA'),
                 employee: emp, machine: machine, tm: tm, product: prod,
-                task: document.getElementById('lb-task').value,
+                task: task,
                 sanitary: sanitary,
                 labelDate: document.getElementById('lb-date').value,
-                batch: document.getElementById('lb-batch').value,
+                batch: batch,
                 width: document.getElementById('lb-width').value, 
                 temp: document.getElementById('lb-temp').value,
                 checkLabel: labelApp, checkPack: packQual,
                 checkSticker: sticker, checkLayout: rowLayout, checkPallet: pallet,
                 comment: document.getElementById('lb-comment').value,
                 report: report,
-                files: uploadedFiles // Send Array of files
+                files: uploadedFiles, // Масив файлів для пошти
+                photo: uploadedFiles.length > 0 ? uploadedFiles[0].data : "" // Перше фото для таблиці
             };
 
             document.getElementById('reportPreview').innerText = report;
@@ -401,7 +446,7 @@ ${alerts}
                 
                 setTimeout(() => {
                     closeModal('sendModal');
-                    clearGallery();
+                    performReset(); // Автоматичне очищення форми
                 }, 1500);
                 
             } catch(e) { 
@@ -416,6 +461,3 @@ ${alerts}
     </script>
 </body>
 </html>
-
-
-
