@@ -118,7 +118,7 @@
                 <!-- 2. Batch -->
                 <div>
                     <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">2. № Партії *</label>
-                    <input type="text" id="pck-batch" placeholder="L..." class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 text-lg transition-colors">
+                    <input type="number" id="pck-batch" placeholder="123..." class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 text-lg transition-colors">
                 </div>
 
                 <!-- 3. TM -->
@@ -152,8 +152,8 @@
                         <label class="text-base font-medium text-slate-700 dark:text-slate-200">Герметичність пакування *</label>
                         <select id="check-seal" class="w-full sm:w-1/2 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors" onchange="checkStatus(this)" required>
                             <option value="" disabled selected>Оберіть...</option>
-                            <option value="OK">✅ Відповідає</option>
-                            <option value="FAIL">❌ Порушена</option>
+                            <option value="✅">✅ Відповідає</option>
+                            <option value="❌">❌ Порушена</option>
                         </select>
                     </div>
 
@@ -161,8 +161,8 @@
                         <label class="text-base font-medium text-slate-700 dark:text-slate-200">Маркування дати (друк) *</label>
                         <select id="check-print" class="w-full sm:w-1/2 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors" onchange="checkStatus(this)" required>
                             <option value="" disabled selected>Оберіть...</option>
-                            <option value="OK">✅ Чітке</option>
-                            <option value="FAIL">❌ Нечитабельне/Відсутнє</option>
+                            <option value="✅">✅ Чітке</option>
+                            <option value="❌">❌ Нечитабельне/Відсутнє</option>
                         </select>
                     </div>
 
@@ -170,8 +170,8 @@
                         <label class="text-base font-medium text-slate-700 dark:text-slate-200">Зовнішній вигляд (чистота) *</label>
                         <select id="check-appearance" class="w-full sm:w-1/2 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors" onchange="checkStatus(this)" required>
                             <option value="" disabled selected>Оберіть...</option>
-                            <option value="OK">✅ Чисто</option>
-                            <option value="FAIL">❌ Бруд/Деформація</option>
+                            <option value="✅">✅ Чисто</option>
+                            <option value="❌">❌ Бруд/Деформація</option>
                         </select>
                     </div>
                     
@@ -179,8 +179,8 @@
                         <label class="text-base font-medium text-slate-700 dark:text-slate-200">Кришка / Ковпачок *</label>
                         <select id="check-cap" class="w-full sm:w-1/2 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 transition-colors" onchange="checkStatus(this)" required>
                             <option value="" disabled selected>Оберіть...</option>
-                            <option value="OK">✅ В нормі</option>
-                            <option value="FAIL">❌ Перекіс/Недокрут</option>
+                            <option value="✅">✅ В нормі</option>
+                            <option value="❌">❌ Перекіс/Недокрут</option>
                         </select>
                     </div>
                 </div>
@@ -229,7 +229,8 @@
     <!-- Sending Modal -->
     <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
         <div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700">
-            <h3 class="text-2xl font-bold mb-4 text-center">Підтвердження</h3>
+            <h3 class="text-2xl font-bold mb-4 text-center">Підтвердження відправки</h3>
+            <p class="text-center text-sm text-slate-500 mb-4">Перевірте введені дані перед відправкою</p>
             <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto mb-6 border border-slate-200 dark:border-slate-700 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div>
             <p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p>
             <div id="sendActions" class="flex flex-col gap-3">
@@ -435,14 +436,9 @@
             document.documentElement.classList.add('dark');
         }
 
-        // Batch Prefix Logic
-        document.getElementById('pck-batch').onblur = function() {
-            if(this.value && !this.value.trim().toUpperCase().startsWith('L')) this.value = 'L' + this.value.trim();
-        };
-
         // Visual Validation
         function checkStatus(el) {
-            if (el.value === 'FAIL') {
+            if (el.value === '❌') {
                 el.classList.add('input-alert');
             } else {
                 el.classList.remove('input-alert');
@@ -537,20 +533,6 @@
             showToast("Форму очищено");
         }
 
-        // Auto-reset logic (23:00)
-        setInterval(() => {
-            const now = new Date();
-            if (now.getHours() === 23 && now.getMinutes() === 0) {
-                const lastRun = localStorage.getItem('last_auto_reset_packing');
-                const today = now.toDateString();
-                if (lastRun !== today) {
-                    performReset();
-                    localStorage.setItem('last_auto_reset_packing', today);
-                    showToast("Автоматичне скидання зміни (23:00)");
-                }
-            }
-        }, 10000);
-
         let pendingData = null;
 
         function initiateSend() {
@@ -569,46 +551,34 @@
             const cap = document.getElementById('check-cap').value;
 
             // ВАЛІДАЦІЯ: Перевірка обов'язкових полів і статусів
-            if(!emp) { showToast("Оберіть контролера!", true); return; }
-            if(!line) { showToast("Оберіть лінію!", true); return; }
-            if(!prodCode) { showToast("Вкажіть продукт (Код/Назва)!", true); return; }
-            if(!batch) { showToast("Вкажіть номер партії!", true); return; }
-            if(!tm) { showToast("Оберіть ТМ!", true); return; }
-            if(!sku) { showToast("Оберіть SKU!", true); return; }
-            if(!weight) { showToast("Вкажіть вагу!", true); return; }
-            
-            // Валідація контрольних точок (вони порожні за замовчуванням)
-            if(!seal) { showToast("Перевірте герметичність!", true); return; }
-            if(!print) { showToast("Перевірте маркування!", true); return; }
-            if(!appearance) { showToast("Перевірте зовнішній вигляд!", true); return; }
-            if(!cap) { showToast("Перевірте кришку!", true); return; }
+            if(!emp || !line || !prodCode || !batch || !tm || !sku || !weight) { showToast("Заповніть всі основні поля!", true); return; }
+            if(!seal || !print || !appearance || !cap) { showToast("Вкажіть всі контрольні точки!", true); return; }
 
             // Alerts logic
             let alerts = "";
-            if (seal === 'FAIL') alerts += "\n🔴 УВАГА: ГЕРМЕТИЧНІСТЬ ПОРУШЕНА";
-            if (print === 'FAIL') alerts += "\n🔴 УВАГА: ПОМИЛКА МАРКУВАННЯ";
-            if (appearance === 'FAIL') alerts += "\n🔴 УВАГА: БРАК ЗОВНІШНЬОГО ВИГЛЯДУ";
-            if (cap === 'FAIL') alerts += "\n🔴 УВАГА: ПРОБЛЕМА З КРИШКОЮ";
+            if (seal === '❌') alerts += "\n🔴 УВАГА: ГЕРМЕТИЧНІСТЬ ПОРУШЕНА";
+            if (print === '❌') alerts += "\n🔴 УВАГА: ПОМИЛКА МАРКУВАННЯ";
+            if (appearance === '❌') alerts += "\n🔴 УВАГА: БРАК ЗОВНІШНЬОГО ВИГЛЯДУ";
+            if (cap === '❌') alerts += "\n🔴 УВАГА: ПРОБЛЕМА З КРИШКОЮ";
 
-            let headerIcon = alerts ? "⚠️" : "⚖️";
+            let headerIcon = alerts ? "⚠️" : "📤";
 
-            const report = `${headerIcon} ЗВІТ QC: Фасування
+            const report = `${headerIcon} ЗВІТ QC Master: Фасування
 ===========================
 👤 Контролер: ${emp}
 🕒 Час: ${document.getElementById('pck-time').value}
 🏭 Лінія: ${line}
-
-📦 Продукт (Варка): ${prodCode}
+📦 Продукт: ${prodCode}
 🏷️ ТМ: ${tm}
-📑 Продукт (SKU): ${sku}
-🔢 Партія: ${batch}
+📑 SKU: ${sku}
+🆔 Партія: ${batch}
 ⚖️ Вага: ${weight} г
 
 🔍 Контроль якості:
-   • Герметичність: ${seal === 'OK' ? 'OK' : '❌ FAIL'}
-   • Маркування: ${print === 'OK' ? 'OK' : '❌ FAIL'}
-   • Зовнішній вигляд: ${appearance === 'OK' ? 'OK' : '❌ FAIL'}
-   • Кришка: ${cap === 'OK' ? 'OK' : '❌ FAIL'}
+   • Герметичність: ${seal}
+   • Маркування: ${print}
+   • Зовнішній вигляд: ${appearance}
+   • Кришка: ${cap}
 
 📷 Фото: ${uploadedFiles.length} шт.
 ${alerts}
@@ -634,7 +604,7 @@ ${alerts}
                 appearance: appearance,
                 cap: cap,
                 comment: document.getElementById('pck-comment').value,
-                files: uploadedFiles, // ARRAY OF FILES
+                files: uploadedFiles, 
                 // Щоб працювала передача фото в таблицю (legacy, бере перше фото)
                 photo: uploadedFiles.length > 0 ? uploadedFiles[0].data : ""
             };
@@ -671,7 +641,7 @@ ${alerts}
                 
                 setTimeout(() => {
                     closeSendModal();
-                    clearGallery();
+                    performReset();
                 }, 1500);
 
             } catch(e) {
