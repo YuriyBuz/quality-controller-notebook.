@@ -22,17 +22,16 @@
         input, select {
             background-color: transparent !important;
             border: 2px solid #cbd5e1 !important;
-            padding: 1.3rem 1rem !important; /* Increased padding */
+            padding: 1.3rem 1rem !important;
             border-radius: 0.5rem !important;
             width: 100%;
-            font-size: 1.125rem !important; /* Increased font size */
+            font-size: 1.125rem !important;
             color: inherit;
             transition: border-color 0.2s;
             appearance: none;
         }
         .dark input, .dark select { border-color: #475569 !important; }
         
-        /* Focus ring color for Fuchsia theme */
         input:focus, select:focus { outline: none; border-color: #c026d3 !important; box-shadow: 0 0 0 2px rgba(192, 38, 211, 0.2); }
         
         .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #c026d3; animation: spin 1s linear infinite; }
@@ -46,6 +45,13 @@
             #resultsArea { position: absolute; left: 0; top: 0; width: 100%; }
             .no-print { display: none !important; }
         }
+
+        /* Стилі для гарного відображення звіту */
+        .report-content strong { font-weight: 700; color: #a21caf; /* fuchsia-700 */ }
+        .dark .report-content strong { color: #e879f9; /* fuchsia-400 */ }
+        .report-content ul { list-style-type: none; padding-left: 0; margin-top: 0.5rem; }
+        .report-content li { margin-bottom: 0.25rem; }
+        .report-header { border-bottom: 2px dashed #e2e8f0; padding-bottom: 1rem; margin-bottom: 1rem; }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -130,7 +136,6 @@
             </div>
 
             <div class="card rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <!-- Clean Header for Table -->
                 <div class="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-4 flex justify-between items-center">
                     <span class="font-bold text-slate-600 dark:text-slate-300 uppercase text-sm">Знайдено записів: <span id="recordCount" class="text-fuchsia-600 dark:text-fuchsia-400">0</span></span>
                 </div>
@@ -162,24 +167,40 @@
 
     <!-- Modal for Full Report -->
     <div id="reportModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
-        <div class="card p-6 rounded-lg shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700 relative">
-            <button onclick="document.getElementById('reportModal').classList.add('hidden'); document.getElementById('reportModal').classList.remove('flex')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        <div class="card p-6 rounded-lg shadow-2xl w-full max-w-3xl flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700 relative">
+            <button onclick="document.getElementById('reportModal').classList.add('hidden'); document.getElementById('reportModal').classList.remove('flex')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors z-10">
+                <svg class="w-8 h-8 bg-slate-100 dark:bg-slate-700 rounded-full p-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
-            <h3 class="text-xl font-bold mb-6 pr-8 text-fuchsia-700 dark:text-fuchsia-400 border-b border-slate-200 dark:border-slate-700 pb-2">Деталі звіту</h3>
-            <!-- Changed to div with whitespace-pre-wrap for text formatting -->
-            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto border border-slate-200 dark:border-slate-700 font-mono text-sm whitespace-pre-wrap flex-1 shadow-inner text-slate-700 dark:text-slate-300" id="modalContent"></div>
-            <div id="modalPhoto" class="mt-4 hidden"></div>
-            <div class="mt-6 flex justify-end">
+            
+            <h3 class="text-xl font-bold mb-4 pr-8 text-fuchsia-700 dark:text-fuchsia-400 border-b border-slate-200 dark:border-slate-700 pb-3 flex items-center gap-2">
+                <span id="modalIcon" class="text-2xl">📝</span> Деталі звіту
+            </h3>
+            
+            <!-- Scrollable Content -->
+            <div class="overflow-y-auto flex-1 pr-2">
+                <!-- Formatted Text Content -->
+                <div class="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700 text-sm leading-relaxed text-slate-700 dark:text-slate-300 report-content" id="modalContent"></div>
+                
+                <!-- Separate Photo Container (Below Text) -->
+                <div id="modalPhoto" class="mt-6 hidden">
+                     <h4 class="font-bold text-slate-700 dark:text-slate-200 border-t border-slate-200 dark:border-slate-700 pt-4 mb-3 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-fuchsia-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Фотодоказ
+                     </h4>
+                     <!-- Image injected here -->
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end border-t border-slate-100 dark:border-slate-800 pt-4">
                 <button onclick="document.getElementById('reportModal').classList.add('hidden'); document.getElementById('reportModal').classList.remove('flex')" class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-sm">Закрити</button>
             </div>
         </div>
     </div>
 
     <script>
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzoChS_W73edAjNbE1yhsB_P3sKq7UI1Ai6LilEFXxWI5zFntG2OxPdHwIADecqraTA/exec";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwUl6CVPn4dEjMi5qaa4YmrCZt6OGI4r4tr9pLPCmK_VGdXiVR5gOD4rEtntzMVOR3x/exec";
         const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
-        let currentData = []; // Store fetched data to access details
+        let currentData = []; 
 
         const empSel = document.getElementById('filter-employee');
         employees.forEach(e => empSel.add(new Option(e, e)));
@@ -216,7 +237,7 @@
             btnSpinner.classList.remove('hidden');
 
             const filters = {
-                action: 'getData', // Key for backend
+                action: 'getData',
                 dateStart: document.getElementById('filter-date-start').value,
                 dateEnd: document.getElementById('filter-date-end').value,
                 employee: document.getElementById('filter-employee').value,
@@ -224,7 +245,6 @@
             };
 
             try {
-                // REAL FETCH ATTEMPT
                 const response = await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify(filters)
@@ -235,7 +255,7 @@
                 }
 
                 const data = await response.json();
-                currentData = data; // Store data globally
+                currentData = data;
                 
                 renderTable(data);
                 document.getElementById('resultsArea').classList.remove('hidden');
@@ -315,31 +335,48 @@
         function openReport(index) {
             if (!currentData || !currentData[index]) return;
             const row = currentData[index];
-            const reportText = row.report || "Немає деталей";
+            const rawText = row.report || "Немає деталей";
             
-            // Set text content to display raw text with formatting (newlines, emojis)
-            document.getElementById('modalContent').textContent = reportText;
+            // Format text nicely: make headers bold and handle line breaks
+            let formattedText = rawText
+                .replace(/===========================/g, '') // Remove visual separators
+                .replace(/^(.*?:)/gm, '<strong>$1</strong>') // Bold text before colon
+                .replace(/\n/g, '<br>'); // Convert newlines to HTML breaks
 
-            // Handle photo
+            // Set Header Icon based on content type
+            let icon = "📝";
+            if(rawText.includes("Мийки")) icon = "🧹";
+            else if(rawText.includes("ХВО")) icon = "💧";
+            else if(rawText.includes("Фасування")) icon = "⚖️";
+            else if(rawText.includes("Варки")) icon = "🥣";
+            else if(rawText.includes("Етикетування")) icon = "🏷️";
+            document.getElementById('modalIcon').innerText = icon;
+            
+            // Inject formatted text
+            document.getElementById('modalContent').innerHTML = formattedText;
+
+            // Handle photo separate container
             const photoContainer = document.getElementById('modalPhoto');
-            photoContainer.innerHTML = '';
-            photoContainer.classList.add('hidden');
-
+            photoContainer.innerHTML = ''; // Clear previous photo
+            
             if (row.photo) {
                 let imgSrc = row.photo;
                 if (!imgSrc.startsWith('data:image')) imgSrc = 'data:image/jpeg;base64,' + imgSrc; 
                 
-                const imgLabel = document.createElement('strong');
-                imgLabel.className = "block mb-2 text-slate-700 dark:text-slate-200 border-t pt-4 mt-4 border-slate-200 dark:border-slate-700";
-                imgLabel.textContent = "📷 Фотодоказ:";
+                // Re-add title inside photo container
+                const imgLabel = document.createElement('h4');
+                imgLabel.className = "font-bold text-slate-700 dark:text-slate-200 border-t border-slate-200 dark:border-slate-700 pt-4 mb-3 flex items-center gap-2";
+                imgLabel.innerHTML = `<svg class="w-5 h-5 text-fuchsia-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> Фотодоказ`;
                 
                 const img = document.createElement('img');
                 img.src = imgSrc;
-                img.className = "max-w-full rounded-lg shadow-md border border-slate-200 dark:border-slate-700";
+                img.className = "max-w-full rounded-lg shadow-md border border-slate-200 dark:border-slate-700 mx-auto";
                 
                 photoContainer.appendChild(imgLabel);
                 photoContainer.appendChild(img);
                 photoContainer.classList.remove('hidden');
+            } else {
+                photoContainer.classList.add('hidden');
             }
 
             document.getElementById('reportModal').classList.remove('hidden');
