@@ -62,6 +62,13 @@
                 <p class="text-cyan-600 dark:text-cyan-400 text-sm font-bold mt-1 uppercase tracking-wide">Санітарний контроль</p>
             </div>
             
+            <div class="p-2 text-cyan-500">
+                <!-- Sparkles Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                </svg>
+            </div>
+
             <button id="themeToggle" class="p-3 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
             </button>
@@ -93,10 +100,10 @@
                     <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Тип обладнання *</label>
                     <select id="clean-type" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors" onchange="updateFormByType()" required>
                         <option value="" disabled selected>Оберіть...</option>
-                        <option value="Котли">Котли</option>
-                        <option value="Лінії розливу">Лінії розливу</option>
-                        <option value="Ємності">Ємності зберігання</option>
-                        <option value="Інше">Інше</option>
+                        <option value="🍲 Котли">🍲 Котли</option>
+                        <option value="🍶 Лінії розливу">🍶 Лінії розливу</option>
+                        <option value="🛢️ Ємності">🛢️ Ємності</option>
+                        <option value="🔧 Інше">🔧 Інше</option>
                     </select>
                 </div>
             </div>
@@ -112,27 +119,27 @@
                 <div class="space-y-4">
                     <div class="flex items-center justify-between">
                         <label class="text-base font-medium">Зовнішній вигляд</label>
-                        <select id="check-ext" class="border-2 rounded-lg p-2 w-1/2 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" onchange="checkStatus(this)">
+                        <select id="check-ext" class="border-2 rounded-lg p-2 w-1/2 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" onchange="checkStatus(this)" required>
                             <option value="" disabled selected>...</option>
-                            <option value="Чисто">✅ Чисто</option>
-                            <option value="Брудно">❌ Брудно</option>
+                            <option value="✅">✅ Чисто</option>
+                            <option value="❌">❌ Брудно</option>
                         </select>
                     </div>
                     <div class="flex items-center justify-between">
                         <label class="text-base font-medium">Внутрішня поверхня</label>
-                        <select id="check-int" class="border-2 rounded-lg p-2 w-1/2 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" onchange="checkStatus(this)">
+                        <select id="check-int" class="border-2 rounded-lg p-2 w-1/2 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" onchange="checkStatus(this)" required>
                             <option value="" disabled selected>...</option>
-                            <option value="Чисто">✅ Чисто</option>
-                            <option value="Брудно">❌ Брудно</option>
+                            <option value="✅">✅ Чисто</option>
+                            <option value="❌">❌ Брудно</option>
                         </select>
                     </div>
                     <div class="flex flex-col gap-1">
                         <div class="flex items-center justify-between">
                             <label class="text-base font-medium">Вузли та агрегати</label>
-                            <select id="check-agg" class="border-2 rounded-lg p-2 w-1/2 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" onchange="checkStatus(this)">
+                            <select id="check-agg" class="border-2 rounded-lg p-2 w-1/2 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" onchange="checkStatus(this)" required>
                                 <option value="" disabled selected>...</option>
-                                <option value="Чисто">✅ Чисто</option>
-                                <option value="Брудно">❌ Брудно</option>
+                                <option value="✅">✅ Чисто</option>
+                                <option value="❌">❌ Брудно</option>
                             </select>
                         </div>
                         <p id="agg-desc" class="text-xs text-slate-500 dark:text-slate-400 italic text-right mt-1">
@@ -146,7 +153,7 @@
             <div>
                 <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Відповідальний за мийку *</label>
                 <!-- Select for predefined lists -->
-                <select id="clean-resp-select" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors mb-2" onchange="handleRespChange()">
+                <select id="clean-resp-select" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors mb-2" onchange="handleRespChange()" required>
                     <option value="" disabled selected>Спочатку оберіть тип обладнання...</option>
                 </select>
                 <!-- Manual input fallback -->
@@ -186,7 +193,22 @@
     <!-- Modals -->
     <div id="confirmResetModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50"><div class="card p-8 rounded-lg shadow-2xl max-w-sm w-full"><h3 class="font-bold text-xl mb-3 text-center">Скидання</h3><p class="mb-8 text-center text-slate-500">Очистити всю форму?</p><div class="flex justify-center gap-4"><button onclick="closeModal('confirmResetModal')" class="px-6 py-3 bg-slate-100 rounded-lg font-bold">Ні</button><button onclick="performReset()" class="px-6 py-3 bg-red-600 text-white rounded-lg font-bold">Так</button></div></div></div>
     
-    <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50"><div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]"><div class="text-center mb-4"><div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-2 text-2xl text-emerald-600">📤</div><h3 class="text-xl font-bold text-slate-800 dark:text-slate-100">Підтвердження відправки</h3><p class="text-sm text-slate-500 dark:text-slate-400">Перевірте введені дані перед відправкою</p></div><div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto mb-6 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div><p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p><div id="sendActions" class="flex flex-col gap-3"><button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg text-lg">✅ Підтвердити</button><button onclick="closeModal('sendModal')" class="w-full bg-transparent border-2 border-slate-300 hover:bg-slate-100 text-slate-500 font-bold py-4 rounded-lg text-lg">Скасувати</button></div><div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div></div></div>
+    <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
+        <div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
+            <div class="text-center mb-4">
+                <div class="text-4xl mb-2">📤</div>
+                <h3 class="text-xl font-bold">Підтвердження відправки</h3>
+                <p class="text-sm text-slate-500">Перевірте введені дані перед відправкою</p>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto mb-6 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div>
+            <p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p>
+            <div id="sendActions" class="flex flex-col gap-3">
+                <button id="doSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg text-lg">✅ Підтвердити</button>
+                <button onclick="closeModal('sendModal')" class="w-full bg-transparent border-2 border-slate-300 hover:bg-slate-100 text-slate-500 font-bold py-4 rounded-lg text-lg">Скасувати</button>
+            </div>
+            <div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div>
+        </div>
+    </div>
 
     <script>
         // АКТУАЛЬНЕ ПОСИЛАННЯ (Перевірено)
@@ -230,14 +252,14 @@
             let list = [];
             let desc = "";
 
-            if (type === 'Котли') {
+            if (type.includes('Котли')) {
                 list = respByBoilers;
                 desc = "(насоси, трубопроводи, естакади)";
-            } else if (type === 'Лінії розливу') {
+            } else if (type.includes('Лінії')) {
                 list = respByLines;
                 desc = "(конвеєри, трубопроводи, укупори)";
-            } else if (type === 'Ємності') {
-                list = []; // Default empty, usually manual or generic
+            } else if (type.includes('Ємності')) {
+                list = []; 
                 desc = "(трубопроводи, естакади та інше)";
             } else {
                 list = [];
@@ -303,7 +325,7 @@
             container.classList.add('hidden');
         }
 
-        function checkStatus(el) { if (el.value === 'Брудно' || el.value === '❌') el.classList.add('input-alert'); else el.classList.remove('input-alert'); }
+        function checkStatus(el) { if (el.value === '❌') el.classList.add('input-alert'); else el.classList.remove('input-alert'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
         function resetForm() { document.getElementById('confirmResetModal').classList.remove('hidden'); document.getElementById('confirmResetModal').classList.add('flex'); }
         
@@ -313,7 +335,6 @@
                  el.value = ""; // Reset to empty
                  el.classList.remove('input-alert');
              });
-             // Keep default controller if selected? Better reset all as requested "все чисто"
              
              clearSignature();
              clearGallery();
@@ -389,13 +410,15 @@
             const int = document.getElementById('check-int').value;
             const agg = document.getElementById('check-agg').value;
             
-            if(!ext || !int || !agg) { alert("Заповніть результати огляду (Чисто/Брудно)!"); return; }
+            if(!ext || !int || !agg) { alert("Заповніть результати огляду!"); return; }
             if(!hasSignature) { alert("Будь ласка, підпишіть звіт!"); return; }
 
             let alerts = "";
-            if(ext === 'Брудно' || int === 'Брудно' || agg === 'Брудно') alerts += "\n🔴 УВАГА: Виявлено забруднення!";
+            if(ext === '❌' || int === '❌' || agg === '❌') alerts += "\n🔴 УВАГА: Виявлено забруднення!";
 
-            const report = `🧹 ЗВІТ QC: Мийки
+            let headerIcon = alerts ? "⚠️" : "🧹";
+
+            const report = `${headerIcon} ЗВІТ QC Master: Мийки
 ===========================
 👤 Контролер: ${emp}
 🕒 Час: ${document.getElementById('clean-time').value}
@@ -429,9 +452,9 @@ ${alerts}
                 ext: ext, int: int, agg: agg, 
                 resp: resp,
                 report: report,
-                files: uploadedFiles, // Array for email attachments
-                photo: uploadedFiles.length > 0 ? uploadedFiles[0].data : "", // First photo for table
-                signature: signatureData // Signature image
+                files: uploadedFiles, 
+                photo: uploadedFiles.length > 0 ? uploadedFiles[0].data : "", 
+                signature: signatureData 
             };
 
             document.getElementById('reportPreview').innerText = report;
@@ -451,8 +474,8 @@ ${alerts}
                 
                 setTimeout(() => { 
                     closeModal('sendModal'); 
-                    performReset(); // Reset form after successful send (makes everything clean)
-                }, 2000);
+                    performReset(); 
+                }, 1500);
             } catch(e) { status.innerText = "❌ Помилка з'єднання"; status.classList.add('text-red-500'); actions.style.display = 'flex'; spinner.classList.add('hidden'); }
         }
         
@@ -460,5 +483,3 @@ ${alerts}
     </script>
 </body>
 </html>
-
-
