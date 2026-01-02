@@ -149,10 +149,10 @@
             
             <div class="bg-orange-500 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md">Органолептика</div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <select id="tst-color" class="rounded-lg" onchange="checkStatus(this)" required><option value="" disabled selected>Колір...</option><option value="+">✅ Відповідає</option><option value="-">❌ Брак</option></select>
-                <select id="tst-aroma" class="rounded-lg" onchange="checkStatus(this)" required><option value="" disabled selected>Аромат...</option><option value="+">✅ Відповідає</option><option value="-">❌ Брак</option></select>
-                <select id="tst-taste" class="rounded-lg" onchange="checkStatus(this)" required><option value="" disabled selected>Смак...</option><option value="+">✅ Відповідає</option><option value="-">❌ Брак</option></select>
-                <select id="tst-consist" class="rounded-lg" onchange="checkStatus(this)" required><option value="" disabled selected>Консистенція...</option><option value="+">✅ Відповідає</option><option value="-">❌ Брак</option></select>
+                <select id="tst-color" class="rounded-lg" onchange="checkStatus(this)" required><option value="" disabled selected>Колір...</option><option value="✅">✅ Відповідає</option><option value="❌">❌ Брак</option></select>
+                <select id="tst-aroma" class="rounded-lg" onchange="checkStatus(this)" required><option value="" disabled selected>Аромат...</option><option value="✅">✅ Відповідає</option><option value="❌">❌ Брак</option></select>
+                <select id="tst-taste" class="rounded-lg" onchange="checkStatus(this)" required><option value="" disabled selected>Смак...</option><option value="✅">✅ Відповідає</option><option value="❌">❌ Брак</option></select>
+                <select id="tst-consist" class="rounded-lg" onchange="checkStatus(this)" required><option value="" disabled selected>Консистенція...</option><option value="✅">✅ Відповідає</option><option value="❌">❌ Брак</option></select>
             </div>
             
             <div class="bg-orange-500 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md">Фізико-хімія</div>
@@ -336,7 +336,7 @@
 
         // Visual Validation
         function checkStatus(el) {
-            if (el.value.includes('-') || el.value.includes('Не')) {
+            if (el.value.includes('-') || el.value.includes('Не') || el.value === '❌') {
                 el.classList.add('input-alert');
             } else {
                 el.classList.remove('input-alert');
@@ -475,10 +475,10 @@
 
             let alerts = "";
             if (phVal > 4.5) alerts += "\n🔴 УВАГА: ВИСОКИЙ pH (> 4.5)";
-            if (color === '-') alerts += "\n🔴 УВАГА: Невідповідність кольору";
-            if (aroma === '-') alerts += "\n🔴 УВАГА: Невідповідність запаху";
-            if (taste === '-') alerts += "\n🔴 УВАГА: Невідповідність смаку";
-            if (consist === '-') alerts += "\n🔴 УВАГА: Невідповідність консистенції";
+            if (color === '❌') alerts += "\n🔴 УВАГА: Невідповідність кольору";
+            if (aroma === '❌') alerts += "\n🔴 УВАГА: Невідповідність запаху";
+            if (taste === '❌') alerts += "\n🔴 УВАГА: Невідповідність смаку";
+            if (consist === '❌') alerts += "\n🔴 УВАГА: Невідповідність консистенції";
             if (!isLiquid && stab === '-') alerts += "\n🔴 УВАГА: Не стійка емульсія";
             
             let headerIcon = alerts ? "⚠️" : "📤";
@@ -494,10 +494,10 @@
 📅 Дата варки: ${document.getElementById('tst-cookDate').value}
 
 👅 Органолептика:
-• Колір: ${color === '+' ? '+' : '-'}
-• Аромат: ${aroma === '+' ? '+' : '-'}
-• Смак: ${taste === '+' ? '+' : '-'}
-• Консистенція: ${consist === '+' ? '+' : '-'}
+• Колір: ${color}
+• Аромат: ${aroma}
+• Смак: ${taste}
+• Консистенція: ${consist}
 
 🧪 Фізико-хімія:
 • Сухі: ${dry}%
