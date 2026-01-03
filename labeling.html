@@ -41,11 +41,53 @@
         .photo-preview-item { position: relative; width: 100%; padding-top: 100%; /* 1:1 Aspect Ratio */ }
         .photo-preview-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; }
         .photo-remove-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
+        /* Tree Animation */
+        #tree-branch {
+            position: fixed;
+            top: 10%;
+            left: -350px;
+            width: 300px;
+            z-index: 60;
+            pointer-events: none;
+            transition: left 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.3));
+        }
+        #tree-branch.show {
+            left: -20px;
+        }
     </style>
 </head>
 <body class="font-sans antialiased">
     
     <div id="toast-container" class="fixed top-4 right-4 z-[2000] flex flex-col gap-2"></div>
+
+    <!-- Festive Decoration Element -->
+    <div id="tree-branch">
+        <svg viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Branch -->
+            <path d="M-10,100 Q150,120 300,50" stroke="#166534" stroke-width="8" stroke-linecap="round" />
+            <!-- Needles -->
+            <path d="M20,105 L40,80 M35,108 L60,85 M50,110 L75,88 M65,112 L90,90 M80,113 L105,92 M10,100 L20,130 M30,102 L45,135 M50,105 L65,138 M70,100 L90,135" stroke="#15803d" stroke-width="3" stroke-linecap="round" />
+            <path d="M100,108 L125,85 M115,105 L140,88 M130,102 L155,90 M145,100 L170,92" stroke="#15803d" stroke-width="3" stroke-linecap="round" />
+            <path d="M100,108 L115,138 M120,105 L135,135 M140,100 L160,130" stroke="#15803d" stroke-width="3" stroke-linecap="round" />
+            <path d="M180,90 L205,70 M195,88 L220,72 M210,85 L235,75" stroke="#15803d" stroke-width="3" stroke-linecap="round" />
+            <path d="M180,90 L195,120 M200,88 L215,115 M220,85 L235,110" stroke="#15803d" stroke-width="3" stroke-linecap="round" />
+            
+            <!-- Toys -->
+            <circle cx="60" cy="135" r="15" fill="#dc2626" /> <!-- Red Ball -->
+            <circle cx="60" cy="135" r="5" fill="#fca5a5" fill-opacity="0.5" transform="translate(-4, -4)" />
+            <line x1="60" y1="108" x2="60" y2="120" stroke="#fcd34d" stroke-width="2" />
+
+            <circle cx="140" cy="130" r="12" fill="#eab308" /> <!-- Gold Ball -->
+            <circle cx="140" cy="130" r="4" fill="#fef08a" fill-opacity="0.5" transform="translate(-3, -3)" />
+            <line x1="140" y1="103" x2="140" y2="118" stroke="#fcd34d" stroke-width="2" />
+
+            <circle cx="210" cy="110" r="10" fill="#2563eb" /> <!-- Blue Ball -->
+            <circle cx="210" cy="110" r="3" fill="#93c5fd" fill-opacity="0.5" transform="translate(-2, -2)" />
+            <line x1="210" y1="88" x2="210" y2="100" stroke="#fcd34d" stroke-width="2" />
+        </svg>
+    </div>
 
     <div class="container mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
         <header class="flex items-center gap-4 mb-8">
@@ -95,11 +137,24 @@
                  <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Продукт</label><select id="lb-product" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors"><option value="">Спочатку ТМ...</option></select></div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Час</label><input type="time" id="lb-time" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors"></div>
-                <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Завдання (№)</label><input type="number" id="lb-task" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors"></div>
+            <!-- SHELF LIFE CALCULATOR -->
+            <div class="bg-indigo-50 dark:bg-slate-800/50 p-5 rounded-lg border border-indigo-100 dark:border-slate-700 mb-6">
+                <h3 class="text-sm font-bold text-indigo-800 dark:text-indigo-400 uppercase mb-4 border-b border-indigo-200 dark:border-slate-600 pb-2">Визначення терміну придатності</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Дата виготовлення партії</label>
+                        <input type="date" id="calc-mfg-date" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Номер завдання</label>
+                        <input type="number" id="calc-task-num" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 transition-colors" placeholder="№">
+                    </div>
+                    <button type="button" onclick="calculateShelfLife()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow transition-colors h-10 w-full sm:w-auto">
+                        Визначити
+                    </button>
+                </div>
             </div>
-            
+
             <div class="bg-blue-600 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md mb-4">Параметри маркування</div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div><label class="block text-xs font-bold text-slate-500 mb-1">Дата на етикетці</label><input type="date" id="lb-date" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600"></div>
@@ -121,6 +176,12 @@
             </div>
 
             <div class="bg-blue-600 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md mb-4 mt-6">Контрольні точки</div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Час</label><input type="time" id="lb-time" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors"></div>
+                <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Завдання (№)</label><input type="number" id="lb-task" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors"></div>
+            </div>
+
             <div class="space-y-4">
                 <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">1. Чистота пляшок (перед етикет.)</label><select id="lb-sanitary" class="w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" required onchange="checkStatus(this)"><option value="" disabled selected>Оберіть...</option><option value="❌ НЕ ОК">❌ НІ</option><option value="✅ ОК">✅ ОК</option></select></div>
                 <div class="flex items-center justify-between gap-4 border-b border-slate-100 pb-2"><label class="text-sm font-bold text-slate-600 dark:text-slate-300 flex-1">2. Відповідність нанесення етикеток</label><select id="check-label-app" class="w-36 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold transition-colors cursor-pointer" required onchange="checkStatus(this)"><option value="" disabled selected>Оберіть...</option><option value="❌">❌ НІ</option><option value="✅">✅ ОК</option></select></div>
@@ -150,6 +211,28 @@
             <textarea id="lb-comment" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg focus:outline-none focus:border-blue-500 transition-colors" rows="2" placeholder="Коментар..."></textarea>
 
             <button onclick="initiateSend()" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2 text-lg"><span>📤 Відправити дані</span></button>
+        </div>
+    </div>
+
+    <!-- SHELF LIFE RESULT MODAL (Redesigned) -->
+    <div id="shelfLifeModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
+        <div class="card bg-orange-100 dark:bg-orange-900 border-2 border-orange-300 p-6 rounded-xl shadow-2xl max-w-sm w-full relative overflow-hidden">
+            <h3 class="font-bold text-xl mb-4 text-center text-orange-800 dark:text-orange-200 uppercase tracking-wide">Маркування</h3>
+            
+            <div class="text-center mb-1">
+                <span class="inline-block text-sm font-bold text-orange-800 dark:text-orange-200">Краще спожити до</span>
+            </div>
+            <div class="text-center mb-2">
+                <span class="inline-block text-sm font-bold text-orange-800 dark:text-orange-200">Номер партії L</span>
+            </div>
+            
+            <!-- Single Container -->
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-inner border-2 border-orange-200 text-center mb-6">
+                <div id="sl-result-date" class="text-3xl font-black text-slate-800 dark:text-white mb-2 leading-tight"></div>
+                <div id="sl-result-batch" class="text-3xl font-black text-slate-800 dark:text-white leading-tight"></div>
+            </div>
+
+            <button onclick="closeModal('shelfLifeModal')" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow-lg transition-transform active:scale-95 uppercase">Закрити</button>
         </div>
     </div>
 
@@ -183,164 +266,164 @@
         const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
         const productDatabase = {
             "Bonsai": [
-                {id: "3102", name: "Bonsai соус соєвий Класичний 235 мл"},
-                {id: "3103", name: "Bonsai соус соєвий Класичний 500 мл"},
-                {id: "3115", name: "Bonsai соус соєвий 750 мл"},
-                {id: "3104", name: "Bonsai соус соєвий Класичний 890 мл"},
-                {id: "3101", name: "Bonsai соус соєвий Класичний 1000 мл (20531)"},
-                {id: "3108", name: "Bonsai соус соєвий ТЕРІЯКІ з часником та имбирем (густий) 235 мл"},
-                {id: "3109", name: "Bonsai соус соєвий УНАГІ кисло-солодкий (Густий) 240 мл"},
-                {id: "3105", name: "Bonsai соус соєвий ДЛЯ СУШІ з водоростями КОМБУ 235 мл"},
-                {id: "3111", name: "Bonsai соус соєвий ЯКІТОРІ з устрицями та кунжутом (густий) 235 мл"},
-                {id: "3106", name: "Bonsai соус соєвий ТАМАРІ з натур. медом 235 мл"},
-                {id: "3112", name: "Bonsai соус солодкий Теріякі 235 мл"},
-                {id: "3113", name: "Bonsai соус Солодкий Чилі 260 гр"},
-                {id: "3110", name: "Bonsai соус соєвий УНАГІ кисло-солодкий 500 мл"},
-                {id: "3116", name: "Bonsai соус соєвий Теріякі 500 мл"},
-                {id: "3107", name: "Bonsai соус соєвий ТЕРІЯКІ з натуральним медом 500 мл"},
-                {id: "3114", name: "Bonsai соус Солодкий Чилі 550 гр"},
-                {id: "3120", name: "Bonsai соус соєвий Класичний (густий) дой-пак 200 гр"},
-                {id: "3117", name: "Bonsai соус соєвий ТЕРІЯКІ з часником та имбирем (густий) дой-пак 200 гр"},
-                {id: "3119", name: "Bonsai соус соєвий УНАГІ кисло-солодкий (густий) дой-пак 200 гр"},
-                {id: "3118", name: "Bonsai соус солодкий Теріякі (густий) дой-пак 200 гр"},
-                {id: "3121", name: "Bonsai соус Солодкий Чилі (густий) дой-пак 200гр"}
+                {id: "3102", name: "Bonsai соус соєвий Класичний 235 мл", life: 18},
+                {id: "3103", name: "Bonsai соус соєвий Класичний 500 мл", life: 18},
+                {id: "3115", name: "Bonsai соус соєвий 750 мл", life: 18},
+                {id: "3104", name: "Bonsai соус соєвий Класичний 890 мл", life: 18},
+                {id: "3101", name: "Bonsai соус соєвий Класичний 1000 мл (20531)", life: 18},
+                {id: "3108", name: "Bonsai соус соєвий ТЕРІЯКІ з часником та имбирем (густий) 235 мл", life: 18},
+                {id: "3109", name: "Bonsai соус соєвий УНАГІ кисло-солодкий (Густий) 240 мл", life: 18},
+                {id: "3105", name: "Bonsai соус соєвий ДЛЯ СУШІ з водоростями КОМБУ 235 мл", life: 18},
+                {id: "3111", name: "Bonsai соус соєвий ЯКІТОРІ з устрицями та кунжутом (густий) 235 мл", life: 18},
+                {id: "3106", name: "Bonsai соус соєвий ТАМАРІ з натур. медом 235 мл", life: 18},
+                {id: "3112", name: "Bonsai соус солодкий Теріякі 235 мл", life: 18},
+                {id: "3113", name: "Bonsai соус Солодкий Чилі 260 гр", life: 12},
+                {id: "3110", name: "Bonsai соус соєвий УНАГІ кисло-солодкий 500 мл", life: 18},
+                {id: "3116", name: "Bonsai соус соєвий Теріякі 500 мл", life: 12},
+                {id: "3107", name: "Bonsai соус соєвий ТЕРІЯКІ з натуральним медом 500 мл", life: 18},
+                {id: "3114", name: "Bonsai соус Солодкий Чилі 550 гр", life: 12},
+                {id: "3120", name: "Bonsai соус соєвий Класичний (густий) дой-пак 200 гр", life: 18},
+                {id: "3117", name: "Bonsai соус соєвий ТЕРІЯКІ з часником та имбирем (густий) дой-пак 200 гр", life: 18},
+                {id: "3119", name: "Bonsai соус соєвий УНАГІ кисло-солодкий (густий) дой-пак 200 гр", life: 18},
+                {id: "3118", name: "Bonsai соус солодкий Теріякі (густий) дой-пак 200 гр", life: 18},
+                {id: "3121", name: "Bonsai соус Солодкий Чилі (густий) дой-пак 200гр", life: 12}
             ],
             "Bonsai Premium": [
-                {id: "3202", name: "Bonsai Premium соус cоєвий Ketjap Manis 570 г"},
-                {id: "3201", name: "Bonsai Premium соус cоєвий Бальзамічний 250 мл"},
-                {id: "3203", name: "Bonsai Premium соус cоєвий Класичний 1000 мл"},
-                {id: "3211", name: "Bonsai Premium соус cоєвий Класичний 20 л"},
-                {id: "3204", name: "Bonsai Premium соус cоєвий Класичний 250 мл"},
-                {id: "3205", name: "Bonsai Premium соус cоєвий Теріякі 250 мл"},
-                {id: "3206", name: "Bonsai Premium соус ГОРІХОВИЙ 500 гр"},
-                {id: "3207", name: "Bonsai Premium соус Гранатовий (НАРШАРАБ) 350гр"},
-                {id: "3209", name: "Bonsai Premium соус НАРШАРАБ 1300 гр"},
-                {id: "3208", name: "Bonsai Premium соус солодкий чилі 1100 гр"}
+                {id: "3202", name: "Bonsai Premium соус cоєвий Ketjap Manis 570 г", life: 18},
+                {id: "3201", name: "Bonsai Premium соус cоєвий Бальзамічний 250 мл", life: 18},
+                {id: "3203", name: "Bonsai Premium соус cоєвий Класичний 1000 мл", life: 18},
+                {id: "3211", name: "Bonsai Premium соус cоєвий Класичний 20 л", life: 18},
+                {id: "3204", name: "Bonsai Premium соус cоєвий Класичний 250 мл", life: 18},
+                {id: "3205", name: "Bonsai Premium соус cоєвий Теріякі 250 мл", life: 18},
+                {id: "3206", name: "Bonsai Premium соус ГОРІХОВИЙ 500 гр", life: 12},
+                {id: "3207", name: "Bonsai Premium соус Гранатовий (НАРШАРАБ) 350гр", life: 12},
+                {id: "3209", name: "Bonsai Premium соус НАРШАРАБ 1300 гр", life: 12},
+                {id: "3208", name: "Bonsai Premium соус солодкий чилі 1100 гр", life: 12}
             ],
             "Bonsai Professional": [
-                {id: "3305", name: "Bonsai professional соус БОЛОНЬЄЗЕ (Італ. кухня) 1000 мл"},
-                {id: "3301", name: "Bonsai professional соус ГОСТРО-СОЛОДКИЙ (Китай. кухня) 1000 мл"},
-                {id: "3307", name: "Bonsai professional соус Для піци 1000 гр"},
-                {id: "3308", name: "Bonsai professional соус КИСЛО-СОЛОДКИЙ (Китай. кухня) 1000 мл"},
-                {id: "3309", name: "Bonsai professional соус Кімчі 1100 гр"},
-                {id: "3310", name: "Bonsai professional соус КУНЖУТНИЙ (густий) 1000 мл"},
-                {id: "3311", name: "Bonsai professional соус Сирний 1 кг/відро"},
-                {id: "3312", name: "Bonsai professional соус соєвий Класичний 1000 мл (концентрат 1:1)"},
-                {id: "3313", name: "Bonsai professional соус соєвий класичний 5000 мл ПЕТ (Концентрат 1:1)"},
-                {id: "3314", name: "Bonsai professional соус соєвий Класичний каністра 20 л New"},
-                {id: "3315", name: "Bonsai professional соус соєвий ТЕРІЯКІ (густий) 1000 мл"},
-                {id: "3316", name: "Bonsai professional соус соєвий ЯКІТОРІ (густий) 1000 мл"},
-                {id: "3317", name: "Bonsai professional соус солодкий ТЕРІЯКІ (густий) 1000 мл"},
-                {id: "3318", name: "Bonsai professional соус Солодкий Чилі 5700 гр ПЕТ"},
-                {id: "3319", name: "Bonsai professional соус УНАГІ (густий) 1000 мл"},
-                {id: "3320", name: "Bonsai professional Соус УСТРИЧНИЙ (густий) 1000 мл"},
-                {id: "3321", name: "Bonsai Professional соус Цезар 5200 гр"},
-                {id: "3322", name: "Bonsai professional соус ТАРТАР 5??? Гр"}
+                {id: "3305", name: "Bonsai professional соус БОЛОНЬЄЗЕ (Італ. кухня) 1000 мл", life: 12},
+                {id: "3301", name: "Bonsai professional соус ГОСТРО-СОЛОДКИЙ (Китай. кухня) 1000 мл", life: 12},
+                {id: "3307", name: "Bonsai professional соус Для піци 1000 гр", life: 12},
+                {id: "3308", name: "Bonsai professional соус КИСЛО-СОЛОДКИЙ (Китай. кухня) 1000 мл", life: 12},
+                {id: "3309", name: "Bonsai professional соус Кімчі 1100 гр", life: 12},
+                {id: "3310", name: "Bonsai professional соус КУНЖУТНИЙ (густий) 1000 мл", life: 6},
+                {id: "3311", name: "Bonsai professional соус Сирний 1 кг/відро", life: 6},
+                {id: "3312", name: "Bonsai professional соус соєвий Класичний 1000 мл (концентрат 1:1)", life: 18},
+                {id: "3313", name: "Bonsai professional соус соєвий класичний 5000 мл ПЕТ (Концентрат 1:1)", life: 18},
+                {id: "3314", name: "Bonsai professional соус соєвий Класичний каністра 20 л New", life: 18},
+                {id: "3315", name: "Bonsai professional соус соєвий ТЕРІЯКІ (густий) 1000 мл", life: 18},
+                {id: "3316", name: "Bonsai professional соус соєвий ЯКІТОРІ (густий) 1000 мл", life: 18},
+                {id: "3317", name: "Bonsai professional соус солодкий ТЕРІЯКІ (густий) 1000 мл", life: 18},
+                {id: "3318", name: "Bonsai professional соус Солодкий Чилі 5700 гр ПЕТ", life: 12},
+                {id: "3319", name: "Bonsai professional соус УНАГІ (густий) 1000 мл", life: 18},
+                {id: "3320", name: "Bonsai professional Соус УСТРИЧНИЙ (густий) 1000 мл", life: 18},
+                {id: "3321", name: "Bonsai Professional соус Цезар 5200 гр", life: 6},
+                {id: "3322", name: "Bonsai professional соус ТАРТАР 5??? Гр", life: 6}
             ],
             "Peri Peri": [
-                {id: "3401", name: "Peri Peri соус Аризона BBQ (Американська кухня) 320 г"},
-                {id: "3402", name: "Peri Peri соус Болоньєзе (Італ.кухня) 310 г"},
-                {id: "3403", name: "Peri Peri соус Гостро-солодкий (Китай.кухня) 320 г"},
-                {id: "3404", name: "Peri Peri соус Гранатовий (НАРШАРАБ) 255 г"},
-                {id: "3405", name: "Peri Peri соус для Локшини WOK (Кантонська кухня) 320 г"},
-                {id: "3425", name: "Peri Peri соус Жовто-гарячий (Тайська кухня) 310 г"},
-                {id: "3426", name: "Peri Peri соус Журавлинний (Англійська кухня) 330 г"},
-                {id: "3406", name: "Peri Peri соус З в’яленими томатами (Італійська кухня) 310 г"},
-                {id: "3407", name: "Peri Peri соус Кетчуп (Американська кухня) 320 г"},
-                {id: "3408", name: "Peri Peri соус Кисло-солодкий (Китай.кухня) 320 г"},
-                {id: "3409", name: "Peri Peri соус Кунжутний (Японська кухня) 310 г"},
-                {id: "3410", name: "Peri Peri соус Манго-Чилі (Тайська кухня) 320 г"},
-                {id: "3411", name: "Peri Peri соус Ожиновий з перцем Халапеньйо (Мексиканська кухня) 330 г"},
-                {id: "3424", name: "Peri Peri соус Цезар (Американська кухня) 300 г"},
-                {id: "3422", name: "Peri Peri соус Ткемалі (Грузинська кухня) 320 г"},
-                {id: "3414", name: "Peri Peri соус Пряні трави (Італійська кухня) 310 г"},
-                {id: "3415", name: "Peri Peri соус Сацебелі (Грузинська кухня) 320 г"},
-                {id: "3418", name: "Peri Peri соус Солодкий-Чилі (Тайська кухня) 320 г"},
-                {id: "3419", name: "Peri Peri соус ТАРТАР (Французька кухня) 280 г"},
-                {id: "3420", name: "Peri Peri соус ТЕРІЯКІ sesame & ginger 180 мл"},
-                {id: "3421", name: "Peri Peri соус ТЕРІЯКІ sweet chili 180 мл"},
-                {id: "3417", name: "Peri Peri соус соєвий soy & wheat 180 мл"},
-                {id: "3423", name: "Peri Peri соус УНАГІ sweet & sour 180 мл"},
-                {id: "3412", name: "Peri Peri соус ПЕСТО 200 г"},
-                {id: "3413", name: "Peri Peri соус ПЕСТО ROSSO 200 г"}
+                {id: "3401", name: "Peri Peri соус Аризона BBQ (Американська кухня) 320 г", life: 24},
+                {id: "3402", name: "Peri Peri соус Болоньєзе (Італ.кухня) 310 г", life: 24},
+                {id: "3403", name: "Peri Peri соус Гостро-солодкий (Китай.кухня) 320 г", life: 24},
+                {id: "3404", name: "Peri Peri соус Гранатовий (НАРШАРАБ) 255 г", life: 12},
+                {id: "3405", name: "Peri Peri соус для Локшини WOK (Кантонська кухня) 320 г", life: 12},
+                {id: "3425", name: "Peri Peri соус Жовто-гарячий (Тайська кухня) 310 г", life: 24},
+                {id: "3426", name: "Peri Peri соус Журавлинний (Англійська кухня) 330 г", life: 12},
+                {id: "3406", name: "Peri Peri соус З в’яленими томатами (Італійська кухня) 310 г", life: 24},
+                {id: "3407", name: "Peri Peri соус Кетчуп (Американська кухня) 320 г", life: 24},
+                {id: "3408", name: "Peri Peri соус Кисло-солодкий (Китай.кухня) 320 г", life: 24},
+                {id: "3409", name: "Peri Peri соус Кунжутний (Японська кухня) 310 г", life: 9},
+                {id: "3410", name: "Peri Peri соус Манго-Чилі (Тайська кухня) 320 г", life: 12},
+                {id: "3411", name: "Peri Peri соус Ожиновий з перцем Халапеньйо (Мексиканська кухня) 330 г", life: 12},
+                {id: "3424", name: "Peri Peri соус Цезар (Американська кухня) 300 г", life: 9},
+                {id: "3422", name: "Peri Peri соус Ткемалі (Грузинська кухня) 320 г", life: 12},
+                {id: "3414", name: "Peri Peri соус Пряні трави (Італійська кухня) 310 г", life: 24},
+                {id: "3415", name: "Peri Peri соус Сацебелі (Грузинська кухня) 320 г", life: 12},
+                {id: "3418", name: "Peri Peri соус Солодкий-Чилі (Тайська кухня) 320 г", life: 12},
+                {id: "3419", name: "Peri Peri соус ТАРТАР (Французька кухня) 280 г", life: 6},
+                {id: "3420", name: "Peri Peri соус ТЕРІЯКІ sesame & ginger 180 мл", life: 12},
+                {id: "3421", name: "Peri Peri соус ТЕРІЯКІ sweet chili 180 мл", life: 12},
+                {id: "3417", name: "Peri Peri соус соєвий soy & wheat 180 мл", life: 12},
+                {id: "3423", name: "Peri Peri соус УНАГІ sweet & sour 180 мл", life: 12},
+                {id: "3412", name: "Peri Peri соус ПЕСТО 200 г", life: 6},
+                {id: "3413", name: "Peri Peri соус ПЕСТО ROSSO 200 г", life: 6}
             ],
             "6 ЛІТРІВ": [
-                {id: "1", name: "6 ЛІТРІВ концентрований компот абрикосово-персиковий 1000 мл"},
-                {id: "2", name: "6 ЛІТРІВ концентрований компот яблучно-вишневий 1000 мл"},
-                {id: "3", name: "6 ЛІТРІВ концентрований компот яблучно-грушевий 1000 мл"},
-                {id: "4", name: "6 ЛІТРІВ концентрований компот яблучно-малиновий 1000 мл"}
+                {id: "1", name: "6 ЛІТРІВ концентрований компот абрикосово-персиковий 1000 мл", life: 12},
+                {id: "2", name: "6 ЛІТРІВ концентрований компот яблучно-вишневий 1000 мл", life: 12},
+                {id: "3", name: "6 ЛІТРІВ концентрований компот яблучно-грушевий 1000 мл", life: 12},
+                {id: "4", name: "6 ЛІТРІВ концентрований компот яблучно-малиновий 1000 мл", life: 12}
             ],
             "Salateria": [
-                {id: "31001", name: "Salateria Fresh Салатна заправка Медово-Гірчична 335 г"},
-                {id: "31002", name: "Salateria Fresh Салатна заправка Цезар 320 г"},
-                {id: "31003", name: "Salateria Fresh Салатна заправка Бальзаміко 335 г"},
-                {id: "3501", name: "Salateria Салатна заправка Original 360 г"},
-                {id: "3502", name: "Salateria Салатна заправка бальзамічна 360 г"},
-                {id: "3503", name: "Salateria Салатна заправка КУНЖУТНА 320 г"},
-                {id: "3504", name: "Salateria Салатна заправка соєва з кунжутною олією 360 г"},
-                {id: "3505", name: "Salateria Салатна заправка соєва з кунжутом 360 г"}
+                {id: "31001", name: "Salateria Fresh Салатна заправка Медово-Гірчична 335 г", life: 12},
+                {id: "31002", name: "Salateria Fresh Салатна заправка Цезар 320 г", life: 9},
+                {id: "31003", name: "Salateria Fresh Салатна заправка Бальзаміко 335 г", life: 12},
+                {id: "3501", name: "Salateria Салатна заправка Original 360 г", life: 12},
+                {id: "3502", name: "Salateria Салатна заправка бальзамічна 360 г", life: 12},
+                {id: "3503", name: "Salateria Салатна заправка КУНЖУТНА 320 г", life: 9},
+                {id: "3504", name: "Salateria Салатна заправка соєва з кунжутною олією 360 г", life: 12},
+                {id: "3505", name: "Salateria Салатна заправка соєва з кунжутом 360 г", life: 12}
             ],
             "Special Edition": [
-                {id: "3141", name: "SOY SAUCE соус соєвий Класичний special edition 1000 мл"}
+                {id: "3141", name: "SOY SAUCE соус соєвий Класичний special edition 1000 мл", life: 18}
             ],
             "YKI": [
-                {id: "3601", name: "YKI соус cоєвий 1000 мл"},
-                {id: "3602", name: "YKI соус cоєвий 205 мл"},
-                {id: "3603", name: "YKI соус cоєвий 470 мл"},
-                {id: "3604", name: "YKI соус cоєвий 890 мл"},
-                {id: "3605", name: "YKI соус Болоньєзе (Італійська кухня) 220 гр"},
-                {id: "3606", name: "YKI соус Болоньєзе (Італійська кухня) 530 гр"},
-                {id: "3607", name: "YKI соус Гостро-солодкий (Китайська кухня) 525 гр"},
-                {id: "3608", name: "YKI соус Кисло-солодкий (Китайська кухня) 525 гр"},
-                {id: "3609", name: "YKI соус соєвий ТЕРІЯКІ (густий) 205 мл"},
-                {id: "3610", name: "YKI соус соєвий ТЕРІЯКІ 205 мл"},
-                {id: "3611", name: "YKI соус соєвий ТЕРІЯКІ з часником та імбиром (густий) 470 мл"},
-                {id: "3612", name: "YKI соус соєвий УНАГІ 205 мл"},
-                {id: "3614", name: "YKI соус Солодкий Чилі 225 гр"},
-                {id: "3613", name: "YKI соус Солодкий-Чилі (Тайська кухня) 540 гр"}
+                {id: "3601", name: "YKI соус cоєвий 1000 мл", life: 18},
+                {id: "3602", name: "YKI соус cоєвий 205 мл", life: 18},
+                {id: "3603", name: "YKI соус cоєвий 470 мл", life: 18},
+                {id: "3604", name: "YKI соус cоєвий 890 мл", life: 18},
+                {id: "3605", name: "YKI соус Болоньєзе (Італійська кухня) 220 гр", life: 12},
+                {id: "3606", name: "YKI соус Болоньєзе (Італійська кухня) 530 гр", life: 12},
+                {id: "3607", name: "YKI соус Гостро-солодкий (Китайська кухня) 525 гр", life: 12},
+                {id: "3608", name: "YKI соус Кисло-солодкий (Китайська кухня) 525 гр", life: 12},
+                {id: "3609", name: "YKI соус соєвий ТЕРІЯКІ (густий) 205 мл", life: 18},
+                {id: "3610", name: "YKI соус соєвий ТЕРІЯКІ 205 мл", life: 18},
+                {id: "3611", name: "YKI соус соєвий ТЕРІЯКІ з часником та імбиром (густий) 470 мл", life: 18},
+                {id: "3612", name: "YKI соус соєвий УНАГІ 205 мл", life: 18},
+                {id: "3614", name: "YKI соус Солодкий Чилі 225 гр", life: 12},
+                {id: "3613", name: "YKI соус Солодкий-Чилі (Тайська кухня) 540 гр", life: 12}
             ],
             "Любисток": [
-                {id: "3801", name: "Любисток соус соєвий 210 мл"},
-                {id: "3802", name: "Любисток соус соєвий 500 мл"},
-                {id: "3803", name: "Любисток соус соєвий 980 мл"},
-                {id: "3804", name: "Любисток соус УНАГІ 210 мл"},
-                {id: "3805", name: "Любисток соус ТЕРІЯКІ 210 мл"},
-                {id: "3806", name: "Любисток соус ТЕРІЯКІ 500 мл"},
-                {id: "3807", name: "Любисток соус Кисло-солодкий 500 гр"},
-                {id: "3808", name: "Любисток соус Гостро-солодкий 500 гр"}
+                {id: "3801", name: "Любисток соус соєвий 210 мл", life: 12},
+                {id: "3802", name: "Любисток соус соєвий 500 мл", life: 12},
+                {id: "3803", name: "Любисток соус соєвий 980 мл", life: 12},
+                {id: "3804", name: "Любисток соус УНАГІ 210 мл", life: 12},
+                {id: "3805", name: "Любисток соус ТЕРІЯКІ 210 мл", life: 18},
+                {id: "3806", name: "Любисток соус ТЕРІЯКІ 500 мл", life: 18},
+                {id: "3807", name: "Любисток соус Кисло-солодкий 500 гр", life: 12},
+                {id: "3808", name: "Любисток соус Гостро-солодкий 500 гр", life: 12}
             ],
             "PL": [
-                {id: "301", name: "PL_Соус Hot Chili, 700 мл"},
-                {id: "402", name: "PL_Соус Sweet Chili 1100гр"},
-                {id: "503", name: "PL_Соус Sweet Chili, 700 мл"},
-                {id: "604", name: "PL_Соус соєвий 1000 мл"},
-                {id: "705", name: "PL_Соус соєвий Ketjap 500 мл"},
-                {id: "806", name: "PL_соус теріякі 1кг/відро"},
-                {id: "907", name: "Наповнювач «Вишневий»"},
-                {id: "1008", name: "PL_Соус Томатний 1000 гр"},
-                {id: "1109", name: "PL_Соус Томатний №95_5400 гр"},
-                {id: "12010", name: "PL_Томатна паста 1000 гр"},
-                {id: "12011", name: "PL_Соус ПЕСТО 1кг (D)"}
+                {id: "301", name: "PL_Соус Hot Chili, 700 мл", life: 18},
+                {id: "402", name: "PL_Соус Sweet Chili 1100гр", life: 12},
+                {id: "503", name: "PL_Соус Sweet Chili, 700 мл", life: 18},
+                {id: "604", name: "PL_Соус соєвий 1000 мл", life: 18},
+                {id: "705", name: "PL_Соус соєвий Ketjap 500 мл", life: 24},
+                {id: "806", name: "PL_соус теріякі 1кг/відро", life: 12},
+                {id: "907", name: "Наповнювач «Вишневий»", life: 3},
+                {id: "1008", name: "PL_Соус Томатний 1000 гр", life: 12},
+                {id: "1109", name: "PL_Соус Томатний №95_5400 гр", life: 12},
+                {id: "12010", name: "PL_Томатна паста 1000 гр", life: 12},
+                {id: "12011", name: "PL_Соус ПЕСТО 1кг (D)", life: 9}
             ],
             "Своє. Свіже": [
-                {id: "3121", name: "Своє. Свіже соус Барбекю 280 гр"},
-                {id: "3122", name: "Своє. Свіже соус Болоньєзе (Італ.кухня) 280 гр"},
-                {id: "3123", name: "Своє. Свіже соус Гостро-солодкий (Китай.кухня) 280 гр"},
-                {id: "3124", name: "Своє. Свіже соус Журавлинний (Англійська кухня) 280 гр"},
-                {id: "3125", name: "Своє. Свіже соус З в’яленими томатами (Італійська кухня) 280 гр"},
-                {id: "3126", name: "Своє. Свіже соус Кетчуп (Американська кухня) 280 гр"},
-                {id: "3127", name: "Своє. Свіже соус Кетчуп Чилі 280 гр"},
-                {id: "3128", name: "Своє. Свіже соус Кисло-солодкий (Китай.кухня) 280 гр"},
-                {id: "3129", name: "Своє. Свіже соус Солодкий-Чилі (Тайська кухня) 280 гр"},
-                {id: "31210", name: "Своє. Свіже соус Тартар 280 гр"}
+                {id: "3121", name: "Своє. Свіже соус Барбекю 280 гр", life: 12},
+                {id: "3122", name: "Своє. Свіже соус Болоньєзе (Італ.кухня) 280 гр", life: 12},
+                {id: "3123", name: "Своє. Свіже соус Гостро-солодкий (Китай.кухня) 280 гр", life: 12},
+                {id: "3124", name: "Своє. Свіже соус Журавлинний (Англійська кухня) 280 гр", life: 12},
+                {id: "3125", name: "Своє. Свіже соус З в’яленими томатами (Італійська кухня) 280 гр", life: 12},
+                {id: "3126", name: "Своє. Свіже соус Кетчуп (Американська кухня) 280 гр", life: 12},
+                {id: "3127", name: "Своє. Свіже соус Кетчуп Чилі 280 гр", life: 12},
+                {id: "3128", name: "Своє. Свіже соус Кисло-солодкий (Китай.кухня) 280 гр", life: 12},
+                {id: "3129", name: "Своє. Свіже соус Солодкий-Чилі (Тайська кухня) 280 гр", life: 12},
+                {id: "31210", name: "Своє. Свіже соус Тартар 280 гр", life: 12}
             ],
             "Премія": [
-                {id: "3131", name: "Повна чаша соус соєвий пастеризований 960мл"},
-                {id: "3132", name: "Премія соус соєвий пастеризований \"Теріякі\" 220мл"},
-                {id: "3133", name: "Премія соус соєвий пастеризований \"Теріякі\" 490мл"},
-                {id: "3134", name: "Премія соус соєвий пастеризований 220мл"},
-                {id: "3135", name: "Премія соус соєвий пастеризований 490мл"},
-                {id: "3136", name: "Майонез original 73 % ТМ «Сільпо» 300г"}
+                {id: "3131", name: "Повна чаша соус соєвий пастеризований 960мл", life: 12},
+                {id: "3132", name: "Премія соус соєвий пастеризований \"Теріякі\" 220мл", life: 12},
+                {id: "3133", name: "Премія соус соєвий пастеризований \"Теріякі\" 490мл", life: 12},
+                {id: "3134", name: "Премія соус соєвий пастеризований 220мл", life: 12},
+                {id: "3135", name: "Премія соус соєвий пастеризований 490мл", life: 12},
+                {id: "3136", name: "Майонез original 73 % ТМ «Сільпо» 300г", life: 6}
             ]
         };
 
@@ -352,11 +435,80 @@
         let uploadedFiles = []; 
 
         function updateProducts() {
-            const tm = tmSel.value;
+            const tm = document.getElementById('lb-tm').value; // Use direct DOM access
             const prodSel = document.getElementById('lb-product');
             prodSel.innerHTML = '<option value="">Оберіть...</option>';
             if (productDatabase[tm]) {
                 productDatabase[tm].forEach(p => prodSel.add(new Option(`${p.id} - ${p.name}`, `${p.id} - ${p.name}`)));
+            }
+        }
+
+        // --- FIXED CALCULATE FUNCTION ---
+        function calculateShelfLife() {
+            try {
+                const tm = document.getElementById('lb-tm').value;
+                const productValue = document.getElementById('lb-product').value;
+                const mfgDateInput = document.getElementById('calc-mfg-date').value;
+                const taskNum = document.getElementById('calc-task-num').value;
+
+                if (!tm || !productValue) { alert("Будь ласка, оберіть ТМ та Продукт у верхній частині форми!"); return; }
+                if (!mfgDateInput) { alert("Вкажіть дату виготовлення!"); return; }
+                if (!taskNum) { alert("Вкажіть номер завдання!"); return; }
+
+                let shelfLifeMonths = 0;
+                const selectedText = productValue; // "id - name"
+                
+                if (productDatabase[tm]) {
+                    const prodObj = productDatabase[tm].find(p => `${p.id} - ${p.name}` === selectedText);
+                    if (prodObj && prodObj.life) {
+                        shelfLifeMonths = prodObj.life;
+                    }
+                }
+
+                if (!shelfLifeMonths) { alert("Не знайдено термін придатності для цього продукту!"); return; }
+
+                // Safe Date Calculation (Local Time)
+                const parts = mfgDateInput.split('-');
+                const mfgYear = parseInt(parts[0], 10);
+                const mfgMonth = parseInt(parts[1], 10) - 1; // Months are 0-indexed
+                const mfgDay = parseInt(parts[2], 10);
+
+                const mfgDate = new Date(mfgYear, mfgMonth, mfgDay);
+                
+                // Add months
+                const targetMonth = mfgDate.getMonth() + shelfLifeMonths;
+                const expiryDate = new Date(mfgYear, targetMonth, mfgDay);
+                
+                // Adjust for month overflow (e.g., Jan 31 + 1 month -> Feb 28/29)
+                // If the day changed, it means we overflowed into the next month
+                if (expiryDate.getDate() !== mfgDate.getDate()) {
+                    expiryDate.setDate(0); // Set to last day of previous month
+                }
+
+                const day = String(expiryDate.getDate()).padStart(2, '0');
+                const month = String(expiryDate.getMonth() + 1).padStart(2, '0');
+                const year = expiryDate.getFullYear();
+                const formattedDate = `${day}.${month}.${year}`;
+
+                // Show Result
+                document.getElementById('sl-result-date').innerText = formattedDate;
+                document.getElementById('sl-result-batch').innerText = `L ${taskNum}`;
+                
+                // Show modal
+                const modal = document.getElementById('shelfLifeModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+
+                // Trigger Tree Animation
+                const tree = document.getElementById('tree-branch');
+                tree.classList.add('show');
+                
+                setTimeout(() => {
+                    tree.classList.remove('show');
+                }, 3000);
+            } catch (err) {
+                console.error(err);
+                alert("Помилка розрахунку: " + err.message);
             }
         }
 
