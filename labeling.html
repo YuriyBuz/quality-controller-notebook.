@@ -43,18 +43,31 @@
         .photo-remove-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
         /* Tree Animation */
-        #tree-branch {
+        .festive-decoration {
             position: fixed;
-            top: 10%;
-            left: -350px;
-            width: 300px;
+            width: 400px; /* Bigger size for lushness */
             z-index: 60;
             pointer-events: none;
-            transition: left 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.3));
+            transition: all 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            filter: drop-shadow(5px 5px 8px rgba(0,0,0,0.4));
         }
-        #tree-branch.show {
-            left: -20px;
+
+        #tree-left {
+            top: -50px;
+            left: -450px;
+            transform: rotate(15deg);
+        }
+        #tree-left.show {
+            left: -80px;
+        }
+
+        #tree-right {
+            bottom: 50px;
+            right: -450px;
+            transform: rotate(-15deg) scaleX(-1); /* Mirror for right side */
+        }
+        #tree-right.show {
+            right: -80px;
         }
     </style>
 </head>
@@ -62,30 +75,64 @@
     
     <div id="toast-container" class="fixed top-4 right-4 z-[2000] flex flex-col gap-2"></div>
 
-    <!-- Festive Decoration Element -->
-    <div id="tree-branch">
-        <svg viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Branch -->
-            <path d="M-10,100 Q150,120 300,50" stroke="#166534" stroke-width="8" stroke-linecap="round" />
-            <!-- Needles -->
-            <path d="M20,105 L40,80 M35,108 L60,85 M50,110 L75,88 M65,112 L90,90 M80,113 L105,92 M10,100 L20,130 M30,102 L45,135 M50,105 L65,138 M70,100 L90,135" stroke="#15803d" stroke-width="3" stroke-linecap="round" />
-            <path d="M100,108 L125,85 M115,105 L140,88 M130,102 L155,90 M145,100 L170,92" stroke="#15803d" stroke-width="3" stroke-linecap="round" />
-            <path d="M100,108 L115,138 M120,105 L135,135 M140,100 L160,130" stroke="#15803d" stroke-width="3" stroke-linecap="round" />
-            <path d="M180,90 L205,70 M195,88 L220,72 M210,85 L235,75" stroke="#15803d" stroke-width="3" stroke-linecap="round" />
-            <path d="M180,90 L195,120 M200,88 L215,115 M220,85 L235,110" stroke="#15803d" stroke-width="3" stroke-linecap="round" />
-            
-            <!-- Toys -->
-            <circle cx="60" cy="135" r="15" fill="#dc2626" /> <!-- Red Ball -->
-            <circle cx="60" cy="135" r="5" fill="#fca5a5" fill-opacity="0.5" transform="translate(-4, -4)" />
-            <line x1="60" y1="108" x2="60" y2="120" stroke="#fcd34d" stroke-width="2" />
+    <!-- Festive Decorations -->
+    <div id="tree-left" class="festive-decoration">
+        <svg viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M-20,150 Q180,160 380,80" stroke="#4a2c0f" stroke-width="12" stroke-linecap="round" />
+            <g stroke="#15803d" stroke-width="4" stroke-linecap="round">
+                <path d="M20,150 L50,110 M30,152 L65,115 M45,155 L80,120 M60,158 L95,122 M75,160 L110,125" />
+                <path d="M20,150 L40,180 M35,152 L55,185 M50,155 L75,190 M65,158 L90,195 M80,160 L105,195" />
+            </g>
+            <g stroke="#16a34a" stroke-width="3" stroke-linecap="round">
+                <path d="M100,160 L130,120 M115,162 L145,125 M130,165 L160,128 M145,168 L175,130" />
+                <path d="M100,160 L120,190 M115,162 L135,195 M130,165 L155,200 M145,168 L170,202" />
+            </g>
+             <g stroke="#15803d" stroke-width="4" stroke-linecap="round">
+                <path d="M180,140 L210,100 M195,142 L225,105 M210,145 L240,108 M225,148 L255,110" />
+                <path d="M180,140 L200,170 M195,142 L215,175 M210,145 L235,180 M225,148 L250,182" />
+            </g>
+            <g stroke="#16a34a" stroke-width="3" stroke-linecap="round">
+                <path d="M260,120 L290,90 M275,122 L305,95 M290,125 L320,98" />
+                <path d="M260,120 L280,150 M275,122 L295,155 M290,125 L310,160" />
+            </g>
+            <circle cx="80" cy="180" r="18" fill="#dc2626" />
+            <line x1="80" y1="160" x2="80" y2="165" stroke="#fcd34d" stroke-width="2" />
+            <circle cx="180" cy="120" r="14" fill="#eab308" />
+            <line x1="180" y1="100" x2="180" y2="108" stroke="#fcd34d" stroke-width="2" />
+            <circle cx="250" cy="160" r="12" fill="#2563eb" />
+            <line x1="250" y1="140" x2="250" y2="150" stroke="#fcd34d" stroke-width="2" />
+            <circle cx="130" cy="180" r="10" fill="#f472b6" />
+            <line x1="130" y1="165" x2="130" y2="172" stroke="#fcd34d" stroke-width="2" />
+        </svg>
+    </div>
 
-            <circle cx="140" cy="130" r="12" fill="#eab308" /> <!-- Gold Ball -->
-            <circle cx="140" cy="130" r="4" fill="#fef08a" fill-opacity="0.5" transform="translate(-3, -3)" />
-            <line x1="140" y1="103" x2="140" y2="118" stroke="#fcd34d" stroke-width="2" />
-
-            <circle cx="210" cy="110" r="10" fill="#2563eb" /> <!-- Blue Ball -->
-            <circle cx="210" cy="110" r="3" fill="#93c5fd" fill-opacity="0.5" transform="translate(-2, -2)" />
-            <line x1="210" y1="88" x2="210" y2="100" stroke="#fcd34d" stroke-width="2" />
+    <div id="tree-right" class="festive-decoration">
+        <svg viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M-20,150 Q180,160 380,80" stroke="#4a2c0f" stroke-width="12" stroke-linecap="round" />
+            <g stroke="#15803d" stroke-width="4" stroke-linecap="round">
+                <path d="M20,150 L50,110 M30,152 L65,115 M45,155 L80,120 M60,158 L95,122 M75,160 L110,125" />
+                <path d="M20,150 L40,180 M35,152 L55,185 M50,155 L75,190 M65,158 L90,195 M80,160 L105,195" />
+            </g>
+            <g stroke="#16a34a" stroke-width="3" stroke-linecap="round">
+                <path d="M100,160 L130,120 M115,162 L145,125 M130,165 L160,128 M145,168 L175,130" />
+                <path d="M100,160 L120,190 M115,162 L135,195 M130,165 L155,200 M145,168 L170,202" />
+            </g>
+             <g stroke="#15803d" stroke-width="4" stroke-linecap="round">
+                <path d="M180,140 L210,100 M195,142 L225,105 M210,145 L240,108 M225,148 L255,110" />
+                <path d="M180,140 L200,170 M195,142 L215,175 M210,145 L235,180 M225,148 L250,182" />
+            </g>
+            <g stroke="#16a34a" stroke-width="3" stroke-linecap="round">
+                <path d="M260,120 L290,90 M275,122 L305,95 M290,125 L320,98" />
+                <path d="M260,120 L280,150 M275,122 L295,155 M290,125 L310,160" />
+            </g>
+            <circle cx="80" cy="180" r="18" fill="#dc2626" />
+            <line x1="80" y1="160" x2="80" y2="165" stroke="#fcd34d" stroke-width="2" />
+            <circle cx="180" cy="120" r="14" fill="#eab308" />
+            <line x1="180" y1="100" x2="180" y2="108" stroke="#fcd34d" stroke-width="2" />
+            <circle cx="250" cy="160" r="12" fill="#2563eb" />
+            <line x1="250" y1="140" x2="250" y2="150" stroke="#fcd34d" stroke-width="2" />
+            <circle cx="130" cy="180" r="10" fill="#f472b6" />
+            <line x1="130" y1="165" x2="130" y2="172" stroke="#fcd34d" stroke-width="2" />
         </svg>
     </div>
 
@@ -101,7 +148,6 @@
                 <p class="text-blue-600 dark:text-blue-400 text-sm font-bold mt-1 uppercase tracking-wide">Контроль пакування</p>
             </div>
             
-             <!-- Label Icon -->
              <div class="p-2 text-blue-500">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line>
@@ -156,9 +202,28 @@
             </div>
 
             <div class="bg-blue-600 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md mb-4">Параметри маркування</div>
+            
+            <!-- Warning Text (No Container) -->
+            <p id="param-warning" class="hidden text-red-600 dark:text-red-400 font-bold mb-4 text-center">
+                ⚠️ Увага! Введені дата або партія відрізняються від розрахункових. Необхідна повторна перевірка.
+            </p>
+
+            <!-- INPUTS + CONFIRM BUTTON (Grid Layout Like Calculation) -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end mb-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Дата на етикетці</label>
+                    <input type="date" id="lb-date" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 transition-colors" oninput="resetVerification()">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Партія (Batch)</label>
+                    <input type="number" id="lb-batch" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="000..." oninput="resetVerification()">
+                </div>
+                <button type="button" onclick="verifyManualInput()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded shadow transition-colors h-10 w-full sm:w-auto uppercase text-sm">
+                    Підтвердити
+                </button>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label class="block text-xs font-bold text-slate-500 mb-1">Дата на етикетці</label><input type="date" id="lb-date" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600"></div>
-                <div><label class="block text-xs font-bold text-slate-500 mb-1">Партія (Batch)</label><input type="number" id="lb-batch" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" placeholder="000..."></div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 mb-1">Термозбіжна плівка розмір</label>
                     <select id="lb-width" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600">
@@ -233,6 +298,21 @@
             </div>
 
             <button onclick="closeModal('shelfLifeModal')" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow-lg transition-transform active:scale-95 uppercase">Закрити</button>
+        </div>
+    </div>
+
+    <!-- MISMATCH WARNING MODAL -->
+    <div id="mismatchModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
+        <div class="card p-8 rounded-lg shadow-2xl max-w-sm w-full border-l-8 border-red-500">
+            <div class="flex justify-center mb-4 text-5xl">⚠️</div>
+            <h3 class="font-bold text-xl mb-3 text-center text-red-600">Невідповідність!</h3>
+            <p class="mb-6 text-center text-slate-600 dark:text-slate-300">
+                Введена дата або партія відрізняються від розрахункових!<br>
+                <span class="font-bold">Будь ласка, виконайте повторну перевірку.</span>
+            </p>
+            <div class="flex justify-center">
+                <button onclick="closeModal('mismatchModal')" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold shadow transition-colors w-full">Зрозуміло</button>
+            </div>
         </div>
     </div>
 
@@ -433,9 +513,15 @@
         Object.keys(productDatabase).forEach(tm => tmSel.add(new Option(tm, tm)));
 
         let uploadedFiles = []; 
+        let calculatedExpiryDate = "";
+        let calculatedBatchVal = "";
+        let calcDateObj = null; 
+        
+        // Flag to track if the data is currently verified
+        let isVerified = false;
 
         function updateProducts() {
-            const tm = document.getElementById('lb-tm').value; // Use direct DOM access
+            const tm = document.getElementById('lb-tm').value;
             const prodSel = document.getElementById('lb-product');
             prodSel.innerHTML = '<option value="">Оберіть...</option>';
             if (productDatabase[tm]) {
@@ -443,7 +529,6 @@
             }
         }
 
-        // --- FIXED CALCULATE FUNCTION ---
         function calculateShelfLife() {
             try {
                 const tm = document.getElementById('lb-tm').value;
@@ -456,7 +541,7 @@
                 if (!taskNum) { alert("Вкажіть номер завдання!"); return; }
 
                 let shelfLifeMonths = 0;
-                const selectedText = productValue; // "id - name"
+                const selectedText = productValue;
                 
                 if (productDatabase[tm]) {
                     const prodObj = productDatabase[tm].find(p => `${p.id} - ${p.name}` === selectedText);
@@ -470,46 +555,115 @@
                 // Safe Date Calculation (Local Time)
                 const parts = mfgDateInput.split('-');
                 const mfgYear = parseInt(parts[0], 10);
-                const mfgMonth = parseInt(parts[1], 10) - 1; // Months are 0-indexed
+                const mfgMonth = parseInt(parts[1], 10) - 1; 
                 const mfgDay = parseInt(parts[2], 10);
 
                 const mfgDate = new Date(mfgYear, mfgMonth, mfgDay);
                 
-                // Add months
                 const targetMonth = mfgDate.getMonth() + shelfLifeMonths;
                 const expiryDate = new Date(mfgYear, targetMonth, mfgDay);
                 
-                // Adjust for month overflow (e.g., Jan 31 + 1 month -> Feb 28/29)
-                // If the day changed, it means we overflowed into the next month
                 if (expiryDate.getDate() !== mfgDate.getDate()) {
-                    expiryDate.setDate(0); // Set to last day of previous month
+                    expiryDate.setDate(0); 
                 }
 
                 const day = String(expiryDate.getDate()).padStart(2, '0');
                 const month = String(expiryDate.getMonth() + 1).padStart(2, '0');
                 const year = expiryDate.getFullYear();
                 const formattedDate = `${day}.${month}.${year}`;
+                
+                calculatedExpiryDate = formattedDate;
+                calcDateObj = `${year}-${month}-${day}`; 
+                calculatedBatchVal = taskNum;
 
-                // Show Result
                 document.getElementById('sl-result-date').innerText = formattedDate;
                 document.getElementById('sl-result-batch').innerText = `L ${taskNum}`;
                 
-                // Show modal
                 const modal = document.getElementById('shelfLifeModal');
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
 
-                // Trigger Tree Animation
-                const tree = document.getElementById('tree-branch');
-                tree.classList.add('show');
+                const treeLeft = document.getElementById('tree-left');
+                const treeRight = document.getElementById('tree-right');
+                
+                treeLeft.classList.add('show');
+                treeRight.classList.add('show');
                 
                 setTimeout(() => {
-                    tree.classList.remove('show');
+                    treeLeft.classList.remove('show');
+                    treeRight.classList.remove('show');
                 }, 3000);
+                
+                // Hide warnings initially until manual check
+                document.getElementById('param-warning').classList.add('hidden');
+                
+                // Important: Reset verification because new calculation = potential new mismatch
+                isVerified = false;
+                
             } catch (err) {
                 console.error(err);
                 alert("Помилка розрахунку: " + err.message);
             }
+        }
+
+        // Resets verification status when user modifies inputs
+        function resetVerification() {
+            isVerified = false;
+            // Also hide the warning temporarily until they click confirm again?
+            // Or keep showing it? Let's hide it to avoid visual noise while typing.
+            document.getElementById('param-warning').classList.add('hidden');
+        }
+
+        // --- NEW MANUAL VERIFICATION FUNCTION ---
+        function verifyManualInput() {
+            if (!calcDateObj || !calculatedBatchVal) {
+                alert("Спочатку виконайте розрахунок терміну придатності!");
+                return;
+            }
+
+            const inputDate = document.getElementById('lb-date').value;
+            const inputBatch = document.getElementById('lb-batch').value;
+            const warningEl = document.getElementById('param-warning');
+
+            let dateMismatch = false;
+            let batchMismatch = false;
+
+            // Check Date
+            if (!inputDate || inputDate !== calcDateObj) {
+                dateMismatch = true;
+            }
+
+            // Check Batch
+            if (!inputBatch || String(inputBatch).trim() !== String(calculatedBatchVal).trim()) {
+                batchMismatch = true;
+            }
+
+            if (dateMismatch || batchMismatch) {
+                isVerified = false; // Mark as NOT verified
+                warningEl.classList.remove('hidden');
+                document.getElementById('mismatchModal').classList.remove('hidden');
+                document.getElementById('mismatchModal').classList.add('flex');
+            } else {
+                isVerified = true; // Mark as Verified
+                warningEl.classList.add('hidden');
+                showToast("Дані вірні! ✅");
+            }
+        }
+
+        function showToast(message, isError = false) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast bg-white dark:bg-slate-700 border-l-4 p-4 rounded-lg shadow-xl flex items-center max-w-sm transform transition-all duration-300 translate-x-full border border-slate-200 dark:border-slate-600`;
+            if (isError) {
+                toast.classList.add('border-red-500', 'text-red-700', 'dark:text-red-400');
+                toast.innerHTML = `<span class="mr-2 text-xl">🚫</span> <span class="font-medium text-sm">${message}</span>`;
+            } else {
+                toast.classList.add('border-emerald-500', 'text-emerald-700', 'dark:text-emerald-400');
+                toast.innerHTML = `<span class="mr-2 text-xl">✅</span> <span class="font-medium text-sm">${message}</span>`;
+            }
+            container.appendChild(toast);
+            requestAnimationFrame(() => { toast.classList.remove('translate-x-full'); });
+            setTimeout(() => { toast.classList.add('translate-x-full'); setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
         function handleFiles(input) {
@@ -547,7 +701,6 @@
             const parent = btnElement.parentElement;
             parent.remove();
             
-            // Find in array (matching src)
             const src = parent.querySelector('img').src;
             uploadedFiles = uploadedFiles.filter(f => f.data !== src);
             
@@ -574,11 +727,16 @@
         function performReset() {
              document.querySelectorAll('input, textarea').forEach(el => el.value = '');
              document.querySelectorAll('select').forEach(el => { 
-                 el.value = ""; // Скидаємо в порожнє значення ("Оберіть...")
+                 el.value = ""; 
                  el.classList.remove('input-alert'); 
              });
              document.getElementById('lb-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
              clearGallery();
+             calculatedExpiryDate = ""; 
+             calculatedBatchVal = "";
+             calcDateObj = null;
+             isVerified = false; // Reset verification
+             document.getElementById('param-warning').classList.add('hidden');
              closeModal('confirmationModal');
         }
 
@@ -598,6 +756,12 @@
 
         let pendingData = null;
         function initiateSend() {
+            // CHECK VERIFICATION FIRST
+            if (!isVerified) {
+                alert("Будь ласка, натисніть кнопку 'ПІДТВЕРДИТИ' для перевірки дати та партії перед відправкою!");
+                return;
+            }
+
             const emp = empSel.value;
             const machine = document.getElementById('lb-machine').value;
             const tm = document.getElementById('lb-tm').value;
@@ -614,7 +778,6 @@
             const rowLayout = document.getElementById('check-row-layout').value;
             const pallet = document.getElementById('check-palletizing').value;
             
-            // Перевірка, чи вибрані контрольні точки
             if (!sanitary || !labelApp || !packQual || !sticker || !rowLayout || !pallet) {
                 alert("Будь ласка, проставте всі контрольні точки (ОК/НІ)!");
                 return;
@@ -628,9 +791,12 @@
             if(rowLayout.includes('❌')) alerts += "\n🔴 УВАГА: Помилка розкладки!";
             if(pallet.includes('❌')) alerts += "\n🔴 УВАГА: Помилка палетування!";
 
+            if (!document.getElementById('param-warning').classList.contains('hidden')) {
+                alerts += "\n⚠️ ПОПЕРЕДЖЕННЯ: Дата або партія змінені вручну і не відповідають розрахунковим!";
+            }
+
             let headerIcon = alerts ? "⚠️" : "🏷️";
 
-            // Генерація звіту у новому форматі
             const report = `${headerIcon} ЗВІТ QC Master: Етикетування
 ===========================
 👤 Контролер: ${emp}
@@ -640,6 +806,10 @@
 🔢 Завдання: ${task}
 🆔 Партія: ${batch}
 📅 Дата етикетки: ${document.getElementById('lb-date').value || '-'}
+
+🧪 Розрахунок:
+   • Партія: ${calculatedBatchVal ? 'L '+calculatedBatchVal : '-'}
+   • Дата: ${calculatedExpiryDate || '-'}
 
 📏 Плівка: ${document.getElementById('lb-width').value || '-'}
 🌡️ Температура: ${document.getElementById('lb-temp').value || '-'} °C
@@ -664,6 +834,8 @@ ${alerts}
                 task: task,
                 sanitary: sanitary,
                 labelDate: document.getElementById('lb-date').value,
+                calculatedExpiry: calculatedExpiryDate,
+                calculatedBatch: calculatedBatchVal ? `L ${calculatedBatchVal}` : "",
                 batch: batch,
                 width: document.getElementById('lb-width').value, 
                 temp: document.getElementById('lb-temp').value,
@@ -671,8 +843,8 @@ ${alerts}
                 checkSticker: sticker, checkLayout: rowLayout, checkPallet: pallet,
                 comment: document.getElementById('lb-comment').value,
                 report: report,
-                files: uploadedFiles, // Масив файлів для пошти
-                photo: uploadedFiles.length > 0 ? uploadedFiles[0].data : "" // Перше фото для таблиці
+                files: uploadedFiles, 
+                photo: uploadedFiles.length > 0 ? uploadedFiles[0].data : "" 
             };
 
             document.getElementById('reportPreview').innerText = report;
@@ -705,7 +877,7 @@ ${alerts}
                 
                 setTimeout(() => {
                     closeModal('sendModal');
-                    performReset(); // Автоматичне очищення форми
+                    performReset(); 
                 }, 1500);
                 
             } catch(e) { 
