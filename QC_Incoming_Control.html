@@ -151,6 +151,7 @@
                     <div class="flex items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-2">
                         <label class="text-sm font-bold text-slate-700 dark:text-slate-200 flex-1">Санітарний стан транспорту</label>
                         <select id="check-transport" class="w-40 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold cursor-pointer" onchange="checkStatus(this)">
+                            <option value="" disabled selected>Оберіть...</option>
                             <option value="✅ Відповідає">✅ Відповідає</option>
                             <option value="❌ Бруд/Шкідники">❌ Бруд/Шкідники</option>
                         </select>
@@ -159,6 +160,7 @@
                     <div class="flex items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-2">
                          <label class="text-sm font-bold text-slate-700 dark:text-slate-200 flex-1">Цілісність пакування</label>
                         <select id="check-package" class="w-40 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold cursor-pointer" onchange="checkStatus(this)">
+                            <option value="" disabled selected>Оберіть...</option>
                             <option value="✅ Ціле">✅ Ціле</option>
                             <option value="❌ Пошкоджене">❌ Пошкоджене</option>
                         </select>
@@ -167,6 +169,7 @@
                      <div class="flex items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-2">
                          <label class="text-sm font-bold text-slate-700 dark:text-slate-200 flex-1">Відповідність маркування</label>
                         <select id="check-marking" class="w-40 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold cursor-pointer" onchange="checkStatus(this)">
+                            <option value="" disabled selected>Оберіть...</option>
                             <option value="✅ Відповідає">✅ Відповідає</option>
                             <option value="❌ Помилка">❌ Помилка</option>
                         </select>
@@ -175,6 +178,7 @@
                     <div class="flex items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-2">
                          <label class="text-sm font-bold text-slate-700 dark:text-slate-200 flex-1">Супровідні документи (Якість)</label>
                         <select id="check-docs" class="w-40 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold cursor-pointer" onchange="checkStatus(this)">
+                            <option value="" disabled selected>Оберіть...</option>
                             <option value="✅ Наявні/ОК">✅ Наявні/ОК</option>
                             <option value="❌ Відсутні/Не коректні">❌ Відсутні/Bad</option>
                         </select>
@@ -183,6 +187,7 @@
                     <div class="flex items-center justify-between gap-4">
                          <label class="text-sm font-bold text-slate-700 dark:text-slate-200 flex-1">Органолептика / Зовнішній вигляд</label>
                         <select id="check-organoleptic" class="w-40 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold cursor-pointer" onchange="checkStatus(this)">
+                            <option value="" disabled selected>Оберіть...</option>
                             <option value="✅ Відповідає">✅ Відповідає</option>
                             <option value="❌ Невідповідність">❌ Невідповідність</option>
                         </select>
