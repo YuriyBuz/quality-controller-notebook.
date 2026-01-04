@@ -185,7 +185,7 @@
 
             <!-- SHELF LIFE CALCULATOR -->
             <div class="bg-indigo-50 dark:bg-slate-800/50 p-5 rounded-lg border border-indigo-100 dark:border-slate-700 mb-6">
-                <h3 class="text-sm font-bold text-indigo-800 dark:text-indigo-400 uppercase mb-4 border-b border-indigo-200 dark:border-slate-600 pb-2">Визначення терміну придатності</h3>
+                <h3 class="text-sm font-bold text-indigo-800 dark:text-indigo-400 uppercase mb-4 border-b border-indigo-200 dark:border-slate-600 pb-2">Помічник визначення терміну придатності</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 mb-1">Дата виготовлення партії</label>
@@ -195,7 +195,7 @@
                         <label class="block text-xs font-bold text-slate-500 mb-1">Номер завдання</label>
                         <input type="number" id="calc-task-num" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 transition-colors" placeholder="№">
                     </div>
-                    <button type="button" onclick="calculateShelfLife()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow transition-colors h-10 w-full sm:w-auto">
+                    <button type="button" onclick="calculateShelfLife()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow transition-colors h-10 w-full sm:w-auto">
                         Визначити
                     </button>
                 </div>
@@ -211,14 +211,14 @@
             <!-- INPUTS + CONFIRM BUTTON (Grid Layout Like Calculation) -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end mb-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">Дата на етикетці</label>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Краще спожити до</label>
                     <input type="date" id="lb-date" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 transition-colors" oninput="resetVerification()">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">Партія (Batch)</label>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Номер партії L</label>
                     <input type="number" id="lb-batch" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="000..." oninput="resetVerification()">
                 </div>
-                <button type="button" onclick="verifyManualInput()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded shadow transition-colors h-10 w-full sm:w-auto uppercase text-sm">
+                <button type="button" onclick="verifyManualInput()" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded shadow transition-colors h-10 w-full sm:w-auto uppercase text-sm">
                     Підтвердити
                 </button>
             </div>
@@ -243,8 +243,26 @@
             <div class="bg-blue-600 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md mb-4 mt-6">Контрольні точки</div>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-                <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Час</label><input type="time" id="lb-time" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors"></div>
-                <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Завдання (№)</label><input type="number" id="lb-task" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors"></div>
+                <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Час проведення контролю</label><input type="time" id="lb-time" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors"></div>
+                <div><label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Завдання на етикетування (№)</label><input type="number" id="lb-task" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors"></div>
+                <!-- Moved Fields -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Термозбіжна плівка розмір</label>
+                    <select id="lb-width" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors">
+                        <option value="">Оберіть...</option>
+                        <option value="300/300">300/300</option>
+                        <option value="350/350">350/350</option>
+                        <option value="300/350">300/350</option>
+                        <option value="350/300">350/300</option>
+                        <option value="400/350">400/350</option>
+                        <option value="350/400">350/400</option>
+                        <option value="400/400">400/400</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Температура (Тунель)</label>
+                    <input type="number" id="lb-temp" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors" placeholder="°C">
+                </div>
             </div>
 
             <div class="space-y-4">
@@ -521,7 +539,7 @@
         let isVerified = false;
 
         function updateProducts() {
-            const tm = document.getElementById('lb-tm').value;
+            const tm = document.getElementById('lb-tm').value; // Use direct DOM access
             const prodSel = document.getElementById('lb-product');
             prodSel.innerHTML = '<option value="">Оберіть...</option>';
             if (productDatabase[tm]) {
@@ -529,6 +547,7 @@
             }
         }
 
+        // --- FIXED CALCULATE FUNCTION ---
         function calculateShelfLife() {
             try {
                 const tm = document.getElementById('lb-tm').value;
@@ -541,7 +560,7 @@
                 if (!taskNum) { alert("Вкажіть номер завдання!"); return; }
 
                 let shelfLifeMonths = 0;
-                const selectedText = productValue;
+                const selectedText = productValue; // "id - name"
                 
                 if (productDatabase[tm]) {
                     const prodObj = productDatabase[tm].find(p => `${p.id} - ${p.name}` === selectedText);
@@ -555,16 +574,19 @@
                 // Safe Date Calculation (Local Time)
                 const parts = mfgDateInput.split('-');
                 const mfgYear = parseInt(parts[0], 10);
-                const mfgMonth = parseInt(parts[1], 10) - 1; 
+                const mfgMonth = parseInt(parts[1], 10) - 1; // Months are 0-indexed
                 const mfgDay = parseInt(parts[2], 10);
 
                 const mfgDate = new Date(mfgYear, mfgMonth, mfgDay);
                 
+                // Add months
                 const targetMonth = mfgDate.getMonth() + shelfLifeMonths;
                 const expiryDate = new Date(mfgYear, targetMonth, mfgDay);
                 
+                // Adjust for month overflow (e.g., Jan 31 + 1 month -> Feb 28/29)
+                // If the day changed, it means we overflowed into the next month
                 if (expiryDate.getDate() !== mfgDate.getDate()) {
-                    expiryDate.setDate(0); 
+                    expiryDate.setDate(0); // Set to last day of previous month
                 }
 
                 const day = String(expiryDate.getDate()).padStart(2, '0');
@@ -572,17 +594,21 @@
                 const year = expiryDate.getFullYear();
                 const formattedDate = `${day}.${month}.${year}`;
                 
+                // Store values
                 calculatedExpiryDate = formattedDate;
-                calcDateObj = `${year}-${month}-${day}`; 
+                calcDateObj = `${year}-${month}-${day}`; // ISO format for comparison
                 calculatedBatchVal = taskNum;
 
+                // Show Result
                 document.getElementById('sl-result-date').innerText = formattedDate;
                 document.getElementById('sl-result-batch').innerText = `L ${taskNum}`;
                 
+                // Show modal
                 const modal = document.getElementById('shelfLifeModal');
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
 
+                // Trigger Tree Animation for both left and right branches
                 const treeLeft = document.getElementById('tree-left');
                 const treeRight = document.getElementById('tree-right');
                 
@@ -778,6 +804,7 @@
             const rowLayout = document.getElementById('check-row-layout').value;
             const pallet = document.getElementById('check-palletizing').value;
             
+            // Перевірка, чи вибрані контрольні точки
             if (!sanitary || !labelApp || !packQual || !sticker || !rowLayout || !pallet) {
                 alert("Будь ласка, проставте всі контрольні точки (ОК/НІ)!");
                 return;
@@ -791,12 +818,14 @@
             if(rowLayout.includes('❌')) alerts += "\n🔴 УВАГА: Помилка розкладки!";
             if(pallet.includes('❌')) alerts += "\n🔴 УВАГА: Помилка палетування!";
 
+            // Warning about manual override
             if (!document.getElementById('param-warning').classList.contains('hidden')) {
                 alerts += "\n⚠️ ПОПЕРЕДЖЕННЯ: Дата або партія змінені вручну і не відповідають розрахунковим!";
             }
 
             let headerIcon = alerts ? "⚠️" : "🏷️";
 
+            // Генерація звіту у новому форматі
             const report = `${headerIcon} ЗВІТ QC Master: Етикетування
 ===========================
 👤 Контролер: ${emp}
@@ -834,8 +863,10 @@ ${alerts}
                 task: task,
                 sanitary: sanitary,
                 labelDate: document.getElementById('lb-date').value,
+                // Pass calculated values specifically
                 calculatedExpiry: calculatedExpiryDate,
                 calculatedBatch: calculatedBatchVal ? `L ${calculatedBatchVal}` : "",
+                
                 batch: batch,
                 width: document.getElementById('lb-width').value, 
                 temp: document.getElementById('lb-temp').value,
@@ -843,8 +874,8 @@ ${alerts}
                 checkSticker: sticker, checkLayout: rowLayout, checkPallet: pallet,
                 comment: document.getElementById('lb-comment').value,
                 report: report,
-                files: uploadedFiles, 
-                photo: uploadedFiles.length > 0 ? uploadedFiles[0].data : "" 
+                files: uploadedFiles, // Масив файлів для пошти
+                photo: uploadedFiles.length > 0 ? uploadedFiles[0].data : "" // Перше фото для таблиці
             };
 
             document.getElementById('reportPreview').innerText = report;
@@ -877,7 +908,7 @@ ${alerts}
                 
                 setTimeout(() => {
                     closeModal('sendModal');
-                    performReset(); 
+                    performReset(); // Автоматичне очищення форми
                 }, 1500);
                 
             } catch(e) { 
