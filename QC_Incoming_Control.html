@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вхідний контроль | QC Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: { colors: { slate: { 50: '#f8fafc', 800: '#1e293b', 900: '#0f172a' }, teal: { 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e' } } }
+            }
+        }
+    </script>
+    <style>
+        :root { --bg-color: #f8fafc; --card-bg: #fff; --text: #1e293b; }
+        .dark { --bg-color: #0f172a; --card-bg: #1e293b; --text: #f1f5f9; }
+        body { background-color: var(--bg-color); color: var(--text); padding-bottom: 2rem; transition: background-color 0.3s ease; }
+        .card { background-color: var(--card-bg); transition: background-color 0.3s ease; }
+        
+        input, select, textarea {
+            background-color: transparent;
+            width: 100%;
+            color: inherit;
+        }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #14b8a6; box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2); }
+        
+        /* Стиль для пустих селектів */
+        select:required:invalid { color: #94a3b8; }
+        option[value=""][disabled] { display: none; }
+        option { color: var(--text); }
+
+        .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #14b8a6; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 50; }
+        .input-alert { border-color: #ef4444 !important; background-color: rgba(239, 68, 68, 0.05) !important; }
+        
+        /* Styles for photo gallery */
+        .photo-preview-item { position: relative; width: 100%; padding-top: 100%; }
+        .photo-preview-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; border: 1px solid #e2e8f0; }
+        .photo-remove-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    </style>
+</head>
+<body class="font-sans antialiased">
+    
+    <div id="toast-container" class="fixed top-4 right-4 z-[2000] flex flex-col gap-2"></div>
+
+    <div class="container mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
+        <header class="flex items-center gap-4 mb-8">
+            <a href="index.html" class="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-teal-600 transition-colors flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+                <span class="font-bold hidden sm:inline">Меню</span>
+            </a>
+            
+            <div class="flex-1 text-center">
+                <h1 class="text-3xl font-bold text-teal-700 dark:text-teal-500">Вхідний контроль</h1>
+                <p class="text-teal-600 dark:text-teal-400 text-sm font-bold mt-1 uppercase tracking-wide">Сировина та Матеріали</p>
+            </div>
+            
+             <!-- Icon for Incoming -->
+             <div class="p-2 text-teal-500">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline>
+                    <polyline points="7.5 19.79 7.5 14.6 3 12"></polyline>
+                    <polyline points="21 12 16.5 14.6 16.5 19.79"></polyline>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+            </div>
+            
+            <button id="themeToggle" class="p-3 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
+        </header>
+
+        <div class="card p-8 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 space-y-6 relative">
+            <button onclick="resetForm()" class="absolute top-4 right-4 text-xs font-bold text-orange-600 hover:text-orange-800 bg-orange-100 hover:bg-orange-200 px-3 py-1.5 rounded-lg transition-colors dark:bg-orange-900/30 dark:text-orange-300 border border-transparent hover:border-orange-300">Скинути</button>
+
+            <!-- 1. General Info -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер *</label>
+                    <select id="employeeSelect" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors"><option value="">Оберіть...</option></select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Дата та Час *</label>
+                    <input type="datetime-local" id="inc-datetime" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors">
+                </div>
+            </div>
+
+            <!-- 2. Supplier & Doc Info -->
+             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Постачальник / Виробник *</label>
+                    <input type="text" id="inc-supplier" placeholder="Назва постачальника..." class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">№ Документа (ТТН/Інвойс) *</label>
+                    <input type="text" id="inc-doc-num" placeholder="№..." class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors">
+                </div>
+            </div>
+
+            <!-- 3. Product Selection -->
+            <div class="bg-teal-50 dark:bg-slate-800/80 p-5 rounded-lg border border-teal-100 dark:border-slate-700 space-y-4">
+                <h3 class="text-sm font-bold text-teal-800 dark:text-teal-400 uppercase mb-2 border-b border-teal-200 dark:border-slate-600 pb-2">Ідентифікація товару</h3>
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Категорія *</label>
+                    <select id="inc-category" class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 text-lg transition-colors" onchange="updateProductList()">
+                        <option value="" disabled selected>Оберіть категорію...</option>
+                        <option value="raw">Сировина / Інгредієнти</option>
+                        <option value="packaging">Тара та Упаковка</option>
+                        <option value="label">Етикетка</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Назва (Артикул) *</label>
+                    <input type="text" id="inc-product-input" list="product-datalist" placeholder="Почніть вводити назву або код..." class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 text-lg transition-colors" autocomplete="off">
+                    <datalist id="product-datalist"></datalist>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">№ Партії (Batch)</label>
+                        <input type="text" id="inc-batch" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Кількість (кг/шт)</label>
+                        <input type="text" id="inc-qty" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600">
+                    </div>
+                     <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Дата виробництва</label>
+                        <input type="date" id="inc-prod-date" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600">
+                    </div>
+                     <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Термін придатності (до)</label>
+                        <input type="date" id="inc-exp-date" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Control Points -->
+            <div class="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-lg border border-slate-200 dark:border-slate-700">
+                <h3 class="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase mb-4 border-b border-slate-200 dark:border-slate-600 pb-2">Результати контролю</h3>
+                
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-2">
+                        <label class="text-sm font-bold text-slate-700 dark:text-slate-200 flex-1">Санітарний стан транспорту</label>
+                        <select id="check-transport" class="w-40 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold cursor-pointer" onchange="checkStatus(this)">
+                            <option value="✅ Відповідає">✅ Відповідає</option>
+                            <option value="❌ Бруд/Шкідники">❌ Бруд/Шкідники</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-2">
+                         <label class="text-sm font-bold text-slate-700 dark:text-slate-200 flex-1">Цілісність пакування</label>
+                        <select id="check-package" class="w-40 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold cursor-pointer" onchange="checkStatus(this)">
+                            <option value="✅ Ціле">✅ Ціле</option>
+                            <option value="❌ Пошкоджене">❌ Пошкоджене</option>
+                        </select>
+                    </div>
+
+                     <div class="flex items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-2">
+                         <label class="text-sm font-bold text-slate-700 dark:text-slate-200 flex-1">Відповідність маркування</label>
+                        <select id="check-marking" class="w-40 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold cursor-pointer" onchange="checkStatus(this)">
+                            <option value="✅ Відповідає">✅ Відповідає</option>
+                            <option value="❌ Помилка">❌ Помилка</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-2">
+                         <label class="text-sm font-bold text-slate-700 dark:text-slate-200 flex-1">Супровідні документи (Якість)</label>
+                        <select id="check-docs" class="w-40 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold cursor-pointer" onchange="checkStatus(this)">
+                            <option value="✅ Наявні/ОК">✅ Наявні/ОК</option>
+                            <option value="❌ Відсутні/Не коректні">❌ Відсутні/Bad</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-center justify-between gap-4">
+                         <label class="text-sm font-bold text-slate-700 dark:text-slate-200 flex-1">Органолептика / Зовнішній вигляд</label>
+                        <select id="check-organoleptic" class="w-40 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold cursor-pointer" onchange="checkStatus(this)">
+                            <option value="✅ Відповідає">✅ Відповідає</option>
+                            <option value="❌ Невідповідність">❌ Невідповідність</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h4 class="font-bold text-sm mb-1 text-slate-700 dark:text-slate-200">Фото звіт</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Можна додати декілька фото</p>
+                    </div>
+                    <label class="cursor-pointer bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg shadow flex items-center gap-2 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <span>Обрати фото</span>
+                        <input type="file" id="photo-upload" accept="image/*" multiple class="hidden" onchange="handleFiles(this)">
+                    </label>
+                </div>
+                
+                <div id="gallery-container" class="grid grid-cols-3 gap-2 hidden">
+                </div>
+            </div>
+
+            <textarea id="inc-comment" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg focus:outline-none focus:border-teal-500 transition-colors" rows="2" placeholder="Коментар / Опис невідповідностей..."></textarea>
+
+            <button onclick="initiateSend()" class="w-full mt-8 bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 rounded-lg shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2 text-lg"><span>📤 Відправити звіт</span></button>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="confirmationModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50"><div class="card p-8 rounded-lg shadow-2xl max-w-sm w-full"><h3 class="font-bold text-xl mb-3 text-center">Скидання</h3><p class="mb-8 text-center text-slate-500">Очистити всю форму?</p><div class="flex justify-center gap-4"><button onclick="closeModal('confirmationModal')" class="px-6 py-3 bg-slate-100 rounded-lg font-bold">Ні</button><button onclick="performReset()" class="px-6 py-3 bg-red-600 text-white rounded-lg font-bold">Так</button></div></div></div>
+    
+    <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
+        <div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
+            <div class="text-center mb-4">
+                <div class="text-4xl mb-2">📤</div>
+                <h3 class="text-xl font-bold">Підтвердження відправки</h3>
+                <p class="text-sm text-slate-500">Перевірте введені дані</p>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto mb-6 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div>
+            <p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p>
+            <div id="sendActions" class="flex flex-col gap-3">
+                <button id="confirmSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg text-lg">✅ Підтвердити</button>
+                <button onclick="closeModal('sendModal')" class="w-full bg-transparent border-2 border-slate-300 hover:bg-slate-100 text-slate-500 font-bold py-4 rounded-lg text-lg">Скасувати</button>
+            </div>
+            <div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxbXT_k3qnIJVqJBdEKF20KaKUXv_vHiscKIggdSeZQp83N5rPpVCXJ8J-o_pMZsVKT/exec";
+        const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
+        
+        // --- Database constructed from uploaded files ---
+        const itemsDatabase = {
+            "raw": [
+                "ADD-D-001 Антиоксидант", "SPC-D-001 Апельсин сицилія чіпси", "SPC-D-002 Апельсин чіпси", "SPC-D-003 Апельсину шкірка", 
+                "NUT-D-001 Арахіс бланшований", "1046 Арахіс жарений (KV-00015305)", "ARO-L-001 Ароматизатор Абрикос", 
+                "ARO-L-002 Ароматизатор Апельсин", "ARO-L-003 Ароматизатор Арахіс", "ARO-L-004 Ароматизатор Базилік", 
+                "ARO-D-008 Ароматизатор Бекон", "ARO-L-009 Ароматизатор Васабі", "ARO-L-010 Ароматизатор Виноград",
+                "1107 Орегано (KV-00012089)", "1108 Ароматизатор Сир Чеддер (KV-00019330)", "1109 Суміш До риби (KV-00011702)",
+                "1110 Натрій цитрат (KV-00018260)", "1111 Барвник Синій блискучий (KV-00041494)", "1112 Сироватка суха молочна (KV-00019255)",
+                "1113 Лавровий лист мелений (KV-00031636)", "1114 Чебрець сорт А (KV-00020907)", "1115 Кмин (KV-00014948)",
+                "1116 Натрію EDTA (KV-00017310)", "1117 Барвник Тартразин (KV-00011705)", "1118 Фенхель мелений (KV-00020904)",
+                "1119 Гірчичний порошок (KV-00011026)", "1121 Устричний порошок", "1125 Соєвий соус порошок (SSP-N)",
+                "1128 Меляса бурякова", "1129 Оцет пряний винний Kuhne", "1004 Соевый соус порошок (SSP-J)", "1009 Соевый соус порошок (SSP-J)",
+                "1020 Соевый соус порошок (SSP-N2) Чумак", "1012 Олія кунжутна", "1016 Олія соняшникова", "1043 Мед бджолиний",
+                "1071 Суміш Прованські трави", "1076 Суміш Італійські трави", "1074 Цедра апельсину мелена", "1082 Екстракт Цибулі",
+                "1023 Ароматизатор Томатів Джотті", "1013 Барвник натуральний карамель", "1035 Сир Чеддер Dublin Dairy", "1092 Сир Парміджіано Реджіано"
+            ],
+            "packaging": [
+                "2013 Банка скло 212 ml", "3157 Банка скло 370 ml", "2032 Відро 1л (біле EL) Peri", "2035 Гофрокороб 360*290*110",
+                "2038 Гофролист 355*285", "2037 Гофропрокладка 1180*760", "3141 Гофропрокладка 1200*800", "3153 Гофроящик 150*110*250",
+                "3156 Гофроящик 360*185*105", "3154 Дозатор з гвинтовим ковпачком", "2034 Плівка ПВХ термозбіжна 400*70",
+                "2042 Плівка стрейч 1500/23", "2041 Плівка стрейч машинна 500/23", "2014 Пляшка ПЕТ 1000 мл Bonsai Premium",
+                "2010 Пляшка ПЕТ 1000 мл Фудлайн", "2024 Пляшка ПЕТ 1000 мл Чумак/Любисток", "3146 Пляшка ПЕТ 1000 мл 38 мм",
+                "2006 Пляшка ПЕТ 205 мл YKI", "2028 Пляшка ПЕТ 220 мл Bonsai GOLD", "2005 Пляшка ПЕТ 235 мл Bonsai",
+                "2015 Пляшка ПЕТ 250 мл Bonsai Premium", "2020 Пляшка ПЕТ 300 мл"
+            ],
+            "label": [
+                "3052 Етикетка Bonsai 1:1 Professional 1000 мл", "3112 Етикетка Bonsai Солодкий-Чилі 550 г", "3005 Етикетка Bonsai класичний 1000 мл",
+                "3004 Етикетка Bonsai класичний 500 мл", "3162 Етикетка Bonsai класичний 750 мл", "C3004 Етикетка Bonsai Класичний 750 мл",
+                "3135 Етикетка Bonsai УНАГІ 500 мл", "3142 Етикетка Своє,свіже Кетчуп чилі", "3143 Етикетка Своє,свіже Кетчуп",
+                "3121 Етикетка Своє,свіже Кисло-солодкий", "3105 Етикетка Своє,свіже Солодкий чилі", "3136 Етикетка Своє,свіже Тартар",
+                "3013 Етикетка Секрети Шефа Соєвий 205 мл", "3026 Етикетка Секрети Шефа Теріякі 220 г", "3062 Етикетка Секрети Шефа Соєвий 470 мл",
+                "123 Етикетка Bonsai ЯКІТОРІ 220 мл", "123 Етикетка YKI Класичний 235 мл", "123 Етикетка YKI ТЕРІЯКІ ГУСТИЙ 235 мл"
+            ]
+        };
+
+        const empSel = document.getElementById('employeeSelect');
+        employees.forEach(e => empSel.add(new Option(e, e)));
+        
+        // Set current datetime
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('inc-datetime').value = now.toISOString().slice(0,16);
+
+        let uploadedFiles = []; 
+        let pendingData = null;
+
+        function updateProductList() {
+            const category = document.getElementById('inc-category').value;
+            const datalist = document.getElementById('product-datalist');
+            const input = document.getElementById('inc-product-input');
+            
+            datalist.innerHTML = '';
+            input.value = '';
+
+            if (category && itemsDatabase[category]) {
+                itemsDatabase[category].forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item;
+                    datalist.appendChild(option);
+                });
+            }
+        }
+
+        function handleFiles(input) {
+            const files = input.files;
+            if (files && files.length > 0) {
+                const container = document.getElementById('gallery-container');
+                container.classList.remove('hidden');
+
+                Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const base64 = e.target.result;
+                        uploadedFiles.push({ name: file.name, type: file.type, data: base64 });
+                        const index = uploadedFiles.length - 1;
+                        const div = document.createElement('div');
+                        div.className = 'photo-preview-item';
+                        div.innerHTML = `<img src="${base64}"><div class="photo-remove-btn" onclick="removeFile(${index}, this)">✕</div>`;
+                        container.appendChild(div);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+            input.value = '';
+        }
+
+        function removeFile(index, btnElement) {
+            const parent = btnElement.parentElement;
+            parent.remove();
+            const src = parent.querySelector('img').src;
+            uploadedFiles = uploadedFiles.filter(f => f.data !== src);
+            if(uploadedFiles.length === 0) document.getElementById('gallery-container').classList.add('hidden');
+        }
+
+        function checkStatus(el) {
+            if (el.value.includes('❌')) el.classList.add('input-alert');
+            else el.classList.remove('input-alert');
+        }
+
+        function resetForm() { document.getElementById('confirmationModal').classList.remove('hidden'); document.getElementById('confirmationModal').classList.add('flex'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+        
+        function performReset() {
+             document.querySelectorAll('input, textarea').forEach(el => el.value = '');
+             document.querySelectorAll('select').forEach(el => { el.value = ""; el.classList.remove('input-alert'); });
+             uploadedFiles = [];
+             document.getElementById('gallery-container').innerHTML = '';
+             closeModal('confirmationModal');
+             const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+             document.getElementById('inc-datetime').value = now.toISOString().slice(0,16);
+        }
+
+        const saved = localStorage.getItem('qc_user');
+        if(saved) empSel.value = saved;
+        empSel.onchange = () => localStorage.setItem('qc_user', empSel.value);
+
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+
+        function initiateSend() {
+            const emp = empSel.value;
+            const supplier = document.getElementById('inc-supplier').value;
+            const docNum = document.getElementById('inc-doc-num').value;
+            const category = document.getElementById('inc-category').value;
+            const product = document.getElementById('inc-product-input').value;
+            
+            if(!emp || !supplier || !docNum || !category || !product) { alert("Заповніть всі обов'язкові поля!"); return; }
+
+            const trans = document.getElementById('check-transport').value;
+            const pack = document.getElementById('check-package').value;
+            const marking = document.getElementById('check-marking').value;
+            const docs = document.getElementById('check-docs').value;
+            const organoleptic = document.getElementById('check-organoleptic').value;
+            
+            let alerts = "";
+            if(trans.includes('❌')) alerts += "\n🔴 ТРАНСПОРТ: Невідповідність";
+            if(pack.includes('❌')) alerts += "\n🔴 ПАКУВАННЯ: Пошкоджене";
+            if(marking.includes('❌')) alerts += "\n🔴 МАРКУВАННЯ: Помилка";
+            if(docs.includes('❌')) alerts += "\n🔴 ДОКУМЕНТИ: Відсутні/Помилка";
+            if(organoleptic.includes('❌')) alerts += "\n🔴 ОРГАНОЛЕПТИКА: Невідповідність";
+
+            let headerIcon = alerts ? "⚠️" : "📦";
+
+            const report = `${headerIcon} ЗВІТ QC Master: Вхідний контроль
+===========================
+👤 Контролер: ${emp}
+📅 Дата: ${document.getElementById('inc-datetime').value.replace('T', ' ')}
+🚛 Постачальник: ${supplier}
+📄 № Документа: ${docNum}
+
+📦 Товар: ${product}
+📂 Категорія: ${category}
+🔢 Партія: ${document.getElementById('inc-batch').value || '-'}
+⚖️ Кількість: ${document.getElementById('inc-qty').value || '-'}
+🏭 Дата вир.: ${document.getElementById('inc-prod-date').value || '-'}
+⏳ Придатний до: ${document.getElementById('inc-exp-date').value || '-'}
+
+🔍 Результати перевірки:
+   • Транспорт: ${trans}
+   • Пакування: ${pack}
+   • Маркування: ${marking}
+   • Документи: ${docs}
+   • Органолептика: ${organoleptic}
+
+📷 Фото: ${uploadedFiles.length} шт.
+
+💬 Коментар: ${document.getElementById('inc-comment').value}
+${alerts}
+===========================`;
+
+            pendingData = {
+                type: 'incoming', 
+                time: new Date().toLocaleString('uk-UA'),
+                employee: emp,
+                supplier: supplier, docNum: docNum,
+                category: category, product: product,
+                batch: document.getElementById('inc-batch').value,
+                quantity: document.getElementById('inc-qty').value,
+                prodDate: document.getElementById('inc-prod-date').value,
+                expDate: document.getElementById('inc-exp-date').value,
+                checkTransport: trans, checkPackage: pack, checkMarking: marking,
+                checkDocs: docs, checkOrganoleptic: organoleptic,
+                comment: document.getElementById('inc-comment').value,
+                report: report,
+                files: uploadedFiles, 
+                photo: uploadedFiles.length > 0 ? uploadedFiles[0].data : ""
+            };
+
+            document.getElementById('reportPreview').innerText = report;
+            document.getElementById('sendStatus').innerText = "";
+            document.getElementById('sendActions').style.display = 'flex';
+            document.getElementById('sendSpinner').classList.add('hidden');
+            document.getElementById('sendModal').classList.remove('hidden');
+            document.getElementById('sendModal').classList.add('flex');
+        }
+
+        async function executeSend() {
+            const actions = document.getElementById('sendActions'); 
+            const spinner = document.getElementById('sendSpinner'); 
+            const status = document.getElementById('sendStatus');
+            
+            actions.style.display = 'none'; 
+            spinner.classList.remove('hidden'); 
+            status.innerText = "Відправка...";
+            
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(pendingData) 
+                });
+                
+                status.innerText = "✅ Дані відправлено (черга)!"; 
+                status.classList.add('text-emerald-600');
+                
+                setTimeout(() => {
+                    closeModal('sendModal');
+                    performReset(); 
+                }, 1500);
+                
+            } catch(e) { 
+                status.innerText = "❌ Помилка з'єднання"; 
+                status.classList.add('text-red-500'); 
+                actions.style.display = 'flex'; 
+                spinner.classList.add('hidden'); 
+            }
+        }
+        
+        document.getElementById('confirmSendBtn').onclick = executeSend;
+    </script>
+</body>
+</html>
