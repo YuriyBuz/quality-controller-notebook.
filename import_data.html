@@ -46,12 +46,10 @@
             .no-print { display: none !important; }
         }
 
-        /* Стилі для гарного відображення звіту */
-        .report-content strong { font-weight: 700; color: #a21caf; /* fuchsia-700 */ }
-        .dark .report-content strong { color: #e879f9; /* fuchsia-400 */ }
+        .report-content strong { font-weight: 700; color: #a21caf; }
+        .dark .report-content strong { color: #e879f9; }
         .report-content ul { list-style-type: none; padding-left: 0; margin-top: 0.5rem; }
         .report-content li { margin-bottom: 0.25rem; }
-        .report-header { border-bottom: 2px dashed #e2e8f0; padding-bottom: 1rem; margin-bottom: 1rem; }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -244,20 +242,16 @@
 
                 const data = await response.json();
                 currentData = data;
-                
                 renderTable(data);
                 document.getElementById('resultsArea').classList.remove('hidden');
                 document.getElementById('recordCount').innerText = data ? data.length : 0;
                 
-                if (data && data.length > 0) {
-                    showToast(`Знайдено записів: ${data.length}`);
-                } else {
-                    showToast("Записів не знайдено");
-                }
+                if (data && data.length > 0) showToast(`Знайдено записів: ${data.length}`);
+                else showToast("Записів не знайдено");
 
             } catch (e) {
                 console.error(e);
-                showToast("Помилка отримання даних (Перевірте підключення)");
+                showToast("Помилка отримання даних");
                 renderTable([]);
                 document.getElementById('resultsArea').classList.remove('hidden');
             } finally {
@@ -273,11 +267,8 @@
 
             if (!data || data.length === 0) {
                 emptyState.classList.remove('hidden');
-                if(data && data.result === 'error') {
-                     emptyState.innerHTML = `<span class="text-red-500 font-bold">Помилка сервера: ${data.error}</span>`;
-                } else {
-                     emptyState.innerHTML = `<svg class="w-12 h-12 mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span>Даних не знайдено за вказаними параметрами.</span>`;
-                }
+                if(data && data.result === 'error') emptyState.innerHTML = `<span class="text-red-500 font-bold">Помилка: ${data.error}</span>`;
+                else emptyState.innerHTML = `<svg class="w-12 h-12 mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span>Даних не знайдено.</span>`;
                 return;
             } else {
                 emptyState.classList.add('hidden');
@@ -295,44 +286,25 @@
                 }
 
                 tr.innerHTML = `
-                    <td class="px-6 py-4 font-medium whitespace-nowrap text-slate-700 dark:text-slate-300">
-                        ${row.time}
-                    </td>
-                    <td class="px-6 py-4 text-slate-600 dark:text-slate-300 font-medium">
-                        ${row.employee}
-                    </td>
-                    <td class="px-6 py-4 text-slate-500 dark:text-slate-400">
-                        <span class="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">${translateSection(row.section)}</span>
-                    </td>
-                    <td class="px-6 py-4 text-slate-500 dark:text-slate-400">
-                        <div class="flex flex-col gap-1">
-                            ${statusBadge}
-                            <span class="truncate max-w-[150px] text-xs opacity-75" title="${row.summary}">${row.summary}</span>
-                        </div>
-                    </td>
+                    <td class="px-6 py-4 font-medium whitespace-nowrap text-slate-700 dark:text-slate-300">${row.time}</td>
+                    <td class="px-6 py-4 text-slate-600 dark:text-slate-300 font-medium">${row.employee}</td>
+                    <td class="px-6 py-4 text-slate-500 dark:text-slate-400"><span class="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">${translateSection(row.section)}</span></td>
+                    <td class="px-6 py-4 text-slate-500 dark:text-slate-400"><div class="flex flex-col gap-1">${statusBadge}<span class="truncate max-w-[150px] text-xs opacity-75" title="${row.summary}">${row.summary}</span></div></td>
                     <td class="px-6 py-4 text-center no-print">
-                        <button onclick="openReport(${index})" class="text-fuchsia-600 hover:text-fuchsia-800 dark:text-fuchsia-400 dark:hover:text-fuchsia-300 font-bold text-sm bg-fuchsia-50 dark:bg-fuchsia-900/20 px-3 py-1.5 rounded-lg transition-colors border border-fuchsia-100 dark:border-fuchsia-800 hover:border-fuchsia-300">
-                            Переглянути
-                        </button>
+                        <button onclick="openReport(${index})" class="text-fuchsia-600 hover:text-fuchsia-800 dark:text-fuchsia-400 dark:hover:text-fuchsia-300 font-bold text-sm bg-fuchsia-50 dark:bg-fuchsia-900/20 px-3 py-1.5 rounded-lg transition-colors border border-fuchsia-100 dark:border-fuchsia-800 hover:border-fuchsia-300">Переглянути</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        // --- ВИПРАВЛЕНА ФУНКЦІЯ openReport ---
         function openReport(index) {
             if (!currentData || !currentData[index]) return;
             const row = currentData[index];
             const rawText = row.report || "Немає деталей";
             
-            // Format text nicely: make headers bold and handle line breaks
-            let formattedText = rawText
-                .replace(/===========================/g, '') // Remove visual separators
-                .replace(/^(.*?:)/gm, '<strong>$1</strong>') // Bold text before colon
-                .replace(/\n/g, '<br>'); // Convert newlines to HTML breaks
+            let formattedText = rawText.replace(/===========================/g, '').replace(/^(.*?:)/gm, '<strong>$1</strong>').replace(/\n/g, '<br>');
 
-            // Set Header Icon based on content type
             let icon = "📝";
             if(rawText.includes("Мийки")) icon = "🧹";
             else if(rawText.includes("ХВО")) icon = "💧";
@@ -340,13 +312,10 @@
             else if(rawText.includes("Варки")) icon = "🥣";
             else if(rawText.includes("Етикетування")) icon = "🏷️";
             document.getElementById('modalIcon').innerText = icon;
-            
-            // Inject formatted text
             document.getElementById('modalContent').innerHTML = formattedText;
 
-            // Handle photo separate container
             const photoContainer = document.getElementById('modalPhoto');
-            photoContainer.innerHTML = ''; // Clear previous photo
+            photoContainer.innerHTML = ''; 
             
             if (row.photo && row.photo.trim() !== "") {
                 const imgLabel = document.createElement('h4');
@@ -354,65 +323,55 @@
                 imgLabel.innerHTML = `<svg class="w-5 h-5 text-fuchsia-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> Фотодоказ`;
                 photoContainer.appendChild(imgLabel);
 
-                // Split by comma in case of multiple files
                 let photos = row.photo.split(',');
-
                 photos.forEach(photoRaw => {
                     let photoSrc = photoRaw.trim();
                     let isLink = photoSrc.includes("http");
                     let displaySrc = photoSrc;
 
-                    // Handle Google Drive links to make them viewable in <img> tag
+                    // КОНВЕРТАЦІЯ ПОСИЛАННЯ DRIVE В URL КАРТИНКИ
                     if (isLink && photoSrc.includes("drive.google.com")) {
-                        // Extract ID and convert to export=view format
                         let match = photoSrc.match(/\/d\/([a-zA-Z0-9_-]+)/);
                         if (match && match[1]) {
+                            // Формат для прямого відображення
                             displaySrc = "https://drive.google.com/uc?export=view&id=" + match[1];
                         }
-                    } 
-                    // Fallback for legacy Base64 (starts without header)
-                    else if (!isLink && !photoSrc.startsWith('data:image')) {
+                    } else if (!isLink && !photoSrc.startsWith('data:image')) {
                         displaySrc = 'data:image/jpeg;base64,' + photoSrc;
                     }
 
-                    // Create Image Element
+                    const imgWrapper = document.createElement('div');
+                    imgWrapper.className = "mb-4";
+
                     const img = document.createElement('img');
                     img.src = displaySrc;
-                    img.className = "max-w-full rounded-lg shadow-md border border-slate-200 dark:border-slate-700 mx-auto mb-2";
+                    img.referrerPolicy = "no-referrer"; // ВАЖЛИВО для Google Drive
+                    img.className = "max-w-full rounded-lg shadow-md border border-slate-200 dark:border-slate-700 mx-auto";
                     
-                    // Fallback button if image fails to load (e.g. strict browser privacy or 403)
+                    // Якщо картинка не завантажилась (наприклад, немає прав доступу)
                     img.onerror = function() {
                         this.style.display = 'none';
                         const linkBtn = document.createElement('a');
                         linkBtn.href = photoSrc;
                         linkBtn.target = "_blank";
-                        linkBtn.className = "block text-center bg-blue-100 text-blue-600 py-2 rounded mb-2 hover:bg-blue-200 transition text-sm font-bold";
-                        linkBtn.innerText = "Відкрити фото в Google Drive ↗";
-                        photoContainer.appendChild(linkBtn);
+                        linkBtn.className = "block text-center bg-red-50 text-red-600 py-3 rounded border border-red-100 mb-2 hover:bg-red-100 transition text-sm font-bold";
+                        linkBtn.innerHTML = "⚠️ Фото не вантажиться. <br>Натисніть тут (перевірте доступ до папки)";
+                        imgWrapper.appendChild(linkBtn);
                     };
 
-                    photoContainer.appendChild(img);
+                    imgWrapper.appendChild(img);
+                    photoContainer.appendChild(imgWrapper);
                 });
-
                 photoContainer.classList.remove('hidden');
             } else {
                 photoContainer.classList.add('hidden');
             }
-
             document.getElementById('reportModal').classList.remove('hidden');
             document.getElementById('reportModal').classList.add('flex');
         }
 
         function translateSection(sec) {
-            const map = {
-                'checklist': 'Чек-лист',
-                'sauce_boiling': 'Варки соусу',
-                'labeling': 'Етикетування',
-                'packing': 'Фасування',
-                'cleaning': 'Мийки',
-                'hvo_control': 'ХВО',
-                'incoming': 'Вхідний контроль'
-            };
+            const map = { 'checklist': 'Чек-лист', 'sauce_boiling': 'Варки соусу', 'labeling': 'Етикетування', 'packing': 'Фасування', 'cleaning': 'Мийки', 'hvo_control': 'ХВО', 'incoming': 'Вхідний контроль' };
             return map[sec] || sec;
         }
     </script>
