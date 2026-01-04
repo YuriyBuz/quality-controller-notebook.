@@ -70,7 +70,6 @@
                 <p class="text-fuchsia-600 dark:text-fuchsia-400 text-sm font-bold mt-1 uppercase tracking-wide">Аналітика та Звіти</p>
             </div>
             
-            <!-- Download Icon -->
             <div class="p-2 text-fuchsia-500">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -84,7 +83,6 @@
             </button>
         </header>
 
-        <!-- Filters Section -->
         <div class="card p-8 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 mb-8 no-print">
             <h3 class="text-sm font-bold text-fuchsia-800 dark:text-fuchsia-400 uppercase mb-6 border-b border-fuchsia-200 dark:border-slate-600 pb-2">Параметри пошуку</h3>
             
@@ -113,6 +111,7 @@
                         <option value="packing">Фасування</option>
                         <option value="cleaning">Мийки</option>
                         <option value="hvo_control">Лаб. Контроль ХВО</option>
+                        <option value="incoming">Вхідний контроль</option>
                     </select>
                 </div>
             </div>
@@ -125,7 +124,6 @@
             </div>
         </div>
 
-        <!-- Results Section -->
         <div id="resultsArea" class="hidden space-y-4">
             <div class="flex justify-between items-center mb-2 no-print">
                 <h2 class="text-2xl font-bold text-slate-700 dark:text-slate-200">Результати</h2>
@@ -152,8 +150,7 @@
                             </tr>
                         </thead>
                         <tbody id="dataTableBody" class="divide-y divide-slate-200 dark:divide-slate-700">
-                            <!-- Rows will be injected here -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
                 <div id="emptyState" class="hidden p-12 text-center text-slate-500 dark:text-slate-400 flex flex-col items-center">
@@ -165,7 +162,6 @@
 
     </div>
 
-    <!-- Modal for Full Report -->
     <div id="reportModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
         <div class="card p-6 rounded-lg shadow-2xl w-full max-w-3xl flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700 relative">
             <button onclick="document.getElementById('reportModal').classList.add('hidden'); document.getElementById('reportModal').classList.remove('flex')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors z-10">
@@ -176,19 +172,11 @@
                 <span id="modalIcon" class="text-2xl">📝</span> Деталі звіту
             </h3>
             
-            <!-- Scrollable Content -->
             <div class="overflow-y-auto flex-1 pr-2">
-                <!-- Formatted Text Content -->
                 <div class="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700 text-sm leading-relaxed text-slate-700 dark:text-slate-300 report-content" id="modalContent"></div>
                 
-                <!-- Separate Photo Container (Below Text) -->
                 <div id="modalPhoto" class="mt-6 hidden">
-                     <h4 class="font-bold text-slate-700 dark:text-slate-200 border-t border-slate-200 dark:border-slate-700 pt-4 mb-3 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-fuchsia-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        Фотодоказ
-                     </h4>
-                     <!-- Image injected here -->
-                </div>
+                     </div>
             </div>
 
             <div class="mt-6 flex justify-end border-t border-slate-100 dark:border-slate-800 pt-4">
@@ -332,6 +320,7 @@
             });
         }
 
+        // --- ВИПРАВЛЕНА ФУНКЦІЯ openReport ---
         function openReport(index) {
             if (!currentData || !currentData[index]) return;
             const row = currentData[index];
@@ -359,21 +348,52 @@
             const photoContainer = document.getElementById('modalPhoto');
             photoContainer.innerHTML = ''; // Clear previous photo
             
-            if (row.photo) {
-                let imgSrc = row.photo;
-                if (!imgSrc.startsWith('data:image')) imgSrc = 'data:image/jpeg;base64,' + imgSrc; 
-                
-                // Re-add title inside photo container
+            if (row.photo && row.photo.trim() !== "") {
                 const imgLabel = document.createElement('h4');
                 imgLabel.className = "font-bold text-slate-700 dark:text-slate-200 border-t border-slate-200 dark:border-slate-700 pt-4 mb-3 flex items-center gap-2";
                 imgLabel.innerHTML = `<svg class="w-5 h-5 text-fuchsia-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> Фотодоказ`;
-                
-                const img = document.createElement('img');
-                img.src = imgSrc;
-                img.className = "max-w-full rounded-lg shadow-md border border-slate-200 dark:border-slate-700 mx-auto";
-                
                 photoContainer.appendChild(imgLabel);
-                photoContainer.appendChild(img);
+
+                // Split by comma in case of multiple files
+                let photos = row.photo.split(',');
+
+                photos.forEach(photoRaw => {
+                    let photoSrc = photoRaw.trim();
+                    let isLink = photoSrc.includes("http");
+                    let displaySrc = photoSrc;
+
+                    // Handle Google Drive links to make them viewable in <img> tag
+                    if (isLink && photoSrc.includes("drive.google.com")) {
+                        // Extract ID and convert to export=view format
+                        let match = photoSrc.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                        if (match && match[1]) {
+                            displaySrc = "https://drive.google.com/uc?export=view&id=" + match[1];
+                        }
+                    } 
+                    // Fallback for legacy Base64 (starts without header)
+                    else if (!isLink && !photoSrc.startsWith('data:image')) {
+                        displaySrc = 'data:image/jpeg;base64,' + photoSrc;
+                    }
+
+                    // Create Image Element
+                    const img = document.createElement('img');
+                    img.src = displaySrc;
+                    img.className = "max-w-full rounded-lg shadow-md border border-slate-200 dark:border-slate-700 mx-auto mb-2";
+                    
+                    // Fallback button if image fails to load (e.g. strict browser privacy or 403)
+                    img.onerror = function() {
+                        this.style.display = 'none';
+                        const linkBtn = document.createElement('a');
+                        linkBtn.href = photoSrc;
+                        linkBtn.target = "_blank";
+                        linkBtn.className = "block text-center bg-blue-100 text-blue-600 py-2 rounded mb-2 hover:bg-blue-200 transition text-sm font-bold";
+                        linkBtn.innerText = "Відкрити фото в Google Drive ↗";
+                        photoContainer.appendChild(linkBtn);
+                    };
+
+                    photoContainer.appendChild(img);
+                });
+
                 photoContainer.classList.remove('hidden');
             } else {
                 photoContainer.classList.add('hidden');
@@ -390,7 +410,8 @@
                 'labeling': 'Етикетування',
                 'packing': 'Фасування',
                 'cleaning': 'Мийки',
-                'hvo_control': 'ХВО'
+                'hvo_control': 'ХВО',
+                'incoming': 'Вхідний контроль'
             };
             return map[sec] || sec;
         }
