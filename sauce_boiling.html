@@ -20,7 +20,7 @@
         .card { background-color: var(--card-bg); transition: background-color 0.3s ease; }
         
         /* INPUT STYLES */
-        input, select {
+        input, select, textarea {
             background-color: transparent !important;
             border: 2px solid #cbd5e1 !important;
             padding: 1.3rem 1rem !important;
@@ -31,9 +31,9 @@
             transition: border-color 0.2s;
             appearance: none;
         }
-        .dark input, .dark select { border-color: #475569 !important; background-color: #1e293b !important; }
+        .dark input, .dark select, .dark textarea { border-color: #475569 !important; background-color: #1e293b !important; }
         
-        input:focus, select:focus { outline: none; border-color: #f97316 !important; box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2); }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #f97316 !important; box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2); }
         
         /* Disabled input style */
         input:disabled, select:disabled {
@@ -57,21 +57,49 @@
         
         .input-alert { border-color: #ef4444 !important; background-color: rgba(239, 68, 68, 0.05) !important; }
         
-        .ph-alert {
+        .range-alert {
             background-color: #fee2e2 !important; 
             border-color: #ef4444 !important;
             color: #991b1b !important;
         }
-        .dark .ph-alert {
+        .dark .range-alert {
             background-color: #7f1d1d !important;
             border-color: #ef4444 !important;
             color: #fecaca !important;
+        }
+
+        /* Toggle Button Styles */
+        .toggle-btn {
+            transition: all 0.2s;
+            border: 2px solid #e2e8f0;
+            color: #64748b;
+        }
+        .dark .toggle-btn {
+            border-color: #475569;
+            color: #94a3b8;
+        }
+        .toggle-btn.active-clean {
+            background-color: #10b981; /* Emerald 500 */
+            border-color: #10b981;
+            color: white;
+        }
+        .toggle-btn.active-dirty {
+            background-color: #ef4444; /* Red 500 */
+            border-color: #ef4444;
+            color: white;
         }
 
         /* Styles for photo gallery */
         .photo-preview-item { position: relative; width: 100%; padding-top: 100%; /* 1:1 Aspect Ratio */ }
         .photo-preview-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; }
         .photo-remove-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10; }
+        
+        /* Range Info Text */
+        .range-info { font-size: 0.75rem; margin-top: 0.25rem; font-weight: 600; }
+        .range-normal { color: #64748b; }
+        .dark .range-normal { color: #94a3b8; }
+        .range-error { color: #dc2626; animation: blink 1s infinite; font-weight: bold; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -103,8 +131,9 @@
 
         <div class="card p-8 rounded-lg shadow-lg border border-orange-100 dark:border-slate-700 space-y-6 relative">
             
+            <!-- Reset Button -->
             <button onclick="resetForm()" class="absolute top-4 right-4 text-xs font-bold text-orange-600 hover:text-orange-800 bg-orange-100 hover:bg-orange-200 px-3 py-1.5 rounded-lg transition-colors dark:bg-orange-900/30 dark:text-orange-300 border border-transparent hover:border-orange-300">
-                Скинути
+                Очистити форму
             </button>
 
             <div class="mt-4">
@@ -132,7 +161,7 @@
 
             <div>
                 <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Продукт (Код/Назва) *</label>
-                <input type="text" id="tst-product" list="products-list" placeholder="Введіть код або назву..." autocomplete="off" class="rounded-lg" required oninput="checkLiquids()">
+                <input type="text" id="tst-product" list="products-list" placeholder="Введіть код або назву..." autocomplete="off" class="rounded-lg" required oninput="updateProductSpecs()">
                 <datalist id="products-list"></datalist>
             </div>
 
@@ -148,35 +177,92 @@
             </div>
             
             <div class="bg-orange-500 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md">Органолептика</div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <select id="tst-color" class="rounded-lg" onchange="checkStatus(this)" required><option value="" disabled selected>Колір...</option><option value="✅">✅ Відповідає</option><option value="❌">❌ Брак</option></select>
-                <select id="tst-aroma" class="rounded-lg" onchange="checkStatus(this)" required><option value="" disabled selected>Аромат...</option><option value="✅">✅ Відповідає</option><option value="❌">❌ Брак</option></select>
-                <select id="tst-taste" class="rounded-lg" onchange="checkStatus(this)" required><option value="" disabled selected>Смак...</option><option value="✅">✅ Відповідає</option><option value="❌">❌ Брак</option></select>
-                <select id="tst-consist" class="rounded-lg" onchange="checkStatus(this)" required><option value="" disabled selected>Консистенція...</option><option value="✅">✅ Відповідає</option><option value="❌">❌ Брак</option></select>
+            
+            <div class="space-y-4">
+                <!-- Color -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
+                    <label class="text-base font-bold text-slate-700 dark:text-slate-200">Колір</label>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button type="button" class="flex-1 sm:flex-none py-2 px-4 rounded-lg font-bold text-sm toggle-btn" onclick="setResult(this, 'color', '✅')">✅ Відповідає</button>
+                        <button type="button" class="flex-1 sm:flex-none py-2 px-4 rounded-lg font-bold text-sm toggle-btn" onclick="setResult(this, 'color', '❌')">❌ Брак</button>
+                    </div>
+                    <input type="hidden" id="tst-color" required>
+                </div>
+
+                <!-- Aroma -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
+                    <label class="text-base font-bold text-slate-700 dark:text-slate-200">Аромат</label>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button type="button" class="flex-1 sm:flex-none py-2 px-4 rounded-lg font-bold text-sm toggle-btn" onclick="setResult(this, 'aroma', '✅')">✅ Відповідає</button>
+                        <button type="button" class="flex-1 sm:flex-none py-2 px-4 rounded-lg font-bold text-sm toggle-btn" onclick="setResult(this, 'aroma', '❌')">❌ Брак</button>
+                    </div>
+                    <input type="hidden" id="tst-aroma" required>
+                </div>
+
+                <!-- Taste -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
+                    <label class="text-base font-bold text-slate-700 dark:text-slate-200">Смак</label>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button type="button" class="flex-1 sm:flex-none py-2 px-4 rounded-lg font-bold text-sm toggle-btn" onclick="setResult(this, 'taste', '✅')">✅ Відповідає</button>
+                        <button type="button" class="flex-1 sm:flex-none py-2 px-4 rounded-lg font-bold text-sm toggle-btn" onclick="setResult(this, 'taste', '❌')">❌ Брак</button>
+                    </div>
+                    <input type="hidden" id="tst-taste" required>
+                </div>
+
+                <!-- Consistency -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <label class="text-base font-bold text-slate-700 dark:text-slate-200">Консистенція</label>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button type="button" class="flex-1 sm:flex-none py-2 px-4 rounded-lg font-bold text-sm toggle-btn" onclick="setResult(this, 'consist', '✅')">✅ Відповідає</button>
+                        <button type="button" class="flex-1 sm:flex-none py-2 px-4 rounded-lg font-bold text-sm toggle-btn" onclick="setResult(this, 'consist', '❌')">❌ Брак</button>
+                    </div>
+                    <input type="hidden" id="tst-consist" required>
+                </div>
             </div>
             
             <div class="bg-orange-500 text-white p-3 rounded-lg text-center text-lg font-bold uppercase tracking-wide shadow-md">Фізико-хімія</div>
+            
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Dry Substances -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Сухі розчинні речовини, °Bx *</label>
-                    <input type="number" step="0.1" id="tst-dry" class="rounded-lg" required>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Сухі розчинні речовини, °Bx</label>
+                    <input type="number" step="0.1" id="tst-dry" class="rounded-lg" oninput="checkRange(this, 'dry')" required>
+                    <div id="range-info-dry" class="range-info range-normal"></div>
                 </div>
+                
+                <!-- Bostwick -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Bostwick, cm/30 sec *</label>
-                    <input type="number" id="tst-visc" class="rounded-lg" required>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Bostwick, cm/30 sec</label>
+                    <input type="number" step="0.1" id="tst-visc" class="rounded-lg" oninput="checkRange(this, 'visc')" required>
+                    <div id="range-info-visc" class="range-info range-normal"></div>
                 </div>
+                
+                <!-- pH -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">pH *</label>
-                    <input type="number" step="0.01" id="tst-ph" oninput="validatePH(this)" class="rounded-lg" required>
-                    <p id="ph-warning" class="hidden text-xs font-bold text-red-600 mt-1 animate-pulse">⚠️ Увага: низька кислотність!</p>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">pH</label>
+                    <input type="number" step="0.01" id="tst-ph" class="rounded-lg" oninput="checkRange(this, 'ph')" required>
+                    <div id="range-info-ph" class="range-info range-normal"></div>
                 </div>
+                
+                <!-- Stability -->
                 <div>
                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Центрифугування</label>
-                    <select id="tst-stab" class="rounded-lg" onchange="checkStatus(this)" required><option value="" disabled selected>...</option><option value="+">✅ Стійка</option><option value="-">⚠️ Не стійка</option></select>
+                    <select id="tst-stab" class="rounded-lg" onchange="checkStatus(this)" required>
+                        <option value="" disabled selected>...</option>
+                        <option value="+">✅ Стійка</option>
+                        <option value="-">⚠️ Не стійка</option>
+                    </select>
+                    <div id="range-info-stab" class="range-info range-normal mt-1"></div>
                 </div>
             </div>
 
-            <!-- MULTIPLE PHOTO UPLOAD SECTION -->
+            <!-- Comments Section -->
+            <div>
+                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Коментар</label>
+                <textarea id="tst-comment" class="rounded-lg w-full p-4 border-2 border-slate-300 dark:border-slate-600 bg-transparent focus:border-orange-500 focus:ring-0 transition-colors" rows="3" placeholder="Додаткові нотатки..."></textarea>
+            </div>
+
+            <!-- Photo Upload -->
             <div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
                 <div class="flex items-center justify-between mb-4">
                     <div>
@@ -189,11 +275,7 @@
                         <input type="file" id="photo-upload" accept="image/*" multiple class="hidden" onchange="handleFiles(this)">
                     </label>
                 </div>
-                
-                <!-- Gallery Grid -->
-                <div id="gallery-container" class="grid grid-cols-3 gap-2 hidden">
-                    <!-- Preview items will be added here -->
-                </div>
+                <div id="gallery-container" class="grid grid-cols-3 gap-2 hidden"></div>
             </div>
 
             <button onclick="initiateSend()" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2 text-lg">
@@ -202,7 +284,7 @@
         </div>
     </div>
 
-    <!-- Confirm Reset Modal -->
+    <!-- Modals -->
     <div id="confirmResetModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
         <div class="card p-8 rounded-lg shadow-2xl max-w-sm w-full border border-slate-200 dark:border-slate-700">
             <h3 class="font-bold text-xl mb-3 text-center">Скидання</h3>
@@ -214,7 +296,6 @@
         </div>
     </div>
 
-    <!-- Sending Modal -->
     <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
         <div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-700">
             <h3 class="text-2xl font-bold mb-4 text-center">Підтвердження відправки</h3>
@@ -230,7 +311,6 @@
     </div>
 
     <script>
-        // АКТУАЛЬНЕ URL (Quality Food Line)
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyMhYBzeu1zLL8iyttdwfKsuxTgiaITV1nlaGc3PyX9BZ5OtXYoYRrGM8jAlJuhIQFcjA/exec";
         
         const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
@@ -260,27 +340,280 @@
             "1801 В’ялені томати"
         ];
 
-        // Коди рідких продуктів, для яких не потрібні заміри Bostwick та Центрифугування
-        const LIQUID_IDS = [
-            "1101", "1102", "1103", "1104", "1105", "1106", "1114", "1119", 
-            "1121", "1128", "1132", "1134", "1403", "1701", "1702", "1703", "1704"
-        ];
+        // --- DATABASE INIT ---
+        const PRODUCT_SPECS_DB = {};
 
+        // Full CSV Data from user file
+        const csvData = `
+1101 Соєвий Bonsai,1101.0, +,, +,,12.8,14.8,-,-,4.5,4.8
+1102 Соєвий Bonsai Prem,1102.0, +,, +,,25.0,27.0,-,-,-,-
+1103 Соєвий YKI,1103.0, +,, +,,13.3,15.3,-,-,-,-
+1104 Соєвий Bonsai Prof,1104.0, +,, +,,37.0,39.0,-,-,-,-
+1105 Соєвий Чумак,1105.0, +,, +,,12.0,14.0,-,-,-,-
+1106 Соєвий METRO Chef,1106.0, +,, +,,27.0,29.0,-,-,-,-
+1107 ТАМАРИ Bonsai,1107.0, +,, +,,24.0,26.0,-,-,-,-
+1108 Теріякі Bonsai,1108.0, +, +, +,,17.5,19.5,9.5,11.7,-,-
+1109 УНАГІ Bonsai,1109.0, +, +, +,,26.0,28.0,8.2,10.0,-,-
+1110 ЯКІТОРІ Bonsai,1110.0, +, +, +,,18.0,20.0,9.5,11.5,-,-
+1111 Теріякі Bonsai Prem,1111.0, +, +, +,,23.0,25.0,8.0,9.7,-,-
+1112 Теріякі густий YKI,1112.0, +, +, +,,11.0,13.0,9.3,12.0,-,-
+1113 Теріякі з медом Bonsai,1113.0, +, +, +,,27.0,29.0,8.5,11.0,-,-
+1114 Теріякі рідкий YKI,1114.0, +,, +,,13.85,14.85,-,-,-,-
+1115 Теріякі Чумак,1115.0, +, +, +,,21.1,23.1,9.5,11.5,-,-
+1116 Для Суши Bonsai,1116.0, +, +, +,,15.7,17.7,-,-,-,-
+1117 Бальзамик Bonsai Prem,1117.0, +, +, +,,26.0,28.0,8.0,10.0,-,-
+1118 Горіховий Bonsai Prem,1118.0, +, +, +,,20.0,22.0,5.7,8.6,-,-
+1119 Соєвий Bonsai Prof (Custom Edition),1119.0, +,, +,,-,-,-,-,-,-
+1120 Для Суши Bonsai Prem,1120.0, +,, +,,-,-,-,-,-,-
+1121 Соєвий (O),1121.0, +,, +,,14.0,15.0,-,-,-,-
+1122 Соєвий Ketjap,1122.0, +, +, +,,38.0,39.0,-,-,-,-
+1123 Устричний Bonsai,1123.0, +, +, +,,23.8,25.8,8.5,10.5,-,-
+1124 Соєвий Солодкий Теріякі ,1124.0, +, +, +,,37.0,39.0,6.5,8.5,-,-
+1125 Соус соєвий Теріякі SESAME & GINGER PERI PERI,1125.0, +, +, +,,29.0,31.0,8.5,10.5,-,-
+1126 Соус соєвий Теріякі SWEET CHILI PERI PERI,1126.0, +, +, +,,37.4,39.4,9.5,11.0,-,-
+1127 Соус соєвий Унагі SWEET & SOUR PERI PERI,1127.0, +, +, +,,42.5,44.5,8.5,10.5,-,-
+1128 Соус соєвий SOY & WHEAT PERI PERI,1128.0, +,, +,,38.5,39.5,-,-,-,-
+1129 Маринад соєвий №1,1129.0, +, +, +,,30.58,31.58,-,-,-,-
+1130 Маринад соєвий №7,1130.0, +, +, +,,33.63,34.63,-,-,-,-
+1131 Соус Теріякі Домінос,1131.0, +, +, +,,22.0,24.0,6.7,8.0,-,-
+1132 Соус соєвий /(Суши Тайм),1132.0, +,, +,,22.31,23.31,-,-,-,-
+1133 Соєвий густий,1133.0, +, +, +,,18.7,20.7,-,-,-,-
+1134 Соус соєвий_PL,1134.0, +,, +,,28.0,30.0,-,-,3.0,3.1
+1201 Кисло-солодкий Peri Peri,1201.0, +, +, +,,18.2,20.2,5.0,8.5,-,-
+1202 Гостро-солодкий Peri Peri,1202.0, +, +, +,,21.0,23.0,2.5,7.5,-,-
+1203 Журавлинний Peri Peri,1203.0, +, +, +,,41.0,43.0,11.0,16.0,-,-
+1204 Ожиновий Peri Peri,1204.0, +, +, +,,45.5,47.5,11.0,13.0,-,-
+1205 Hot Chili PL,1205.0, +, +, +,,37.81,39.81,7.8,9.5,-,-
+"1206 Sweet Chili Peri Peri, Bonsai Prem",1206.0, +, +, +,,37.5,39.5,5.0,7.0,-,-
+1207 Гранатовий Наршараб Peri Peri,1207.0, +, +, +,,72.0,74.0,18.0,25.0,-,-
+1208 Для ЛокшиниWOK Peri Peri,1208.0, +, +, +,,24.5,26.5,11.5,13.0,-,-
+1209 Жовто-гарячий Peri Peri,1209.0, +, +, +,,26.33,28.33,1.0,3.0,-,-
+1210 Солодкий Чилі YKI,1210.0, +, +, +,,29.5,31.5,4.0,7.0,-,-
+1211 Манго-Чилі Peri Peri,1211.0, +, +, +,,28.5,30.5,4.5,6.0,-,-
+1212 Пряні трави Peri Peri,1212.0, +, +, +,,26.5,27.5,-,-,-,-
+1213 Солодкий Чилі Чумак,1213.0, +, +, +,,32.0,34.0,4.5,7.0,-,-
+1214 Солодкий Чилі Bonsai,1214.0, +, +, +,,27.0,29.0,5.0,8.0,3.0,3.5
+1216 Солодкий Чилі(SE) Bonsai Prem,1216.0, +, +, +,,29.8,30.8,-,-,-,-
+1217 Sweet Chili PL (PD),1217.0, +, +, +,,31.0,33.0,7.7,10.0,3.0,3.3
+1218 Sweet Chili PL,1218.0, +, +, +,,36.8,38.8,7.0,9.7,-,-
+1219 Ткемалі Peri Peri,1219.0, +, +, +,,14.5,16.5,7.0,9.0,3.0,3.5
+1220 Кімчі Premium,1220.0, +, +, +,,21.0,23.0,2.0,4.5,-,-
+1221 Сацебелі Peri Peri,1221.0, +, +, +,,24.5,26.5,3.5,8.5,-,-
+1301 Аризона Барбекю Peri Peri,1301.0, +, +, +,,30.0,33.0,5.5,7.0,2.0,3.0
+1302 Болоньезе Peri Peri,1302.0, +, +, +,,22.5,24.5,4.0,6.5,-,-
+1303 З в’яленими томатами Peri Peri,1303.0, +, +, +,,24.0,26.0,3.5,5.0,3.0,3.5
+1304 Кетчуп Peri Peri,1304.0, +, +, +,,32.5,34.5,3.0,5.0,-,-
+1305 Болоньєзе YKI,1305.0, +, +, +,,25.0,27.0,4.5,6.5,-,-
+1307 Для ПІЦИ Bonsai Prof,1307.0, +, +, +,,11.2,13.2,7.0,8.0,4.2,4.38
+1308 Кетчуп Лагідний YKI,1308.0, +, +, +,,-,-,-,-,-,-
+1310 Кетчуп Чілі YKI,1310.0, +, +, +,,-,-,-,-,-,-
+1312 PL_Соус Томатний (PD),1312.0, +, +, +,,11.5,13.5,5.5,7.0,4.0,4.3
+1314 PL_Соус №95 Томатний,1314.0, +, +, +,,24.0,26.0,3.5,6.0,-,-
+1315 PL_Томатна паста 1000 гр,1315.0, +, +, +,,25.0,28.0,-,-,-,-
+1401 Original Salateria,1401.0, +, +, +,,14.5,16.5,8.0,10.5,-,-
+1402 Бальзаміко Fresh Salateria,1402.0, +, +, +,,27.0,29.0,7.0,11.5,-,-
+1403 З кунжутною олією Salateria,1403.0, +,, +,,30.2,31.2,-,-,-,-
+1404 З кунжутом Salateria,1404.0, +, +, +,,27.8,28.8,9.0,11.5,-,-
+1405 Медово-гірчична Fresh Salateria,1405.0, +, +, +,,31.0,33.0,5.0,9.0,3.0,3.1
+"1501 Кунжутний PP, BProf, Salat",1501.0,, +, +, +,-,-,6.0,8.0,3.2,3.6
+1502 Сирний Bonsai Prof,1502.0,, +, +, +,-,-,-,-,-,-
+1503 Тартар Peri Peri,1503.0,, +, +, +,-,-,5.5,7.5,-,-
+1504 Цезар Peri Peri,1504.0,, +, +, +,-,-,6.0,8.0,3.5,3.6
+"1505 Сирний Bonsai Prof, Peri Peri ",1505.0,, +, +, +,-,-,5.5,7.0,-,-
+1506 ПЕСТО ROSSO,1506.0,, +, +, +,-,-,2.5,6.0,-,-
+1507 ПЕСТО,1507.0,, +, +, +,-,-,2.5,6.0,-,-
+1508 ПЕСТО PL,1508.0, +, +, +,,-,-,5.5,7.5,-,-
+1509 Майонез original 73%,1509.0,, +, +, +,-,-,0.07,2.0,3.0,4.5
+1510 PL_Вершковий (PD),1510.0, +, +, +, +,-,-,15.0,17.0,4.3,4.5
+1601 Наповнювач Вишневий PL,1601.0, +, +, +,,26.0,30.0,2.5,5.0,-,-
+1602 Наповнювач Лісова ягода PL,1602.0, +, +, +,,26.0,30.0,2.5,5.0,-,-
+1701 Концентрований компот яблучно-грушевий,1701.0, +,, +,,17.5,19.5,-,-,-,-
+1702 Концентрований компот яблучно-вишневий,1702.0, +,, +,,11.5,13.5,-,-,-,-
+1703 Концентрований компот яблучно-малиновий,1703.0, +,, +,,11.9,13.9,-,-,-,-
+1704 Концентрований компот абрикосово-персиковий,1704.0, +,, +,,11.75,13.75,-,-,-,-
+1801 В’ялені томати,1801.0, +,, +,,-,-,-,-,-,-
+`;
+
+        function parseCSV() {
+            const lines = csvData.trim().split('\n');
+            lines.forEach(line => {
+                const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                if (!matches) return;
+                
+                const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.trim().replace(/^"|"$/g, ''));
+                if(cols.length < 2) return;
+
+                const name = cols[0];
+                const codeMatch = name.match(/^\d+/);
+                const key = codeMatch ? codeMatch[0] : name;
+
+                PRODUCT_SPECS_DB[key] = {
+                    dry: { 
+                        req: cols[2] === '+', 
+                        min: parseFloat(cols[6]) || null, 
+                        max: parseFloat(cols[7]) || null 
+                    },
+                    visc: { 
+                        req: cols[3] === '+', 
+                        min: parseFloat(cols[8]) || null, 
+                        max: parseFloat(cols[9]) || null 
+                    },
+                    ph: { 
+                        req: cols[4] === '+', 
+                        min: parseFloat(cols[10]) || null, 
+                        max: parseFloat(cols[11]) || null 
+                    },
+                    stab: { 
+                        req: cols[5] === '+' 
+                    }
+                };
+            });
+        }
+
+        // Init DB
+        parseCSV();
+
+        let currentSpecs = {
+            dry: { min: null, max: null, required: true },
+            visc: { min: null, max: null, required: true },
+            ph: { min: null, max: null, required: true },
+            stab: { required: true }
+        };
+
+        function updateProductSpecs() {
+            const val = document.getElementById('tst-product').value;
+            const codeMatch = val.match(/^\d+/);
+            const key = codeMatch ? codeMatch[0] : val;
+
+            const dbSpec = PRODUCT_SPECS_DB[key];
+
+            if (dbSpec) {
+                currentSpecs = dbSpec;
+            } else {
+                currentSpecs = {
+                    dry: { min: null, max: null, required: true },
+                    visc: { min: null, max: null, required: true },
+                    ph: { min: null, max: null, required: true },
+                    stab: { required: true }
+                };
+            }
+
+            applySpecsToUI();
+        }
+
+        function applySpecsToUI() {
+            updateInputState('tst-dry', 'range-info-dry', currentSpecs.dry, "°Bx");
+            updateInputState('tst-visc', 'range-info-visc', currentSpecs.visc, "cm/30s");
+            updateInputState('tst-ph', 'range-info-ph', currentSpecs.ph, "");
+            
+            const stabSelect = document.getElementById('tst-stab');
+            const stabInfo = document.getElementById('range-info-stab');
+            
+            if (!currentSpecs.stab.req) {
+                stabSelect.disabled = true;
+                stabSelect.value = "";
+                stabSelect.parentElement.classList.add('opacity-50');
+                stabSelect.required = false;
+                stabInfo.innerText = "Не потрібно";
+                stabInfo.className = "range-info range-normal";
+            } else {
+                stabSelect.disabled = false;
+                stabSelect.parentElement.classList.remove('opacity-50');
+                stabSelect.required = true;
+                stabInfo.innerText = "";
+            }
+        }
+
+        function updateInputState(id, infoId, spec, unit) {
+            const input = document.getElementById(id);
+            const info = document.getElementById(infoId);
+            
+            if (!spec.req) {
+                input.disabled = true;
+                input.value = "";
+                input.placeholder = "Не потрібно";
+                input.parentElement.classList.add('opacity-50');
+                input.required = false;
+                info.innerText = "Не потрібно";
+                info.className = "range-info range-normal";
+                input.classList.remove('range-alert');
+            } else {
+                input.disabled = false;
+                input.placeholder = "";
+                input.parentElement.classList.remove('opacity-50');
+                input.required = true;
+                
+                const type = id.replace('tst-', '');
+                if (spec.min !== null && spec.max !== null) {
+                    info.innerText = `Норма: ${spec.min} - ${spec.max} ${unit}`;
+                } else if (type === 'ph') {
+                    info.innerText = "Стандарт безпеки: < 4.5";
+                } else {
+                    info.innerText = "Норма не задана";
+                }
+                info.className = "range-info range-normal"; 
+                
+                if (input.value) checkRange(input, type);
+            }
+        }
+
+        function checkRange(input, type) {
+            const val = parseFloat(input.value);
+            const spec = currentSpecs[type];
+            const info = document.getElementById('range-info-' + type);
+
+            if (!spec.req || isNaN(val)) {
+                input.classList.remove('range-alert');
+                return;
+            }
+
+            let isError = false;
+            let limitText = "";
+
+            if (type === 'ph' && spec.max === null) {
+                if (val > 4.5) {
+                    isError = true;
+                    limitText = "< 4.5 (Стандарт)";
+                }
+            } else if (spec.min !== null && spec.max !== null) {
+                if (val < spec.min || val > spec.max) {
+                    isError = true;
+                    limitText = `${spec.min} - ${spec.max}`;
+                }
+            }
+
+            if (isError) {
+                input.classList.add('range-alert');
+                info.innerText = `⚠️ УВАГА! Невідповідність. Планові: ${limitText}`;
+                info.className = "range-info range-error";
+            } else {
+                input.classList.remove('range-alert');
+                const unit = type === 'dry' ? '°Bx' : (type === 'visc' ? 'cm/30s' : '');
+                
+                if (spec.min !== null && spec.max !== null) {
+                    info.innerText = `Норма: ${spec.min} - ${spec.max} ${unit}`;
+                } else if (type === 'ph') {
+                    info.innerText = "Стандарт безпеки: < 4.5";
+                } else {
+                    info.innerText = "Норма не задана";
+                }
+                info.className = "range-info text-emerald-600 dark:text-emerald-400";
+            }
+        }
+
+        // --- INIT ---
         const empSel = document.getElementById('employeeSelect');
         employees.forEach(e => empSel.add(new Option(e, e)));
         const dl = document.getElementById('products-list');
         products.forEach(p => { const opt = document.createElement('option'); opt.value = p; dl.appendChild(opt); });
         
-        // Init Defaults
         document.getElementById('tst-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
         document.getElementById('tst-cookDate').valueAsDate = new Date();
 
-        // Restore User
         const saved = localStorage.getItem('qc_user');
         if(saved) empSel.value = saved;
         empSel.onchange = () => localStorage.setItem('qc_user', empSel.value);
 
-        // Theme Toggle
         document.getElementById('themeToggle').addEventListener('click', () => {
             document.documentElement.classList.toggle('dark');
             localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
@@ -289,58 +622,18 @@
             document.documentElement.classList.add('dark');
         }
 
-        // Logic for Liquid Products
-        function checkLiquids() {
-            const val = document.getElementById('tst-product').value;
-            const isLiquid = LIQUID_IDS.some(id => val.startsWith(id));
-            
-            const visc = document.getElementById('tst-visc');
-            const stab = document.getElementById('tst-stab');
-            
-            if (isLiquid) {
-                visc.disabled = true;
-                visc.value = "";
-                visc.placeholder = "Не потрібно";
-                visc.parentElement.classList.add('opacity-50');
-                
-                stab.disabled = true;
-                stab.value = "";
-                stab.parentElement.classList.add('opacity-50');
-                stab.required = false;
-                visc.required = false;
-            } else {
-                visc.disabled = false;
-                visc.placeholder = "";
-                visc.parentElement.classList.remove('opacity-50');
-                
-                stab.disabled = false;
-                stab.parentElement.classList.remove('opacity-50');
-                stab.required = true;
-                visc.required = true;
-            }
+        function setResult(btn, type, value) {
+            const parent = btn.parentElement;
+            const buttons = parent.querySelectorAll('.toggle-btn');
+            buttons.forEach(b => b.classList.remove('active-clean', 'active-dirty'));
+            document.getElementById('tst-' + type).value = value;
+            if (value === '✅') btn.classList.add('active-clean');
+            else btn.classList.add('active-dirty');
         }
 
-        // Validate pH
-        function validatePH(input) {
-            const val = parseFloat(input.value);
-            const warning = document.getElementById('ph-warning');
-            if (val > 4.5) {
-                input.classList.add('ph-alert');
-                warning.classList.remove('hidden');
-                showToast('Увага: Низька кислотність (pH > 4.5)', true);
-            } else {
-                input.classList.remove('ph-alert');
-                warning.classList.add('hidden');
-            }
-        }
-
-        // Visual Validation
         function checkStatus(el) {
-            if (el.value.includes('-') || el.value.includes('Не') || el.value === '❌') {
-                el.classList.add('input-alert');
-            } else {
-                el.classList.remove('input-alert');
-            }
+            if (el.value.includes('-') || el.value.includes('Не') || el.value === '❌') el.classList.add('input-alert');
+            else el.classList.remove('input-alert');
         }
 
         function showToast(message, isError = false) {
@@ -361,32 +654,19 @@
 
         // FILES LOGIC
         let uploadedFiles = [];
-
         function handleFiles(input) {
             const files = input.files;
             if (files && files.length > 0) {
                 const container = document.getElementById('gallery-container');
                 container.classList.remove('hidden');
-
                 Array.from(files).forEach(file => {
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         const base64 = e.target.result;
-                        // Push to storage
-                        uploadedFiles.push({
-                            name: file.name,
-                            type: file.type,
-                            data: base64
-                        });
-                        
-                        // Render Preview
-                        const index = uploadedFiles.length - 1;
+                        uploadedFiles.push({ name: file.name, type: file.type, data: base64 });
                         const div = document.createElement('div');
                         div.className = 'photo-preview-item';
-                        div.innerHTML = `
-                            <img src="${base64}">
-                            <div class="photo-remove-btn" onclick="removeFile(this, '${base64}')">✕</div>
-                        `;
+                        div.innerHTML = `<img src="${base64}"><div class="photo-remove-btn" onclick="removeFile(this, '${base64}')">✕</div>`;
                         container.appendChild(div);
                     };
                     reader.readAsDataURL(file);
@@ -394,38 +674,29 @@
             }
             input.value = '';
         }
-
         function removeFile(btnElement, dataContent) {
-            const parent = btnElement.parentElement;
-            parent.remove();
+            btnElement.parentElement.remove();
             uploadedFiles = uploadedFiles.filter(f => f.data !== dataContent);
-            if(uploadedFiles.length === 0) {
-                document.getElementById('gallery-container').classList.add('hidden');
-            }
+            if(uploadedFiles.length === 0) document.getElementById('gallery-container').classList.add('hidden');
         }
-
         function clearGallery() {
             uploadedFiles = [];
-            const container = document.getElementById('gallery-container');
-            container.innerHTML = '';
-            container.classList.add('hidden');
+            document.getElementById('gallery-container').innerHTML = '';
+            document.getElementById('gallery-container').classList.add('hidden');
         }
 
-        // Reset Logic
-        function resetForm() {
-            document.getElementById('confirmResetModal').classList.remove('hidden');
-            document.getElementById('confirmResetModal').classList.add('flex');
-        }
-
+        function resetForm() { document.getElementById('confirmResetModal').classList.remove('hidden'); document.getElementById('confirmResetModal').classList.add('flex'); }
+        
         function performReset() {
-            document.querySelectorAll('input, select').forEach(el => {
+            document.querySelectorAll('input, select, textarea').forEach(el => {
                  el.value = '';
-                 el.classList.remove('input-alert');
-                 el.disabled = false; // Enable all back
+                 el.classList.remove('input-alert', 'range-alert');
+                 el.disabled = false; 
                  if(el.parentElement.classList.contains('opacity-50')) el.parentElement.classList.remove('opacity-50');
             });
+            document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active-clean', 'active-dirty'));
+            document.querySelectorAll('.range-info').forEach(info => { info.innerText = ""; info.className = "range-info range-normal"; });
             
-            // Set defaults again
             document.getElementById('tst-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
             document.getElementById('tst-cookDate').valueAsDate = new Date();
             clearGallery();
@@ -437,6 +708,24 @@
 
         let pendingData = null;
 
+        function formatReportLine(label, value, type, suffix = '') {
+            const spec = currentSpecs[type];
+            if (!spec.req) return `• ${label}: Не потрібно`;
+            
+            const valNum = parseFloat(value);
+            let alert = "";
+            
+            if (type === 'ph' && spec.max === null && valNum > 4.5) {
+                alert = " ⚠️ ( > 4.5 )";
+            } else if (spec.min !== null && spec.max !== null) {
+                if (valNum < spec.min || valNum > spec.max) {
+                    alert = ` ⚠️ (Норма: ${spec.min}-${spec.max})`;
+                }
+            }
+            
+            return `• ${label}: ${value}${suffix}${alert}`;
+        }
+
         function initiateSend() {
             const emp = empSel.value;
             const cook = document.getElementById('tst-cookName').value;
@@ -446,46 +735,38 @@
             const visc = document.getElementById('tst-visc').value;
             const ph = document.getElementById('tst-ph').value;
             
-            // Check if liquid rules apply
-            const isLiquid = document.getElementById('tst-visc').disabled;
-
-            // ВАЛІДАЦІЯ
-            if(!emp || !cook || !prod || !task || !dry || !ph) { 
-                showToast("Заповніть всі обов'язкові поля!", true); 
-                return; 
-            }
-            if(!isLiquid && !visc) {
-                 showToast("Заповніть в'язкість (Bostwick)!", true);
-                 return;
-            }
-
-            const color = document.getElementById('tst-color').value || '-';
-            const aroma = document.getElementById('tst-aroma').value || '-';
-            const taste = document.getElementById('tst-taste').value || '-';
-            const consist = document.getElementById('tst-consist').value || '-';
-            const phVal = parseFloat(ph);
-            const stab = document.getElementById('tst-stab').value || (isLiquid ? '-' : '?');
+            if(!emp || !cook || !prod || !task) { showToast("Заповніть основні поля!", true); return; }
             
-            // Validation for selects
-            if(!document.getElementById('tst-color').value) { showToast("Оберіть колір!", true); return; }
-            if(!document.getElementById('tst-aroma').value) { showToast("Оберіть аромат!", true); return; }
-            if(!document.getElementById('tst-taste').value) { showToast("Оберіть смак!", true); return; }
-            if(!document.getElementById('tst-consist').value) { showToast("Оберіть консистенцію!", true); return; }
-            if(!isLiquid && !document.getElementById('tst-stab').value) { showToast("Оберіть стабільність!", true); return; }
+            // Check specs requirements
+            if(currentSpecs.dry.req && !dry) { showToast("Введіть сухі речовини!", true); return; }
+            if(currentSpecs.ph.req && !ph) { showToast("Введіть pH!", true); return; }
+            if(currentSpecs.visc.req && !visc) { showToast("Введіть в'язкість!", true); return; }
 
+            const color = document.getElementById('tst-color').value;
+            const aroma = document.getElementById('tst-aroma').value;
+            const taste = document.getElementById('tst-taste').value;
+            const consist = document.getElementById('tst-consist').value;
+            const comment = document.getElementById('tst-comment').value;
+
+            if(!color || !aroma || !taste || !consist) { showToast("Заповніть органолептику!", true); return; }
+            
+            const stab = document.getElementById('tst-stab').value;
+            if(currentSpecs.stab.req && !stab) { showToast("Оберіть стабільність!", true); return; }
+
+            // Range Alerts check
             let alerts = "";
-            if (phVal > 4.5) alerts += "\n🔴 УВАГА: ВИСОКИЙ pH (> 4.5)";
+            const rangeErrors = document.querySelectorAll('.range-alert');
+            if(rangeErrors.length > 0) alerts += "\n🔴 УВАГА: Невідповідність фізико-хімічних показників!";
+            
             if (color === '❌') alerts += "\n🔴 УВАГА: Невідповідність кольору";
             if (aroma === '❌') alerts += "\n🔴 УВАГА: Невідповідність запаху";
             if (taste === '❌') alerts += "\n🔴 УВАГА: Невідповідність смаку";
             if (consist === '❌') alerts += "\n🔴 УВАГА: Невідповідність консистенції";
-            if (!isLiquid && stab === '-') alerts += "\n🔴 УВАГА: Не стійка емульсія";
+            if (currentSpecs.stab.req && stab === '-') alerts += "\n🔴 УВАГА: Не стійка емульсія";
             
             let headerIcon = alerts ? "⚠️" : "🍲";
             
-            // New Report Format
             const report = `${headerIcon} ЗВІТ QC Master: Варки соусу
-===========================
 👤 Контролер: ${emp}
 🕒 Час: ${document.getElementById('tst-time').value}
 👨‍🍳 Варник: ${cook}
@@ -494,20 +775,21 @@
 📅 Дата варки: ${document.getElementById('tst-cookDate').value}
 
 👅 Органолептика:
-• Колір: ${color}
-• Аромат: ${aroma}
-• Смак: ${taste}
-• Консистенція: ${consist}
+• Колір: ${color === '✅' ? 'Відповідає' : 'Брак'}
+• Аромат: ${aroma === '✅' ? 'Відповідає' : 'Брак'}
+• Смак: ${taste === '✅' ? 'Відповідає' : 'Брак'}
+• Консистенція: ${consist === '✅' ? 'Відповідає' : 'Брак'}
 
 🧪 Фізико-хімія:
-• Сухі: ${dry}%
-• Bostwick: ${isLiquid ? 'Не потрібно' : visc}
-• pH: ${ph}
-• Центрифугування: ${isLiquid ? 'Не потрібно' : (stab === '+' ? '+' : '-')}
+${formatReportLine('Сухі', dry, 'dry', '%')}
+${formatReportLine('Bostwick', visc, 'visc')}
+${formatReportLine('pH', ph, 'ph')}
+• Центрифугування: ${stab ? (stab === '+' ? '+' : '-') : 'Не потрібно'}
+
+💬 Коментар: ${comment}
 
 📷 Фото: ${uploadedFiles.length} шт.
-${alerts}
-===========================`;
+${alerts}`; 
 
             pendingData = {
                 type: "sauce",
@@ -515,7 +797,6 @@ ${alerts}
                 employee: emp,
                 section: "Варки соусу",
                 report: report,
-                // Fields
                 cook: cook,
                 product: prod,
                 task: task,
@@ -524,10 +805,11 @@ ${alerts}
                 aroma: aroma,
                 taste: taste,
                 consist: consist,
-                dry: dry,
-                visc: isLiquid ? "N/A" : visc,
-                ph: ph,
-                stability: isLiquid ? "N/A" : stab,
+                dry: dry || "N/A",
+                visc: visc || "N/A",
+                ph: ph || "N/A",
+                stability: stab || "N/A",
+                comment: comment,
                 files: uploadedFiles,
                 photo: uploadedFiles.length > 0 ? uploadedFiles[0].data : ""
             };
@@ -583,13 +865,3 @@ ${alerts}
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
