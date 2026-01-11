@@ -40,6 +40,27 @@
         canvas { border: 2px dashed #cbd5e1; border-radius: 0.5rem; cursor: crosshair; touch-action: none; background-color: #fff; }
         .dark canvas { background-color: #fff; } 
 
+        /* Toggle Button Styles */
+        .toggle-btn {
+            transition: all 0.2s;
+            border: 2px solid #e2e8f0;
+            color: #64748b;
+        }
+        .dark .toggle-btn {
+            border-color: #475569;
+            color: #94a3b8;
+        }
+        .toggle-btn.active-clean {
+            background-color: #10b981; /* Emerald 500 */
+            border-color: #10b981;
+            color: white;
+        }
+        .toggle-btn.active-dirty {
+            background-color: #ef4444; /* Red 500 */
+            border-color: #ef4444;
+            color: white;
+        }
+
         /* Photo Gallery Styles */
         .photo-preview-item { position: relative; width: 100%; padding-top: 100%; }
         .photo-preview-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; border: 1px solid #e2e8f0; }
@@ -63,7 +84,6 @@
             </div>
             
             <div class="p-2 text-cyan-500">
-                <!-- Sparkles Icon -->
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                 </svg>
@@ -108,43 +128,86 @@
                 </div>
             </div>
 
+            <!-- Washing Type (New) -->
             <div>
-                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Об'єкт перевірки (№ / Назва) *</label>
-                <input type="text" id="clean-object" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors" placeholder="Наприклад: Котел №1">
+                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Тип Мийки *</label>
+                <select id="wash-type" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors" required>
+                    <option value="" disabled selected>Оберіть тип мийки...</option>
+                    <option value="А 1">А 1</option>
+                    <option value="А 2">А 2</option>
+                    <option value="Ополіск">Ополіск</option>
+                    <option value="Мийка гарячою водою">Мийка гарячою водою</option>
+                </select>
             </div>
 
-            <!-- Checks -->
+            <div>
+                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Об'єкт перевірки (№ / Назва) *</label>
+                <!-- Select for predefined objects -->
+                <select id="clean-object-select" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors mb-2" onchange="handleObjectChange()" required>
+                     <option value="" disabled selected>Спочатку оберіть тип обладнання...</option>
+                </select>
+                <!-- Manual input fallback -->
+                <input type="text" id="clean-object-manual" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors hidden" placeholder="Назва об'єкту вручну...">
+            </div>
+
+            <!-- Checks (Updated with Buttons on Right) -->
             <div class="bg-cyan-50 dark:bg-slate-800 p-5 rounded-lg border border-cyan-100 dark:border-slate-700">
                 <h3 class="text-sm font-bold text-cyan-800 dark:text-cyan-400 uppercase mb-4 border-b border-cyan-200 dark:border-slate-600 pb-2">Результати огляду</h3>
                 <div class="space-y-4">
-                    <div class="flex items-center justify-between">
-                        <label class="text-base font-medium">Зовнішній вигляд</label>
-                        <select id="check-ext" class="border-2 rounded-lg p-2 w-1/2 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" onchange="checkStatus(this)" required>
-                            <option value="" disabled selected>...</option>
-                            <option value="✅">✅ Чисто</option>
-                            <option value="❌">❌ Брудно</option>
-                        </select>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <label class="text-base font-medium">Внутрішня поверхня</label>
-                        <select id="check-int" class="border-2 rounded-lg p-2 w-1/2 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" onchange="checkStatus(this)" required>
-                            <option value="" disabled selected>...</option>
-                            <option value="✅">✅ Чисто</option>
-                            <option value="❌">❌ Брудно</option>
-                        </select>
-                    </div>
-                    <div class="flex flex-col gap-1">
-                        <div class="flex items-center justify-between">
-                            <label class="text-base font-medium">Вузли та агрегати</label>
-                            <select id="check-agg" class="border-2 rounded-lg p-2 w-1/2 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" onchange="checkStatus(this)" required>
-                                <option value="" disabled selected>...</option>
-                                <option value="✅">✅ Чисто</option>
-                                <option value="❌">❌ Брудно</option>
-                            </select>
+                    <!-- Check 1 -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/50 dark:border-slate-700/50 pb-3 last:border-0 last:pb-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl" id="icon-ext">❔</span>
+                            <label class="text-base font-bold text-slate-700 dark:text-slate-200">Зовнішній вигляд</label>
                         </div>
-                        <p id="agg-desc" class="text-xs text-slate-500 dark:text-slate-400 italic text-right mt-1">
-                            (Оберіть тип обладнання)
-                        </p>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <button type="button" class="flex-1 sm:flex-none py-2 px-6 rounded-lg font-bold text-sm toggle-btn" onclick="setResult(this, 'ext', '✅')">
+                                ✅ Чисто
+                            </button>
+                            <button type="button" class="flex-1 sm:flex-none py-2 px-6 rounded-lg font-bold text-sm toggle-btn" onclick="setResult(this, 'ext', '❌')">
+                                ❌ Брудно
+                            </button>
+                        </div>
+                        <input type="hidden" id="check-ext" required>
+                    </div>
+
+                    <!-- Check 2 -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/50 dark:border-slate-700/50 pb-3 last:border-0 last:pb-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl" id="icon-int">❔</span>
+                            <label class="text-base font-bold text-slate-700 dark:text-slate-200">Внутрішня поверхня</label>
+                        </div>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <button type="button" class="flex-1 sm:flex-none py-2 px-6 rounded-lg font-bold text-sm toggle-btn" onclick="setResult(this, 'int', '✅')">
+                                ✅ Чисто
+                            </button>
+                            <button type="button" class="flex-1 sm:flex-none py-2 px-6 rounded-lg font-bold text-sm toggle-btn" onclick="setResult(this, 'int', '❌')">
+                                ❌ Брудно
+                            </button>
+                        </div>
+                        <input type="hidden" id="check-int" required>
+                    </div>
+
+                    <!-- Check 3 -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div class="flex flex-col">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xl" id="icon-agg">❔</span>
+                                <label class="text-base font-bold text-slate-700 dark:text-slate-200">Суміжні Вузли та агрегати</label>
+                            </div>
+                            <p id="agg-desc" class="text-xs text-slate-500 dark:text-slate-400 italic ml-7 mt-0.5">
+                                (Оберіть тип обладнання)
+                            </p>
+                        </div>
+                        <div class="flex gap-2 w-full sm:w-auto self-start sm:self-center mt-2 sm:mt-0">
+                            <button type="button" class="flex-1 sm:flex-none py-2 px-6 rounded-lg font-bold text-sm toggle-btn" onclick="setResult(this, 'agg', '✅')">
+                                ✅ Чисто
+                            </button>
+                            <button type="button" class="flex-1 sm:flex-none py-2 px-6 rounded-lg font-bold text-sm toggle-btn" onclick="setResult(this, 'agg', '❌')">
+                                ❌ Брудно
+                            </button>
+                        </div>
+                        <input type="hidden" id="check-agg" required>
                     </div>
                 </div>
             </div>
@@ -216,7 +279,9 @@
         
         const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
         
-        // Відповідальні за типами
+        // --- ДАНІ СПИСКІВ ---
+        
+        // Відповідальні
         const respByBoilers = [
             "Садиріна Ольга Анатоліївна", "Солдатова Ірина Володимирівна", 
             "Загура Іван", "Іван Миколайович", "Кораблін Дмитро"
@@ -225,6 +290,23 @@
             "Максімюк Анатолій Вікторович", "Король Юрій Валерійович", "Гора Андрій Олександрович",
             "Максімюк Анатолій Анатолійович", "Єрко Віктор Андрійович", 
             "Мозговий Олександр Сергійович", "Хлупянець Віталій Анатолійович", "Чалий Володимир Анатолійович"
+        ];
+
+        // Об'єкти
+        const objectsByBoilers = [
+            "ВК- 1", "ВК- 3", "ВК- 4", "ВК- 5", 
+            "ВВК- 11", "ВК- 12", "ВК- 9"
+        ];
+        const objectsByLines = [
+            "Розлив лінія А", "Розлив лінія В", "Розлив лінія С", "Розлив лінія D", 
+            "Розлив лінія E", "Розлив лінія F", "Розлив лінія G", "Розлив лінія H", 
+            "Розлив лінія P", "Розлив лінія І", "Розлив лінія S"
+        ];
+        const objectsByTanks = [
+            "Накопичувач 3000л", "Накопичувач 600л", 
+            "Накопичувач 1", "Накопичувач 2", "Накопичувач 3", "Накопичувач 4", 
+            "Накопичувач 5", "Накопичувач 6", "Накопичувач 7", "Накопичувач 8", 
+            "Накопичувач 1 H2O", "Накопичувач 2 H2O"
         ];
 
         // Ініціалізація
@@ -241,34 +323,53 @@
         // Logic for Dynamic Lists & Labels
         function updateFormByType() {
             const type = document.getElementById('clean-type').value;
-            const respSel = document.getElementById('clean-resp-select');
-            const aggDesc = document.getElementById('agg-desc');
-            const manualInput = document.getElementById('clean-resp-manual');
-
-            // Reset list
-            respSel.innerHTML = '<option value="" disabled selected>Оберіть зі списку...</option>';
-            manualInput.classList.add('hidden');
             
-            let list = [];
+            // Elements for Responsibility
+            const respSel = document.getElementById('clean-resp-select');
+            const manualResp = document.getElementById('clean-resp-manual');
+            
+            // Elements for Objects
+            const objSel = document.getElementById('clean-object-select');
+            const manualObj = document.getElementById('clean-object-manual');
+
+            const aggDesc = document.getElementById('agg-desc');
+
+            // Reset lists
+            respSel.innerHTML = '<option value="" disabled selected>Оберіть зі списку...</option>';
+            manualResp.classList.add('hidden');
+            
+            objSel.innerHTML = '<option value="" disabled selected>Оберіть об\'єкт...</option>';
+            manualObj.classList.add('hidden');
+            
+            let listResp = [];
+            let listObj = [];
             let desc = "";
 
             if (type.includes('Котли')) {
-                list = respByBoilers;
+                listResp = respByBoilers;
+                listObj = objectsByBoilers;
                 desc = "(насоси, трубопроводи, естакади)";
             } else if (type.includes('Лінії')) {
-                list = respByLines;
+                listResp = respByLines;
+                listObj = objectsByLines;
                 desc = "(конвеєри, трубопроводи, укупори)";
             } else if (type.includes('Ємності')) {
-                list = []; 
+                listResp = []; 
+                listObj = objectsByTanks;
                 desc = "(трубопроводи, естакади та інше)";
             } else {
-                list = [];
+                listResp = [];
+                listObj = [];
                 desc = "(інші вузли)";
             }
 
-            // Populate select
-            list.forEach(name => respSel.add(new Option(name, name)));
+            // Populate Responsible
+            listResp.forEach(name => respSel.add(new Option(name, name)));
             respSel.add(new Option("Інший / Вручну", "other"));
+
+            // Populate Objects
+            listObj.forEach(name => objSel.add(new Option(name, name)));
+            objSel.add(new Option("Інший / Вручну", "other"));
 
             // Update label description
             aggDesc.innerText = desc;
@@ -282,7 +383,49 @@
                 manualInput.focus();
             } else {
                 manualInput.classList.add('hidden');
-                manualInput.value = ""; // Clear manual input if standard selected
+                manualInput.value = ""; 
+            }
+        }
+
+        function handleObjectChange() {
+            const val = document.getElementById('clean-object-select').value;
+            const manualInput = document.getElementById('clean-object-manual');
+            if (val === 'other') {
+                manualInput.classList.remove('hidden');
+                manualInput.focus();
+            } else {
+                manualInput.classList.add('hidden');
+                manualInput.value = ""; 
+            }
+        }
+
+        // Logic for Toggle Buttons (Results)
+        function setResult(btn, type, value) {
+            // Find parent div (closest .flex container that holds buttons)
+            // Modified to find closest button group container
+            const parent = btn.parentElement;
+            const buttons = parent.querySelectorAll('.toggle-btn');
+            
+            // Remove active classes from all siblings
+            buttons.forEach(b => {
+                b.classList.remove('active-clean', 'active-dirty');
+            });
+
+            // Set hidden input value
+            document.getElementById('check-' + type).value = value;
+
+            // Add active class to clicked button
+            if (value === '✅') {
+                btn.classList.add('active-clean');
+                // Update icon if it exists in the row (traverse up to container then find icon)
+                const container = parent.parentElement;
+                const icon = container.querySelector('[id^="icon-"]');
+                if(icon) icon.innerText = '✅';
+            } else {
+                btn.classList.add('active-dirty');
+                const container = parent.parentElement;
+                const icon = container.querySelector('[id^="icon-"]');
+                if(icon) icon.innerText = '❌';
             }
         }
 
@@ -325,21 +468,32 @@
             container.classList.add('hidden');
         }
 
-        function checkStatus(el) { if (el.value === '❌') el.classList.add('input-alert'); else el.classList.remove('input-alert'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
         function resetForm() { document.getElementById('confirmResetModal').classList.remove('hidden'); document.getElementById('confirmResetModal').classList.add('flex'); }
         
         function performReset() {
              document.querySelectorAll('input[type="text"]').forEach(el => el.value = '');
              document.querySelectorAll('select').forEach(el => {
-                 el.value = ""; // Reset to empty
+                 el.value = ""; 
                  el.classList.remove('input-alert');
              });
              
+             // Reset hidden inputs for checks
+             document.getElementById('check-ext').value = "";
+             document.getElementById('check-int').value = "";
+             document.getElementById('check-agg').value = "";
+
+             // Reset toggle buttons visuals
+             document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active-clean', 'active-dirty'));
+             document.getElementById('icon-ext').innerText = '❔';
+             document.getElementById('icon-int').innerText = '❔';
+             document.getElementById('icon-agg').innerText = '❔';
+
              clearSignature();
              clearGallery();
              document.getElementById('agg-desc').innerText = "(Оберіть тип обладнання)";
              document.getElementById('clean-resp-manual').classList.add('hidden');
+             document.getElementById('clean-object-manual').classList.add('hidden');
              
              document.getElementById('clean-date').valueAsDate = new Date();
              document.getElementById('clean-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
@@ -391,10 +545,16 @@
         
         function initiateSend() {
             const emp = empSel.value; 
-            const obj = document.getElementById('clean-object').value; 
             const type = document.getElementById('clean-type').value;
+            const washType = document.getElementById('wash-type').value;
             
-            // Get responsible person logic
+            // Object logic
+            let obj = document.getElementById('clean-object-select').value;
+            if (obj === 'other' || !obj) {
+                obj = document.getElementById('clean-object-manual').value;
+            }
+
+            // Responsible logic
             let resp = document.getElementById('clean-resp-select').value;
             if (resp === 'other' || !resp) {
                 resp = document.getElementById('clean-resp-manual').value;
@@ -403,6 +563,7 @@
             // Validation
             if(!emp) { alert("Оберіть контролера!"); return; }
             if(!type) { alert("Оберіть тип обладнання!"); return; }
+            if(!washType) { alert("Оберіть тип мийки!"); return; }
             if(!obj) { alert("Вкажіть об'єкт!"); return; }
             if(!resp) { alert("Вкажіть відповідального!"); return; }
 
@@ -410,7 +571,7 @@
             const int = document.getElementById('check-int').value;
             const agg = document.getElementById('check-agg').value;
             
-            if(!ext || !int || !agg) { alert("Заповніть результати огляду (Чисто/Брудно)!"); return; }
+            if(!ext || !int || !agg) { alert("Заповніть результати огляду (Натисніть на кнопки Чисто/Брудно)!"); return; }
             if(!hasSignature) { alert("Будь ласка, підпишіть звіт!"); return; }
 
             let alerts = "";
@@ -419,35 +580,34 @@
             let headerIcon = alerts ? "⚠️" : "📤";
 
             const report = `${headerIcon} ЗВІТ QC Master: Мийки
-===========================
 👤 Контролер: ${emp}
 🕒 Час: ${document.getElementById('clean-time').value}
 📅 Дата: ${document.getElementById('clean-date').value}
 
-🏗️ Тип: ${type}
+🏗️ Тип обладнання: ${type}
+🧽 Тип мийки: ${washType}
 ⚙️ Об'єкт: ${obj}
 
 🔍 Результати огляду:
-   • Зовнішній вигляд: ${ext === '✅' ? '+' : '-'}
-   • Внутрішня поверхня: ${int === '✅' ? '+' : '-'}
-   • Вузли та агрегати: ${agg === '✅' ? '+' : '-'}
+   • Зовнішній вигляд: ${ext === '✅' ? 'Чисто' : 'Брудно'}
+   • Внутрішня поверхня: ${int === '✅' ? 'Чисто' : 'Брудно'}
+   • Суміжні вузли та агрегати: ${agg === '✅' ? 'Чисто' : 'Брудно'}
 
 👷 Відповідальний: ${resp}
 (Підпис додано до електронного звіту)
 
 📷 Фото: ${uploadedFiles.length} шт.
-${alerts}
-===========================`;
+${alerts}`;
 
-            // Signature processing
-            const signatureData = canvas.toDataURL('image/png'); // Base64 string of signature
+            const signatureData = canvas.toDataURL('image/png');
 
             pendingData = {
                 type: 'cleaning', 
                 date: document.getElementById('clean-date').value, 
                 time: document.getElementById('clean-time').value,
                 employee: emp, 
-                equipType: type, 
+                equipType: type,
+                washType: washType, // added field
                 equipObj: obj,
                 ext: ext, int: int, agg: agg, 
                 resp: resp,
@@ -483,9 +643,3 @@ ${alerts}
     </script>
 </body>
 </html>
-
-
-
-
-
-
