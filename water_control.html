@@ -238,7 +238,7 @@
 
     <script>
         // АКТУАЛЬНЕ ПОСИЛАННЯ (Перевірено)
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHYZ0UvHBNxVSNqJ4qkbLLX6P_AcifmovdF83CHBoPVxDCNPsZgHVHIZgdyJcQKo7zsw/exec";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyMhYBzeu1zLL8iyttdwfKsuxTgiaITV1nlaGc3PyX9BZ5OtXYoYRrGM8jAlJuhIQFcjA/exec";
         
         const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
         
@@ -389,7 +389,6 @@
             let headerIcon = alerts ? "⚠️" : "💧";
 
             const report = `${headerIcon} ЗВІТ QC: Лаб. Контроль ХВО
-===========================
 👤 Контролер: ${emp}
 🕒 Час: ${document.getElementById('hvo-time').value}
 🏭 Стан системи: ${status}
@@ -411,7 +410,7 @@
 
 📷 Фото: ${uploadedFiles.length} шт.
 ${alerts}
-===========================`;
+`;
 
             pendingData = {
                 type: "hvo_control",
@@ -484,6 +483,7 @@ ${alerts}
     </script>
 </body>
 </html>
+
 
 
 
