@@ -1,329 +1,377 @@
-/**
- * QC MASTER - ЗАГАЛЬНИЙ СЕРВЕРНИЙ СКРИПТ
- * Дата оновлення: 18.01.2026
- * URL розгортання: https://script.google.com/macros/s/AKfycbv_VqCK8PHYF5MMG6G-JeEVtwqr6UPyZetCx6cy-NoP5f6KrHQ9jDje8e6m0kI7sUuqsA/exec
- * Підтримує: Вхідний контроль, Чек-листи, Варки, Фасування, Етикетування, Мийки, ХВО та Рекламації.
- */
-
-// --- НАЛАШТУВАННЯ ---
-const EMAIL_RECIPIENT = "Dyndarnastia@gmail.com,Buznitskiy7@gmail.com"; 
-const TIMEZONE = "Europe/Kiev";
-const LOGO_URL = "https://foodline-production.com/wp-content/uploads/2021/10/3752781497_3752781497.webp";
-
-const FOLDERS = {
-  INCOMING: "1zy96Uzsk9IL-tfELvK8XIDP7Z9JRifG4",
-  CHECKLIST: "181M0H7utmdm80xBoijtFnaD5NrE9tjgK",
-  SAUCE: "1x0J3xg8p0o6lSzKgT8uXdPk75qUjOUyL",
-  PACKING: "1CCl1TLqtJR9HtpQRy4XuxvGrqGBBB0r2",
-  LABELING: "166LxiIEppdm-Scb9q3YQ63hSUzGQ7ALR",
-  CLEANING: "1buIUCeuxy40BJF6RFUfcTuOXaqbIfIBZ",
-  HVO: "1jvrBMFDQ_q_uA9GY5jamChDleZHjjnnt",
-  RECLAMATION: "1HY6EcVOvlh-8xUD-Fz39-BKoYBj8XScO",
-  DEFAULT: "1N7PYUNSdEFCxw3d7Alm7f9DpvRGHUAKi"
-};
-
-// --- ГОЛОВНІ ОБРОБНИКИ ---
-
-function doGet(e) {
-  return ContentService.createTextOutput("QC Script is active.");
-}
-
-function doPost(e) {
-  const lock = LockService.getScriptLock();
-  lock.tryLock(30000);
-  
-  try {
-    const doc = SpreadsheetApp.getActiveSpreadsheet();
-    const data = JSON.parse(e.postData.contents);
-
-    if (data.action === 'getData') {
-       return ContentService.createTextOutput(JSON.stringify(handleGetData(doc, data))).setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    switch (data.type) {
-      case 'reclamation': handleReclamation(doc, data); break;
-      case 'incoming':    handleIncoming(doc, data); break;
-      case 'checklist':   handleChecklist(doc, data); break;
-      case 'sauce':       handleSauce(doc, data); break;
-      case 'packing':     handlePacking(doc, data); break;
-      case 'labeling':    handleLabeling(doc, data); break;
-      case 'cleaning':    handleCleaning(doc, data); break; 
-      case 'hvo': 
-      case 'hvo_control': handleHVO(doc, data); break;
-      default: console.error("Unknown report type: " + data.type);
-    }
-
-    return ContentService.createTextOutput(JSON.stringify({ "result": "success" })).setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ "result": "error", "error": err.toString() })).setMimeType(ContentService.MimeType.JSON);
-  } finally {
-    lock.releaseLock();
-  }
-}
-
-// --- СПЕЦІАЛЬНІ ФУНКЦІЇ ДЛЯ РЕКЛАМАЦІЙ ---
-
-function handleReclamation(doc, data) {
-  const sheet = ensureSheet(doc, "Рекламації", ["Дата запису", "Контролер", "Постачальник", "Товар", "Партія", "Дата поставки", "№ Документа", "Опис невідповідності", "Фото"]);
-  const fName = generateFileName("RECL", data.supplier);
-  
-  // Створення окремих файлів зображень для пошти та Диску
-  const blobs = createBlobs(data.files, fName);
-  const photosLinks = saveBlobsToDrive(blobs, FOLDERS.RECLAMATION);
-  
-  sheet.appendRow([getTimestamp(), data.employee, data.supplier, data.product, data.batch, data.date, data.doc, data.desc, photosLinks]);
-  
-  // Генерація PDF з вбудованими фото
-  const pdfBlob = createReclamationPDF(data);
-  
-  const subject = `⚠️ РЕКЛАМАЦІЯ: ${data.supplier} - ${data.product}`;
-  const body = `📝 Сформовано новий Акт невідповідності.\n\n` +
-               `Постачальник: ${data.supplier}\n` +
-               `Товар: ${data.product}\n\n` +
-               `Звіт PDF та фото додані до листа.`;
-  
-  sendEmail(subject, body, [pdfBlob].concat(blobs));
-}
-
-function createReclamationPDF(data) {
-  let photoHtml = "";
-  if (data.files && data.files.length > 0) {
-    photoHtml = '<div style="margin-top: 30px; page-break-before: always;"><h3>Додатки (фотофіксація невідповідності):</h3>';
-    data.files.forEach((file, index) => {
-      photoHtml += `<div style="margin-bottom: 20px; text-align: center;">
-        <img src="${file.data}" style="height: 50mm; width: auto; border: 1px solid #ddd; padding: 2px;">
-        <p style="font-size: 10px; color: #666;">Фото №${index + 1}</p>
-      </div>`;
-    });
-    photoHtml += '</div>';
-  }
-
-  const html = `
-    <html>
-      <head>
-        <style>
-          body { font-family: 'Arial', sans-serif; padding: 20px; color: #333; line-height: 1.5; }
-          .header { border-bottom: 2px solid #dc2626; padding-bottom: 10px; margin-bottom: 20px; overflow: hidden; }
-          .logo { float: right; height: 60px; }
-          .title { color: #dc2626; font-size: 20px; font-weight: bold; text-transform: uppercase; margin: 0; }
-          .info-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          .info-table td { padding: 6px; border-bottom: 1px solid #eee; font-size: 13px; }
-          .label { font-weight: bold; color: #666; width: 35%; }
-          .content-box { margin-top: 20px; padding: 15px; background: #fffcfc; border-left: 4px solid #dc2626; font-size: 13px; white-space: pre-wrap; border: 1px solid #fecaca; }
-          .footer { margin-top: 40px; border-top: 1px solid #ccc; padding-top: 15px; font-size: 11px; color: #555; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <img src="${LOGO_URL}" class="logo">
-          <p class="title">Акт невідповідності продукції</p>
-          <p style="margin: 5px 0 0; font-size: 11px;">ПП "ФУДЛАЙН ПРОДАКШН"</p>
-        </div>
-
-        <table class="info-table">
-          <tr><td class="label">Дата акта:</td><td>${getTimestamp()}</td></tr>
-          <tr><td class="label">Постачальник:</td><td>${data.supplier}</td></tr>
-          <tr><td class="label">Продукція:</td><td>${data.product}</td></tr>
-          <tr><td class="label">Партія:</td><td>${data.batch || '—'}</td></tr>
-          <tr><td class="label">Дата поставки:</td><td>${data.date || '—'}</td></tr>
-          <tr><td class="label">Документ:</td><td>${data.doc || '—'}</td></tr>
-          <tr><td class="label">Контролер QC:</td><td>${data.employee}</td></tr>
-        </table>
-
-        <div class="content-box">${data.desc}</div>
-
-        <div class="footer">
-          <p>Цей акт є офіційною претензією щодо якості. Просимо розглянути та надати відповідь.</p>
-          <table style="width: 100%; margin-top: 30px;">
-            <tr>
-              <td style="width: 50%;">
-                <p>Від ПП "ФУДЛАЙН ПРОДАКШН":</p>
-                <div style="border-bottom: 1px solid #000; width: 140px; height: 25px;"></div>
-                <p style="font-size: 9px;">(підпис, ПІБ)</p>
-              </td>
-              <td style="width: 50%; text-align: right;">
-                <p>Від Постачальника:</p>
-                <div style="border-bottom: 1px solid #000; width: 140px; height: 25px; display: inline-block;"></div>
-                <p style="font-size: 9px;">(підпис, ПІБ)</p>
-              </td>
-            </tr>
-          </table>
-        </div>
-        ${photoHtml}
-      </body>
-    </html>
-  `;
-  
-  const blob = Utilities.newBlob(html, 'text/html', 'temp.html');
-  return blob.getAs('application/pdf').setName(`Акт_Рекламація_${data.supplier}.pdf`);
-}
-
-// --- СТАНДАРТНІ ОБРОБНИКИ ІНШИХ МОДУЛІВ ---
-
-function handleIncoming(doc, data) {
-  const sheet = ensureSheet(doc, "Вхідний контроль", ["Дата запису", "Час", "Контролер", "Постачальник", "№ Документа", "Товар", "Категорія", "Партія", "Кількість", "Вироблено", "Придатний до", "Транспорт", "Пакування", "Маркування", "Документи", "Органолептика", "Коментар", "Фото"]);
-  const fName = generateFileName("Incoming", data.product);
-  const blobs = createBlobs(data.files, fName);
-  const photosLinks = saveBlobsToDrive(blobs, FOLDERS.INCOMING);
-  sheet.appendRow([getTimestamp(), data.time, data.employee, data.supplier, data.docNum, data.product, data.category, data.batch, data.quantity, data.prodDate, data.expDate, data.checkTransport, data.checkPackage, data.checkMarking, data.checkDocs, data.checkOrganoleptic, data.comment, photosLinks]);
-  sendEmail(`QC Вхідний: ${data.product}`, data.report, blobs);
-}
-
-function handleSauce(doc, data) {
-  const sheet = ensureSheet(doc, "Варки соусу", ["Дата запису", "Час", "Контролер", "Варник", "Продукт", "№ Завдання", "Дата варки", "Колір", "Аромат", "Смак", "Консистенція", "Сухі речовини", "В'язкість", "pH", "Стійкість", "Коментар", "Фото"]);
-  const fName = generateFileName("Sauce", data.product);
-  const blobs = createBlobs(data.files, fName);
-  const photosLinks = saveBlobsToDrive(blobs, FOLDERS.SAUCE);
-  sheet.appendRow([getTimestamp(), data.time, data.employee, data.cook, data.product, data.task, formatInputDate(data.cookDate), data.color, data.aroma, data.taste, data.consist, data.dry, data.visc, data.ph, data.stability, data.comment, photosLinks]);
-  sendEmail(`QC Варка: ${data.product}`, data.report, blobs, EMAIL_RECIPIENT + ",bas@vsesvit-group.com.ua");
-}
-
-function handlePacking(doc, data) {
-  const sheet = ensureSheet(doc, "Фасування", ["Дата запису", "Час", "Контролер", "Лінія", "Код продукту", "ТМ", "SKU", "Партія", "Вага", "Герметичність", "Маркування", "Зовнішній вигляд", "Кришка", "Коментар", "Фото"]);
-  const fName = generateFileName("Packing", data.sku);
-  const blobs = createBlobs(data.files, fName);
-  const photosLinks = saveBlobsToDrive(blobs, FOLDERS.PACKING);
-  sheet.appendRow([getTimestamp(), data.time, data.employee, data.line, data.productCode, data.tm, data.sku, data.batch, data.weight, data.seal, data.print, data.appearance, data.cap, data.comment, photosLinks]);
-  sendEmail(`QC Фасування: ${data.sku}`, data.report, blobs);
-}
-
-function handleLabeling(doc, data) {
-  const sheet = ensureSheet(doc, "Етикетування", ["Дата запису", "Час", "Контролер", "Машина/Лінія", "ТМ", "Продукт", "№ Завдання", "Санітарія", "Дата етикетки", "Партія", "Ширина", "Температура", "Нанесення", "Якість пака", "Стікер", "Розкладка", "Палетування", "Коментар", "Фото"]);
-  const fName = generateFileName("Label", data.product);
-  const blobs = createBlobs(data.files, fName);
-  const photosLinks = saveBlobsToDrive(blobs, FOLDERS.LABELING);
-  sheet.appendRow([getTimestamp(), data.time, data.employee, data.machine, data.tm, data.product, data.task, data.checkSanit, data.labelDate, data.batch, data.width, data.temp, data.checkApply, data.checkPack, data.checkSticker, data.checkLayout, data.checkPallet, data.comment, photosLinks]);
-  sendEmail(`QC Етикетка: ${data.product}`, data.report, blobs);
-}
-
-function handleCleaning(doc, data) {
-  const sheet = ensureSheet(doc, "Мийки", ["Дата запису", "Дата", "Час", "Контролер", "Тип обладнання", "Тип Мийки", "Об'єкт", "Зовнішній", "Внутрішній", "Агрегати", "Відповідальний", "Підпис", "Фото"]);
-  let signatureLink = "";
-  if (data.signature && data.signature.startsWith("data:")) {
-     const sigBlobs = createBlobs([{data: data.signature}], "Sig_" + data.equipObj);
-     signatureLink = saveBlobsToDrive(sigBlobs, FOLDERS.CLEANING);
-  }
-  const fName = generateFileName("Clean", data.equipObj);
-  const blobs = createBlobs(data.files, fName);
-  const photosLinks = saveBlobsToDrive(blobs, FOLDERS.CLEANING);
-  sheet.appendRow([getTimestamp(), formatInputDate(data.date), data.time, data.employee, data.equipType, data.washType, data.equipObj, data.ext, data.int, data.agg, data.resp, signatureLink, photosLinks]);
-  sendEmail(`QC Мийка: ${data.equipObj}`, data.report, blobs);
-}
-
-function handleHVO(doc, data) {
-  const sheet = ensureSheet(doc, "HVO", ["Дата запису", "Час", "Контролер", "Статус", "Сіль (1)", "Залишок (1)", "Сіль (2)", "Залишок (2)", "Аерація", "Рот. М'яка", "Рот. Чиста", "Жорсткість", "Залізо", "Марганець", "pH", "Звіт", "Фото"]);
-  const filesInput = data.files || (data.photo ? [{data: data.photo}] : []);
-  const fName = generateFileName("HVO", "System");
-  const blobs = createBlobs(filesInput, fName);
-  const photosLinks = saveBlobsToDrive(blobs, FOLDERS.HVO);
-  sheet.appendRow([getTimestamp(), data.time, data.employee, data.status, data.salt1, data.rem1, data.salt2, data.rem2, data.aeration, data.rotSoft, data.rotClean, data.hard, data.fe, data.mn, data.ph, data.report, photosLinks]);
-  if(data.report) sendEmail("QC Звіт: ХВО", data.report, blobs);
-}
-
-function handleChecklist(doc, data) {
-  const sheet = ensureSheet(doc, "Чек-лист", ["Дата запису", "Контролер", "Етап", "Виконано", "Всього", "Текст звіту", "Фото"]);
-  const filesInput = data.files || (data.photo ? [{ data: data.photo }] : []);
-  const fName = generateFileName("Checklist", data.stage);
-  const blobs = createBlobs(filesInput, fName);
-  const photosLinks = saveBlobsToDrive(blobs, FOLDERS.CHECKLIST);
-  sheet.appendRow([getTimestamp(), data.employee, data.stage, data.done, data.total, data.report, photosLinks]);
-  sendEmail(`QC Чек-лист: ${data.stage}`, data.report, blobs);
-}
-
-// --- ДОПОМІЖНІ ФУНКЦІЇ ---
-
-function createBlobs(files, baseName) {
-  if (!files || !Array.isArray(files)) return [];
-  return files.map((file, index) => {
-    try {
-      const parts = file.data.split(",");
-      const contentType = parts[0].split(":")[1].split(";")[0];
-      const extension = contentType.split("/")[1] || "png";
-      const blob = Utilities.newBlob(Utilities.base64Decode(parts[1]), contentType, `${baseName}_${index + 1}.${extension}`);
-      return blob;
-    } catch (e) { return null; }
-  }).filter(b => b !== null);
-}
-
-function saveBlobsToDrive(blobs, folderId) {
-  if (!folderId || !blobs.length) return "";
-  const folder = DriveApp.getFolderById(folderId);
-  return blobs.map(blob => folder.createFile(blob).getUrl()).join(",\n");
-}
-
-function ensureSheet(doc, name, headers) {
-  let sheet = doc.getSheetByName(name);
-  if (!sheet) {
-    sheet = doc.insertSheet(name);
-    sheet.appendRow(headers);
-    sheet.setFrozenRows(1);
-    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f4f6");
-  }
-  return sheet;
-}
-
-function getTimestamp() {
-  return Utilities.formatDate(new Date(), TIMEZONE, "dd.MM.yyyy HH:mm:ss");
-}
-
-function formatInputDate(dateStr) {
-  if (!dateStr) return "";
-  const parts = dateStr.split("-");
-  return parts.length === 3 ? `${parts[2]}.${parts[1]}.${parts[0]}` : dateStr;
-}
-
-function generateFileName(type, name) {
-  const dateStr = Utilities.formatDate(new Date(), TIMEZONE, "yyyyMMdd_HHmm");
-  const safeName = (name || "Item").toString().replace(/[^a-zA-Z0-9а-яА-ЯіїєґІЇЄҐ_\-]/g, "").substring(0, 20);
-  return `${type}_${dateStr}_${safeName}`;
-}
-
-function sendEmail(subject, body, attachments, recipientsOverride) {
-  const recipients = (recipientsOverride || EMAIL_RECIPIENT).split(",");
-  recipients.forEach(email => {
-    try {
-      MailApp.sendEmail({
-        to: email.trim(),
-        subject: subject,
-        body: body,
-        attachments: attachments || [],
-        name: "QC Master Bot"
-      });
-    } catch (e) { console.error("Email failed to " + email); }
-  });
-}
-
-/**
- * Отримання даних для сторінки історії
- */
-function handleGetData(ss, filters) {
-  const results = [];
-  const limit = 50; 
-  const sheetsConfig = {
-    'checklist': { name: 'Чек-лист', colDate: 0, colEmp: 1, mapRow: r => ({ time: r[0], employee: r[1], section: 'checklist', summary: `${r[2]} (${r[3]}/${r[4]})`, photo: r[6] }) },
-    'incoming': { name: 'Вхідний контроль', colDate: 0, colEmp: 2, mapRow: r => ({ time: r[0], employee: r[2], section: 'incoming', summary: `${r[5]} (${r[3]})`, photo: r[17] }) },
-    'reclamation': { name: 'Рекламації', colDate: 0, colEmp: 1, mapRow: r => ({ time: r[0], employee: r[1], section: 'reclamation', summary: `Акт: ${r[2]} - ${r[3]}`, photo: r[8] }) }
-  };
-  
-  const start = new Date(filters.dateStart); start.setHours(0,0,0,0);
-  const end = new Date(filters.dateEnd); end.setHours(23,59,59,999);
-  const sections = (filters.section === 'all') ? Object.keys(sheetsConfig) : [filters.section];
-  
-  sections.forEach(key => {
-    const config = sheetsConfig[key];
-    const sheet = ss.getSheetByName(config.name);
-    if (!sheet) return;
-    const data = sheet.getDataRange().getValues();
-    for (let i = data.length - 1; i >= 1; i--) {
-      const row = data[i];
-      const rowDate = new Date(row[config.colDate]);
-      if (rowDate >= start && rowDate <= end) {
-        if (filters.employee === 'all' || row[config.colEmp] === filters.employee) {
-          results.push(config.mapRow(row));
-          if (results.length >= limit) break;
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Рекламації | QC Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: { colors: { slate: { 50: '#f8fafc', 800: '#1e293b', 900: '#0f172a' } } }
+            }
         }
-      }
-    }
-  });
-  return results;
-}
+    </script>
+    <style>
+        :root { --bg-color: #f8fafc; --card-bg: #fff; --text: #1e293b; }
+        .dark { --bg-color: #0f172a; --card-bg: #1e293b; --text: #f1f5f9; }
+        body { background-color: var(--bg-color); color: var(--text); padding-bottom: 2rem; transition: background-color 0.3s ease; }
+        .card { background-color: var(--card-bg); transition: background-color 0.3s ease; }
+        input, select, textarea { background-color: transparent; width: 100%; color: inherit; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2); }
+        .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #ef4444; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 50; }
+        .photo-preview-item { position: relative; width: 100%; padding-top: 100%; }
+        .photo-preview-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; border: 1px solid #e2e8f0; }
+        .photo-remove-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; font-size: 12px; font-weight: bold; }
+        
+        .preview-table td { padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .dark .preview-table td { border-bottom-color: rgba(255,255,255,0.05); }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="font-sans antialiased">
+    <div id="toast-container" class="fixed top-4 right-4 z-[2000] flex flex-col gap-2"></div>
+
+    <div class="container mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
+        <header class="flex items-center gap-4 mb-8">
+            <a href="index.html" class="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-red-600 transition-colors flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+                <span class="font-bold hidden sm:inline">Меню</span>
+            </a>
+            
+            <div class="flex-1 text-center">
+                <h1 class="text-3xl font-bold text-red-700 dark:text-red-500">Рекламація</h1>
+                <p class="text-red-600 dark:text-red-400 text-sm font-bold mt-1 uppercase tracking-wide">ФУДЛАЙН ПРОДАКШН</p>
+            </div>
+
+            <button id="themeToggle" class="p-3 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
+        </header>
+
+        <div class="card p-8 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 space-y-6 relative">
+            <div class="mt-2">
+                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер *</label>
+                <select id="employeeSelect" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg" required>
+                    <option value="" disabled selected>Оберіть...</option>
+                </select>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Постачальник *</label>
+                    <input type="text" id="supplier" placeholder="Назва постачальника" class="border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Назва товару *</label>
+                    <input type="text" id="product" placeholder="Назва товару" class="border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4">
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Партія</label>
+                        <input type="text" id="batch" placeholder="Номер партії" class="border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Дата поставки</label>
+                        <input type="date" id="deliveryDate" class="border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">№ Документа поставки</label>
+                    <input type="text" id="docNum" placeholder="ТТН або видаткова" class="border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4">
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase">Опис невідповідності *</label>
+                        <button type="button" onclick="generateTemplate()" class="text-[10px] bg-slate-100 dark:bg-slate-700 hover:bg-red-50 text-red-600 font-bold py-1 px-2 rounded-md transition-colors border border-red-200">
+                            📄 Сформувати шаблон
+                        </button>
+                    </div>
+                    <textarea id="description" rows="10" placeholder="Детально опишіть проблему..." class="border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 text-sm"></textarea>
+                </div>
+            </div>
+
+            <!-- Фото -->
+            <div class="bg-red-50 dark:bg-red-900/10 p-4 rounded-lg border border-red-200 dark:border-red-900/30">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h4 class="font-bold text-sm mb-1 text-slate-700 dark:text-slate-200">Фото докази</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Стиснуті для PDF та пошти</p>
+                    </div>
+                    <label class="cursor-pointer bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow flex items-center gap-2 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <span>Додати</span>
+                        <input type="file" id="photo-upload" accept="image/*" multiple class="hidden" onchange="handleFiles(this)">
+                    </label>
+                </div>
+                <div id="gallery-container" class="grid grid-cols-3 gap-2 hidden"></div>
+            </div>
+
+            <button onclick="initiateSend()" class="w-full mt-8 bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-lg shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2 text-lg">
+                <span>📤 Відправити рекламацію</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Модальне вікно підтвердження -->
+    <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
+        <div class="card p-6 rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[95vh] border border-slate-200 dark:border-slate-700">
+            <div class="text-center mb-4">
+                <div class="w-14 h-14 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-2 text-3xl">📄</div>
+                <h3 class="text-xl font-bold">Перевірка даних</h3>
+                <p class="text-xs text-slate-500 uppercase tracking-widest font-semibold">Акт невідповідності</p>
+            </div>
+            
+            <div class="overflow-y-auto mb-6 pr-1 custom-scrollbar" id="reportPreview"></div>
+
+            <p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p>
+            
+            <div id="sendActions" class="flex flex-col gap-3">
+                <button id="doSendBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] text-lg">✅ Надіслати Акт</button>
+                <button onclick="closeSendModal()" class="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold py-3 rounded-xl transition-colors">Скасувати</button>
+            </div>
+            
+            <div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_VqCK8PHYF5MMG6G-JeEVtwqr6UPyZetCx6cy-NoP5f6KrHQ9jDje8e6m0kI7sUuqsA/exec";
+        const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
+        
+        const empSel = document.getElementById('employeeSelect');
+        employees.forEach(e => empSel.add(new Option(e, e)));
+        
+        const saved = localStorage.getItem('qc_user');
+        if(saved) empSel.value = saved;
+        empSel.onchange = () => localStorage.setItem('qc_user', empSel.value);
+
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+        });
+
+        function generateTemplate() {
+            const product = document.getElementById('product').value || "[назва товару]";
+            const supplier = document.getElementById('supplier').value || "[постачальник]";
+            
+            const template = `Під час перевірки поставленої продукції "${product}" від постачальника "${supplier}" було виявлені недоліки (дефекти):
+
+1. _______________________________________
+
+Зазначені недоліки є істотним порушенням якості, не відповідають безпечності харчової продукції і унеможливлюють використання партії у виробничому процесі ПП "ФУДЛАЙН ПРОДАКШН".
+
+Вимоги:
+1. Протягом 3 (трьох) робочих днів розглянути цей акт, надати письмову відповідь. Контактна особа: Долгополов Костянтин Валентинович, тел. 050 469 25 61.
+
+2. Провести розслідування щодо даного браку для запобігання подібним випадкам у майбутньому.
+
+Додатки: 
+1. Фотографії, що ілюструють невідповідність (________________________________)`;
+            
+            document.getElementById('description').value = template;
+            showToast("Шаблон сформовано");
+        }
+
+        let uploadedFiles = [];
+        async function handleFiles(input) {
+            const files = input.files;
+            if (files && files.length > 0) {
+                const container = document.getElementById('gallery-container');
+                container.classList.remove('hidden');
+                
+                for (const file of Array.from(files)) {
+                    const base64 = await resizeAndCompress(file);
+                    uploadedFiles.push({ name: file.name, type: "image/jpeg", data: base64 });
+                    const div = document.createElement('div');
+                    div.className = 'photo-preview-item';
+                    div.innerHTML = `<img src="${base64}"><div class="photo-remove-btn" onclick="removeFile(this, '${base64}')">✕</div>`;
+                    container.appendChild(div);
+                }
+            }
+            input.value = '';
+        }
+
+        function resizeAndCompress(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const maxSide = 1200;
+                        
+                        if (width > height && width > maxSide) {
+                            height = (height * maxSide) / width;
+                            width = maxSide;
+                        } else if (height > maxSide) {
+                            width = (width * maxSide) / height;
+                            height = maxSide;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.7));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function removeFile(btn, data) {
+            btn.parentElement.remove();
+            uploadedFiles = uploadedFiles.filter(f => f.data !== data);
+            if(!uploadedFiles.length) document.getElementById('gallery-container').classList.add('hidden');
+        }
+
+        function showToast(msg, error = false) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `p-4 rounded-lg shadow-lg border-l-4 ${error ? 'bg-red-50 border-red-500 text-red-700' : 'bg-emerald-50 border-emerald-500 text-emerald-700'}`;
+            toast.innerText = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        let pendingData = null;
+        function initiateSend() {
+            const data = {
+                type: "reclamation",
+                employee: empSel.value,
+                supplier: document.getElementById('supplier').value,
+                product: document.getElementById('product').value,
+                batch: document.getElementById('batch').value,
+                date: document.getElementById('deliveryDate').value,
+                doc: document.getElementById('docNum').value,
+                desc: document.getElementById('description').value,
+                files: uploadedFiles
+            };
+
+            if(!data.employee || !data.supplier || !data.product || !data.desc) {
+                showToast("Заповніть обов'язкові поля (*)", true);
+                return;
+            }
+
+            pendingData = data;
+            
+            let photoThumbnails = uploadedFiles.map(f => `<img src="${f.data}" class="w-12 h-12 object-cover rounded border border-slate-200">`).join('');
+            
+            document.getElementById('reportPreview').innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex justify-center mb-2">
+                         <img src="https://foodline-production.com/wp-content/uploads/2021/10/3752781497_3752781497.webp" class="h-8 w-auto opacity-80" alt="Logo">
+                    </div>
+                    <div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                        <table class="w-full text-sm preview-table">
+                            <tr>
+                                <td class="font-bold text-slate-400 w-2/5 uppercase text-[9px] flex items-center">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                    Постачальник
+                                </td>
+                                <td class="py-1 font-semibold">${data.supplier}</td>
+                            </tr>
+                            <tr>
+                                <td class="font-bold text-slate-400 w-2/5 uppercase text-[9px] flex items-center">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                                    Товар
+                                </td>
+                                <td class="py-1 font-semibold">${data.product}</td>
+                            </tr>
+                            <tr>
+                                <td class="font-bold text-slate-400 w-2/5 uppercase text-[9px] flex items-center">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 11h.01M7 15h.01M13 7h.01M13 11h.01M13 15h.01M17 7h.01M17 11h.01M17 15h.01M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                                    Партія
+                                </td>
+                                <td class="py-1 font-medium">${data.batch || '—'}</td>
+                            </tr>
+                            <tr>
+                                <td class="font-bold text-slate-400 w-2/5 uppercase text-[9px] flex items-center">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    Дата док.
+                                </td>
+                                <td class="py-1">${data.date || '—'}</td>
+                            </tr>
+                            <tr>
+                                <td class="font-bold text-slate-400 w-2/5 uppercase text-[9px] flex items-center">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    Документ
+                                </td>
+                                <td class="py-1 text-[11px]">${data.doc || '—'}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase mb-1 px-1 flex items-center">
+                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                            Текст Акта
+                        </p>
+                        <div class="bg-red-50 dark:bg-red-900/10 p-3 rounded-xl border border-red-100 dark:border-red-900/20 text-[10px] text-slate-700 dark:text-slate-300 max-h-40 overflow-y-auto custom-scrollbar">
+                            ${data.desc.replace(/\n/g, '<br>')}
+                        </div>
+                    </div>
+
+                    ${uploadedFiles.length > 0 ? `
+                        <div>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase mb-2 px-1 flex items-center">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h14a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                Фото докази (${uploadedFiles.length})
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                                ${photoThumbnails}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="text-[10px] text-center text-slate-400 italic pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center">
+                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                        Склав: ${data.employee}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('sendModal').classList.remove('hidden');
+            document.getElementById('sendModal').classList.add('flex');
+        }
+
+        async function executeSend() {
+            const actions = document.getElementById('sendActions');
+            const spinner = document.getElementById('sendSpinner');
+            const status = document.getElementById('sendStatus');
+
+            actions.style.display = 'none';
+            spinner.classList.remove('hidden');
+            status.innerText = "Формування PDF та відправка...";
+
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify(pendingData)
+                });
+                status.innerText = "✅ Відправлено успішно!";
+                setTimeout(() => location.reload(), 2000);
+            } catch(e) {
+                status.innerText = "❌ Помилка з'єднання";
+                actions.style.display = 'flex';
+                spinner.classList.add('hidden');
+            }
+        }
+        document.getElementById('doSendBtn').onclick = executeSend;
+        function closeSendModal() { document.getElementById('sendModal').classList.add('hidden'); document.getElementById('sendModal').classList.remove('flex'); }
+    </script>
+</body>
+</html>
