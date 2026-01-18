@@ -1,0 +1,329 @@
+/**
+ * QC MASTER - ЗАГАЛЬНИЙ СЕРВЕРНИЙ СКРИПТ
+ * Дата оновлення: 18.01.2026
+ * URL розгортання: https://script.google.com/macros/s/AKfycbv_VqCK8PHYF5MMG6G-JeEVtwqr6UPyZetCx6cy-NoP5f6KrHQ9jDje8e6m0kI7sUuqsA/exec
+ * Підтримує: Вхідний контроль, Чек-листи, Варки, Фасування, Етикетування, Мийки, ХВО та Рекламації.
+ */
+
+// --- НАЛАШТУВАННЯ ---
+const EMAIL_RECIPIENT = "Dyndarnastia@gmail.com,Buznitskiy7@gmail.com"; 
+const TIMEZONE = "Europe/Kiev";
+const LOGO_URL = "https://foodline-production.com/wp-content/uploads/2021/10/3752781497_3752781497.webp";
+
+const FOLDERS = {
+  INCOMING: "1zy96Uzsk9IL-tfELvK8XIDP7Z9JRifG4",
+  CHECKLIST: "181M0H7utmdm80xBoijtFnaD5NrE9tjgK",
+  SAUCE: "1x0J3xg8p0o6lSzKgT8uXdPk75qUjOUyL",
+  PACKING: "1CCl1TLqtJR9HtpQRy4XuxvGrqGBBB0r2",
+  LABELING: "166LxiIEppdm-Scb9q3YQ63hSUzGQ7ALR",
+  CLEANING: "1buIUCeuxy40BJF6RFUfcTuOXaqbIfIBZ",
+  HVO: "1jvrBMFDQ_q_uA9GY5jamChDleZHjjnnt",
+  RECLAMATION: "1HY6EcVOvlh-8xUD-Fz39-BKoYBj8XScO",
+  DEFAULT: "1N7PYUNSdEFCxw3d7Alm7f9DpvRGHUAKi"
+};
+
+// --- ГОЛОВНІ ОБРОБНИКИ ---
+
+function doGet(e) {
+  return ContentService.createTextOutput("QC Script is active.");
+}
+
+function doPost(e) {
+  const lock = LockService.getScriptLock();
+  lock.tryLock(30000);
+  
+  try {
+    const doc = SpreadsheetApp.getActiveSpreadsheet();
+    const data = JSON.parse(e.postData.contents);
+
+    if (data.action === 'getData') {
+       return ContentService.createTextOutput(JSON.stringify(handleGetData(doc, data))).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    switch (data.type) {
+      case 'reclamation': handleReclamation(doc, data); break;
+      case 'incoming':    handleIncoming(doc, data); break;
+      case 'checklist':   handleChecklist(doc, data); break;
+      case 'sauce':       handleSauce(doc, data); break;
+      case 'packing':     handlePacking(doc, data); break;
+      case 'labeling':    handleLabeling(doc, data); break;
+      case 'cleaning':    handleCleaning(doc, data); break; 
+      case 'hvo': 
+      case 'hvo_control': handleHVO(doc, data); break;
+      default: console.error("Unknown report type: " + data.type);
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({ "result": "success" })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ "result": "error", "error": err.toString() })).setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// --- СПЕЦІАЛЬНІ ФУНКЦІЇ ДЛЯ РЕКЛАМАЦІЙ ---
+
+function handleReclamation(doc, data) {
+  const sheet = ensureSheet(doc, "Рекламації", ["Дата запису", "Контролер", "Постачальник", "Товар", "Партія", "Дата поставки", "№ Документа", "Опис невідповідності", "Фото"]);
+  const fName = generateFileName("RECL", data.supplier);
+  
+  // Створення окремих файлів зображень для пошти та Диску
+  const blobs = createBlobs(data.files, fName);
+  const photosLinks = saveBlobsToDrive(blobs, FOLDERS.RECLAMATION);
+  
+  sheet.appendRow([getTimestamp(), data.employee, data.supplier, data.product, data.batch, data.date, data.doc, data.desc, photosLinks]);
+  
+  // Генерація PDF з вбудованими фото
+  const pdfBlob = createReclamationPDF(data);
+  
+  const subject = `⚠️ РЕКЛАМАЦІЯ: ${data.supplier} - ${data.product}`;
+  const body = `📝 Сформовано новий Акт невідповідності.\n\n` +
+               `Постачальник: ${data.supplier}\n` +
+               `Товар: ${data.product}\n\n` +
+               `Звіт PDF та фото додані до листа.`;
+  
+  sendEmail(subject, body, [pdfBlob].concat(blobs));
+}
+
+function createReclamationPDF(data) {
+  let photoHtml = "";
+  if (data.files && data.files.length > 0) {
+    photoHtml = '<div style="margin-top: 30px; page-break-before: always;"><h3>Додатки (фотофіксація невідповідності):</h3>';
+    data.files.forEach((file, index) => {
+      photoHtml += `<div style="margin-bottom: 20px; text-align: center;">
+        <img src="${file.data}" style="height: 50mm; width: auto; border: 1px solid #ddd; padding: 2px;">
+        <p style="font-size: 10px; color: #666;">Фото №${index + 1}</p>
+      </div>`;
+    });
+    photoHtml += '</div>';
+  }
+
+  const html = `
+    <html>
+      <head>
+        <style>
+          body { font-family: 'Arial', sans-serif; padding: 20px; color: #333; line-height: 1.5; }
+          .header { border-bottom: 2px solid #dc2626; padding-bottom: 10px; margin-bottom: 20px; overflow: hidden; }
+          .logo { float: right; height: 60px; }
+          .title { color: #dc2626; font-size: 20px; font-weight: bold; text-transform: uppercase; margin: 0; }
+          .info-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          .info-table td { padding: 6px; border-bottom: 1px solid #eee; font-size: 13px; }
+          .label { font-weight: bold; color: #666; width: 35%; }
+          .content-box { margin-top: 20px; padding: 15px; background: #fffcfc; border-left: 4px solid #dc2626; font-size: 13px; white-space: pre-wrap; border: 1px solid #fecaca; }
+          .footer { margin-top: 40px; border-top: 1px solid #ccc; padding-top: 15px; font-size: 11px; color: #555; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <img src="${LOGO_URL}" class="logo">
+          <p class="title">Акт невідповідності продукції</p>
+          <p style="margin: 5px 0 0; font-size: 11px;">ПП "ФУДЛАЙН ПРОДАКШН"</p>
+        </div>
+
+        <table class="info-table">
+          <tr><td class="label">Дата акта:</td><td>${getTimestamp()}</td></tr>
+          <tr><td class="label">Постачальник:</td><td>${data.supplier}</td></tr>
+          <tr><td class="label">Продукція:</td><td>${data.product}</td></tr>
+          <tr><td class="label">Партія:</td><td>${data.batch || '—'}</td></tr>
+          <tr><td class="label">Дата поставки:</td><td>${data.date || '—'}</td></tr>
+          <tr><td class="label">Документ:</td><td>${data.doc || '—'}</td></tr>
+          <tr><td class="label">Контролер QC:</td><td>${data.employee}</td></tr>
+        </table>
+
+        <div class="content-box">${data.desc}</div>
+
+        <div class="footer">
+          <p>Цей акт є офіційною претензією щодо якості. Просимо розглянути та надати відповідь.</p>
+          <table style="width: 100%; margin-top: 30px;">
+            <tr>
+              <td style="width: 50%;">
+                <p>Від ПП "ФУДЛАЙН ПРОДАКШН":</p>
+                <div style="border-bottom: 1px solid #000; width: 140px; height: 25px;"></div>
+                <p style="font-size: 9px;">(підпис, ПІБ)</p>
+              </td>
+              <td style="width: 50%; text-align: right;">
+                <p>Від Постачальника:</p>
+                <div style="border-bottom: 1px solid #000; width: 140px; height: 25px; display: inline-block;"></div>
+                <p style="font-size: 9px;">(підпис, ПІБ)</p>
+              </td>
+            </tr>
+          </table>
+        </div>
+        ${photoHtml}
+      </body>
+    </html>
+  `;
+  
+  const blob = Utilities.newBlob(html, 'text/html', 'temp.html');
+  return blob.getAs('application/pdf').setName(`Акт_Рекламація_${data.supplier}.pdf`);
+}
+
+// --- СТАНДАРТНІ ОБРОБНИКИ ІНШИХ МОДУЛІВ ---
+
+function handleIncoming(doc, data) {
+  const sheet = ensureSheet(doc, "Вхідний контроль", ["Дата запису", "Час", "Контролер", "Постачальник", "№ Документа", "Товар", "Категорія", "Партія", "Кількість", "Вироблено", "Придатний до", "Транспорт", "Пакування", "Маркування", "Документи", "Органолептика", "Коментар", "Фото"]);
+  const fName = generateFileName("Incoming", data.product);
+  const blobs = createBlobs(data.files, fName);
+  const photosLinks = saveBlobsToDrive(blobs, FOLDERS.INCOMING);
+  sheet.appendRow([getTimestamp(), data.time, data.employee, data.supplier, data.docNum, data.product, data.category, data.batch, data.quantity, data.prodDate, data.expDate, data.checkTransport, data.checkPackage, data.checkMarking, data.checkDocs, data.checkOrganoleptic, data.comment, photosLinks]);
+  sendEmail(`QC Вхідний: ${data.product}`, data.report, blobs);
+}
+
+function handleSauce(doc, data) {
+  const sheet = ensureSheet(doc, "Варки соусу", ["Дата запису", "Час", "Контролер", "Варник", "Продукт", "№ Завдання", "Дата варки", "Колір", "Аромат", "Смак", "Консистенція", "Сухі речовини", "В'язкість", "pH", "Стійкість", "Коментар", "Фото"]);
+  const fName = generateFileName("Sauce", data.product);
+  const blobs = createBlobs(data.files, fName);
+  const photosLinks = saveBlobsToDrive(blobs, FOLDERS.SAUCE);
+  sheet.appendRow([getTimestamp(), data.time, data.employee, data.cook, data.product, data.task, formatInputDate(data.cookDate), data.color, data.aroma, data.taste, data.consist, data.dry, data.visc, data.ph, data.stability, data.comment, photosLinks]);
+  sendEmail(`QC Варка: ${data.product}`, data.report, blobs, EMAIL_RECIPIENT + ",bas@vsesvit-group.com.ua");
+}
+
+function handlePacking(doc, data) {
+  const sheet = ensureSheet(doc, "Фасування", ["Дата запису", "Час", "Контролер", "Лінія", "Код продукту", "ТМ", "SKU", "Партія", "Вага", "Герметичність", "Маркування", "Зовнішній вигляд", "Кришка", "Коментар", "Фото"]);
+  const fName = generateFileName("Packing", data.sku);
+  const blobs = createBlobs(data.files, fName);
+  const photosLinks = saveBlobsToDrive(blobs, FOLDERS.PACKING);
+  sheet.appendRow([getTimestamp(), data.time, data.employee, data.line, data.productCode, data.tm, data.sku, data.batch, data.weight, data.seal, data.print, data.appearance, data.cap, data.comment, photosLinks]);
+  sendEmail(`QC Фасування: ${data.sku}`, data.report, blobs);
+}
+
+function handleLabeling(doc, data) {
+  const sheet = ensureSheet(doc, "Етикетування", ["Дата запису", "Час", "Контролер", "Машина/Лінія", "ТМ", "Продукт", "№ Завдання", "Санітарія", "Дата етикетки", "Партія", "Ширина", "Температура", "Нанесення", "Якість пака", "Стікер", "Розкладка", "Палетування", "Коментар", "Фото"]);
+  const fName = generateFileName("Label", data.product);
+  const blobs = createBlobs(data.files, fName);
+  const photosLinks = saveBlobsToDrive(blobs, FOLDERS.LABELING);
+  sheet.appendRow([getTimestamp(), data.time, data.employee, data.machine, data.tm, data.product, data.task, data.checkSanit, data.labelDate, data.batch, data.width, data.temp, data.checkApply, data.checkPack, data.checkSticker, data.checkLayout, data.checkPallet, data.comment, photosLinks]);
+  sendEmail(`QC Етикетка: ${data.product}`, data.report, blobs);
+}
+
+function handleCleaning(doc, data) {
+  const sheet = ensureSheet(doc, "Мийки", ["Дата запису", "Дата", "Час", "Контролер", "Тип обладнання", "Тип Мийки", "Об'єкт", "Зовнішній", "Внутрішній", "Агрегати", "Відповідальний", "Підпис", "Фото"]);
+  let signatureLink = "";
+  if (data.signature && data.signature.startsWith("data:")) {
+     const sigBlobs = createBlobs([{data: data.signature}], "Sig_" + data.equipObj);
+     signatureLink = saveBlobsToDrive(sigBlobs, FOLDERS.CLEANING);
+  }
+  const fName = generateFileName("Clean", data.equipObj);
+  const blobs = createBlobs(data.files, fName);
+  const photosLinks = saveBlobsToDrive(blobs, FOLDERS.CLEANING);
+  sheet.appendRow([getTimestamp(), formatInputDate(data.date), data.time, data.employee, data.equipType, data.washType, data.equipObj, data.ext, data.int, data.agg, data.resp, signatureLink, photosLinks]);
+  sendEmail(`QC Мийка: ${data.equipObj}`, data.report, blobs);
+}
+
+function handleHVO(doc, data) {
+  const sheet = ensureSheet(doc, "HVO", ["Дата запису", "Час", "Контролер", "Статус", "Сіль (1)", "Залишок (1)", "Сіль (2)", "Залишок (2)", "Аерація", "Рот. М'яка", "Рот. Чиста", "Жорсткість", "Залізо", "Марганець", "pH", "Звіт", "Фото"]);
+  const filesInput = data.files || (data.photo ? [{data: data.photo}] : []);
+  const fName = generateFileName("HVO", "System");
+  const blobs = createBlobs(filesInput, fName);
+  const photosLinks = saveBlobsToDrive(blobs, FOLDERS.HVO);
+  sheet.appendRow([getTimestamp(), data.time, data.employee, data.status, data.salt1, data.rem1, data.salt2, data.rem2, data.aeration, data.rotSoft, data.rotClean, data.hard, data.fe, data.mn, data.ph, data.report, photosLinks]);
+  if(data.report) sendEmail("QC Звіт: ХВО", data.report, blobs);
+}
+
+function handleChecklist(doc, data) {
+  const sheet = ensureSheet(doc, "Чек-лист", ["Дата запису", "Контролер", "Етап", "Виконано", "Всього", "Текст звіту", "Фото"]);
+  const filesInput = data.files || (data.photo ? [{ data: data.photo }] : []);
+  const fName = generateFileName("Checklist", data.stage);
+  const blobs = createBlobs(filesInput, fName);
+  const photosLinks = saveBlobsToDrive(blobs, FOLDERS.CHECKLIST);
+  sheet.appendRow([getTimestamp(), data.employee, data.stage, data.done, data.total, data.report, photosLinks]);
+  sendEmail(`QC Чек-лист: ${data.stage}`, data.report, blobs);
+}
+
+// --- ДОПОМІЖНІ ФУНКЦІЇ ---
+
+function createBlobs(files, baseName) {
+  if (!files || !Array.isArray(files)) return [];
+  return files.map((file, index) => {
+    try {
+      const parts = file.data.split(",");
+      const contentType = parts[0].split(":")[1].split(";")[0];
+      const extension = contentType.split("/")[1] || "png";
+      const blob = Utilities.newBlob(Utilities.base64Decode(parts[1]), contentType, `${baseName}_${index + 1}.${extension}`);
+      return blob;
+    } catch (e) { return null; }
+  }).filter(b => b !== null);
+}
+
+function saveBlobsToDrive(blobs, folderId) {
+  if (!folderId || !blobs.length) return "";
+  const folder = DriveApp.getFolderById(folderId);
+  return blobs.map(blob => folder.createFile(blob).getUrl()).join(",\n");
+}
+
+function ensureSheet(doc, name, headers) {
+  let sheet = doc.getSheetByName(name);
+  if (!sheet) {
+    sheet = doc.insertSheet(name);
+    sheet.appendRow(headers);
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#f3f4f6");
+  }
+  return sheet;
+}
+
+function getTimestamp() {
+  return Utilities.formatDate(new Date(), TIMEZONE, "dd.MM.yyyy HH:mm:ss");
+}
+
+function formatInputDate(dateStr) {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  return parts.length === 3 ? `${parts[2]}.${parts[1]}.${parts[0]}` : dateStr;
+}
+
+function generateFileName(type, name) {
+  const dateStr = Utilities.formatDate(new Date(), TIMEZONE, "yyyyMMdd_HHmm");
+  const safeName = (name || "Item").toString().replace(/[^a-zA-Z0-9а-яА-ЯіїєґІЇЄҐ_\-]/g, "").substring(0, 20);
+  return `${type}_${dateStr}_${safeName}`;
+}
+
+function sendEmail(subject, body, attachments, recipientsOverride) {
+  const recipients = (recipientsOverride || EMAIL_RECIPIENT).split(",");
+  recipients.forEach(email => {
+    try {
+      MailApp.sendEmail({
+        to: email.trim(),
+        subject: subject,
+        body: body,
+        attachments: attachments || [],
+        name: "QC Master Bot"
+      });
+    } catch (e) { console.error("Email failed to " + email); }
+  });
+}
+
+/**
+ * Отримання даних для сторінки історії
+ */
+function handleGetData(ss, filters) {
+  const results = [];
+  const limit = 50; 
+  const sheetsConfig = {
+    'checklist': { name: 'Чек-лист', colDate: 0, colEmp: 1, mapRow: r => ({ time: r[0], employee: r[1], section: 'checklist', summary: `${r[2]} (${r[3]}/${r[4]})`, photo: r[6] }) },
+    'incoming': { name: 'Вхідний контроль', colDate: 0, colEmp: 2, mapRow: r => ({ time: r[0], employee: r[2], section: 'incoming', summary: `${r[5]} (${r[3]})`, photo: r[17] }) },
+    'reclamation': { name: 'Рекламації', colDate: 0, colEmp: 1, mapRow: r => ({ time: r[0], employee: r[1], section: 'reclamation', summary: `Акт: ${r[2]} - ${r[3]}`, photo: r[8] }) }
+  };
+  
+  const start = new Date(filters.dateStart); start.setHours(0,0,0,0);
+  const end = new Date(filters.dateEnd); end.setHours(23,59,59,999);
+  const sections = (filters.section === 'all') ? Object.keys(sheetsConfig) : [filters.section];
+  
+  sections.forEach(key => {
+    const config = sheetsConfig[key];
+    const sheet = ss.getSheetByName(config.name);
+    if (!sheet) return;
+    const data = sheet.getDataRange().getValues();
+    for (let i = data.length - 1; i >= 1; i--) {
+      const row = data[i];
+      const rowDate = new Date(row[config.colDate]);
+      if (rowDate >= start && rowDate <= end) {
+        if (filters.employee === 'all' || row[config.colEmp] === filters.employee) {
+          results.push(config.mapRow(row));
+          if (results.length >= limit) break;
+        }
+      }
+    }
+  });
+  return results;
+}
