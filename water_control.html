@@ -239,7 +239,43 @@
     <script>
         // АКТУАЛЬНЕ ПОСИЛАННЯ (Перевірено)
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw1RkhbztxtjoIwBn_iW3x8P2-sJr8h5HYzaZ8JHHrPdPNeFzhL5Gi7_SXsMIhEbjIP6A/exec";
-        
+       // --- УНІВЕРСАЛЬНИЙ БЛОК ОФЛАЙНУ ---
+const OFFLINE_KEY = 'qc_offline_queue';
+
+// Збереження в чергу, якщо немає інтернету
+function saveOffline(data) {
+    let queue = JSON.parse(localStorage.getItem(OFFLINE_KEY) || '[]');
+    queue.push({ id: Date.now(), data: data });
+    localStorage.setItem(OFFLINE_KEY, JSON.stringify(queue));
+}
+
+// Функція синхронізації (відправка накопичених даних)
+async function syncOffline() {
+    if (!navigator.onLine) return;
+    let queue = JSON.parse(localStorage.getItem(OFFLINE_KEY) || '[]');
+    if (queue.length === 0) return;
+    
+    let remaining = [];
+    for (let item of queue) {
+        try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(item.data)
+            });
+        } catch (e) {
+            remaining.push(item);
+        }
+    }
+    localStorage.setItem(OFFLINE_KEY, JSON.stringify(remaining));
+}
+
+// Реєстрація Service Worker та слухачів
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+}
+window.addEventListener('online', syncOffline);
+setInterval(syncOffline, 30000); // Перевірка кожні 30 сек
         const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
         
         const empSel = document.getElementById('employeeSelect');
@@ -483,6 +519,7 @@ ${alerts}
     </script>
 </body>
 </html>
+
 
 
 
