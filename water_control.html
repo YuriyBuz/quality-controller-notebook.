@@ -263,9 +263,20 @@ async function syncOffline() {
                 mode: 'no-cors',
                 body: JSON.stringify(item.data)
             });
-        } catch (e) {
-            remaining.push(item);
-        }
+        } catch(e) {
+        // Замість повідомлення про помилку — зберігаємо офлайн
+        saveOffline(pendingData);
+        
+        status.innerText = "📶 Збережено офлайн (черга)";
+        status.classList.remove('text-red-500'); // якщо був червоний
+        status.classList.add('text-amber-600'); // помаранчевий (статус очікування)
+        
+        setTimeout(() => {
+            if(typeof closeSendModal === 'function') closeSendModal();
+            else if(typeof closeModal === 'function') closeModal('sendModal');
+            performReset();
+        }, 2000);
+    }
     }
     localStorage.setItem(OFFLINE_KEY, JSON.stringify(remaining));
 }
@@ -519,6 +530,7 @@ ${alerts}
     </script>
 </body>
 </html>
+
 
 
 
