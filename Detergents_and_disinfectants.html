@@ -10,7 +10,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Облік Миючих">
-    <!-- Логотип залишено старий, можете змінити URL за потреби -->
     <link rel="apple-touch-icon" href="https://foodline-production.com/wp-content/uploads/2021/10/3752781497_3752781497.webp">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -22,7 +21,6 @@
             --item-bg-color: #f1f5f9;
             --item-hover-bg-color: #e2e8f0;
             --border-color: #e2e8f0;
-            /* Змінено на блакитний (cyan) для асоціації з миючими засобами */
             --active-btn-bg: #0891b2; 
             --active-btn-text: #ffffff;
             --error-btn-bg: #ef4444;
@@ -61,7 +59,7 @@
         }
 
         .modal-overlay { background-color: rgba(0, 0, 0, 0.6); z-index: 1000; backdrop-filter: blur(2px); }
-        .modal-content { z-index: 1001; }
+        .modal-content { z-index: 1001; max-height: 95vh; overflow-y: auto; }
         
         input[type="number"], input[type="text"], input[type="date"], select {
             background-color: var(--card-bg-color);
@@ -115,10 +113,15 @@
     </script>
 
     <div class="container mx-auto max-w-3xl p-4 sm:p-6 relative">
-        <header class="relative text-center mb-6">
-            <div class="absolute top-0 left-0 text-center">
-                <button onclick="fetchData()" class="inline-block p-2 rounded-full text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white shadow-sm border border-gray-200" title="Оновити дані">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+        <header class="relative text-center mb-6 pt-14 sm:pt-0">
+            <!-- Змінений блок з кнопкою "Меню" та "Оновити" -->
+            <div class="absolute top-0 left-0 flex gap-2">
+                <a href="index.html" class="px-3 py-2 bg-white rounded-xl shadow-sm border border-gray-200 text-gray-600 hover:text-cyan-700 transition-colors flex items-center gap-2" title="На головну сторінку">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 sm:w-6 sm:h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+                    <span class="font-bold hidden sm:inline text-sm">Меню</span>
+                </a>
+                <button onclick="fetchData()" class="p-2 sm:p-2.5 bg-white rounded-xl shadow-sm border border-gray-200 text-gray-600 hover:text-cyan-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 flex items-center" title="Оновити дані">
+                    <svg class="h-5 w-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                 </button>
             </div>
 
@@ -133,30 +136,28 @@
             <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Видача миючих засобів</h1>
         </header>
 
-        <!-- Вибір працівника -->
+        <!-- Вибір контролера -->
         <div class="mb-4 card p-4 rounded-xl shadow-sm border border-gray-200">
-            <label for="employeeSelect" class="block text-sm font-bold mb-2 text-gray-700">Відповідальний працівник:</label>
+            <label for="employeeSelect" class="block text-sm font-bold mb-2 text-gray-700">Контролер:</label>
             <select id="employeeSelect" class="block w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 font-semibold text-lg text-gray-800">
                 <option value="">-- Оберіть зі списку --</option>
-                <option value="Соботович Л.М.">Соботович Л.М.</option>
-                <option value="Огаркова М.В.">Огаркова М.В.</option>
-                <option value="Попадюк А.М.">Попадюк А.М.</option>
+                <!-- Список підтягується з вкладки "Користувачі" -->
             </select>
         </div>
 
         <!-- Кнопки дій -->
         <div class="mb-4 flex flex-wrap gap-2">
-            <button onclick="fetchHistory(true)" class="flex-1 bg-cyan-50 hover:bg-cyan-100 text-cyan-800 px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center justify-center border border-cyan-200" title="Історія моїх видач за сьогодні">
+            <button onclick="fetchHistory(true)" class="flex-1 bg-cyan-50 hover:bg-cyan-100 text-cyan-800 px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center justify-center border border-cyan-200" title="Історія моїх дій за сьогодні">
                 <svg class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 Мої за сьогодні
             </button>
             <button onclick="fetchHistory(false)" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center justify-center border border-gray-200" title="Загальна історія">
                 <svg class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-                Всі видачі
+                Всі операції
             </button>
             <button onclick="forceSendReport()" class="w-full sm:w-auto bg-amber-100 hover:bg-amber-200 text-amber-800 px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center justify-center border border-amber-200" title="Надіслати план закупки на email">
                 <svg class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                Відправити план закупки
+                Відправити план
             </button>
         </div>
 
@@ -209,7 +210,7 @@
                     <svg class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                     Назад
                 </button>
-                <h2 id="historyTitle" class="text-xl font-bold text-gray-800">Історія видачі</h2>
+                <h2 id="historyTitle" class="text-xl font-bold text-gray-800">Історія рухів</h2>
             </div>
             
             <div id="historyContainer" class="flex flex-col gap-3">
@@ -218,51 +219,85 @@
         </div>
     </div>
 
-    <!-- Модальне вікно внесення використання -->
+    <!-- Модальне вікно операцій (Видача / Поповнення / Інвентаризація) -->
     <div id="usageModal" class="fixed inset-0 hidden items-end sm:items-center justify-center modal-overlay p-0 sm:p-4 transition-opacity">
         <div class="card w-full max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl modal-content transform transition-transform translate-y-full sm:translate-y-0" id="usageModalContent">
             <div class="p-6">
+                <!-- Header Modal -->
                 <div class="flex justify-between items-start mb-4">
                     <div>
                         <div class="flex items-center gap-2 mb-1">
                             <span class="bg-gray-200 text-gray-800 text-xs font-bold px-2 py-1 rounded" id="modalPartNo"></span>
                             <span class="text-xs text-cyan-800 font-bold bg-cyan-100 px-2 py-1 rounded line-clamp-1" id="modalPartCategory"></span>
                         </div>
-                        <h3 class="text-xl font-bold text-gray-900" id="modalPartName">Назва засобу</h3>
-                        <p class="text-sm text-muted mt-1" id="modalPartEquipment">Призначення</p>
+                        <h3 class="text-xl font-bold text-gray-900 leading-tight" id="modalPartName">Назва засобу</h3>
                     </div>
                     <button id="closeUsageModalBtn" class="text-gray-400 hover:text-gray-600 ml-2">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
 
-                <div class="bg-gray-100 p-3 rounded-lg flex justify-between items-center mb-6 border border-gray-200">
-                    <span class="font-medium text-sm text-gray-700">Поточний залишок:</span>
-                    <span class="font-bold text-lg text-gray-900" id="modalCurrentStock">18 од.</span>
+                <p class="text-sm text-muted mb-4" id="modalPartEquipment">Призначення</p>
+
+                <!-- Current Stock & Reset Button -->
+                <div class="flex justify-between items-center mb-4">
+                    <div class="bg-gray-100 px-3 py-2 rounded-lg flex items-center gap-2 border border-gray-200 shadow-sm">
+                        <span class="font-medium text-xs text-gray-700">Залишок:</span>
+                        <span class="font-bold text-base text-gray-900" id="modalCurrentStock">18 кг.</span>
+                    </div>
+                    <button type="button" id="resetModalBtn" class="bg-orange-100 text-orange-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-orange-200 transition-colors shadow-sm">
+                        Скинути
+                    </button>
+                </div>
+
+                <!-- Tabs Operation Selection -->
+                <div class="flex gap-1 bg-gray-100 p-1 rounded-xl mb-4 border border-gray-200 shadow-inner">
+                    <button id="tabUsage" onclick="setTab('usage')" class="flex-1 py-1.5 rounded-lg font-bold text-sm bg-white shadow-sm text-cyan-700 transition-all">Видача</button>
+                    <button id="tabRestock" onclick="setTab('restock')" class="flex-1 py-1.5 rounded-lg font-bold text-sm text-gray-500 hover:bg-gray-200 transition-all">Поповнення</button>
+                    <button id="tabInventory" onclick="setTab('inventory')" class="flex-1 py-1.5 rounded-lg font-bold text-sm text-gray-500 hover:bg-gray-200 transition-all">Залишок</button>
                 </div>
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-bold mb-1 text-gray-700">Кількість використано/видано (кг/л/шт):</label>
-                        <!-- Змінено step на 0.01 для можливості вводу десяткових дробів (напр. 1.5 кг) -->
-                        <input type="number" id="useQuantity" min="0.01" step="0.01" value="1" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 font-bold text-lg text-center" inputmode="decimal">
+                        <label class="block text-sm font-bold mb-1 text-gray-700" id="qtyLabel">Кількість видано (кг):</label>
+                        <input type="number" id="useQuantity" min="0.01" step="0.01" value="1" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 font-bold text-lg text-center bg-white shadow-sm" inputmode="decimal">
+                    </div>
+
+                    <!-- Поле: Ким було використано -->
+                    <div id="usedByGroup">
+                        <label class="block text-sm font-bold mb-1 text-gray-700">Ким було використано (ПІБ):</label>
+                        <input type="text" id="useUsedBy" list="employeesDatalist" placeholder="Оберіть або введіть ПІБ..." class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 text-base shadow-sm">
+                        <datalist id="employeesDatalist">
+                            <!-- Підтягується скриптом з вкладки "Користувачі" -->
+                        </datalist>
                     </div>
                     
-                    <div>
-                        <label class="block text-sm font-bold mb-1 text-gray-700">Де було використано (об'єкт/цех):</label>
-                        <input type="text" id="useLocation" placeholder="Наприклад: Цех №1, мийка підлоги" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 text-base">
+                    <div id="batchGroup" class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-bold mb-1 text-gray-700">№ партії:</label>
+                            <input type="text" id="useBatch" placeholder="Номер..." class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-cyan-500 text-sm shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-1 text-gray-700">Кінцева дата:</label>
+                            <input type="date" id="useExpDate" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-cyan-500 text-sm shadow-sm">
+                        </div>
+                    </div>
+
+                    <div id="locationGroup">
+                        <label class="block text-sm font-bold mb-1 text-gray-700">Де використано (об'єкт/цех):</label>
+                        <input type="text" id="useLocation" placeholder="Наприклад: Цех №1, мийка підлоги" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 text-base shadow-sm">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-bold mb-1 text-gray-700">Дата використання:</label>
-                        <input type="date" id="useDate" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 text-base">
+                        <label class="block text-sm font-bold mb-1 text-gray-700">Дата операції:</label>
+                        <input type="date" id="useDate" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 text-base shadow-sm">
                     </div>
                 </div>
 
                 <div class="mt-8 flex gap-3">
-                    <button id="submitUsageBtn" class="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-transform active:scale-95 text-lg flex justify-center items-center">
+                    <button id="submitUsageBtn" class="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-transform active:scale-95 text-base sm:text-lg flex justify-center items-center">
                         <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        Зареєструвати
+                        Зареєструвати видачу
                     </button>
                 </div>
             </div>
@@ -278,20 +313,13 @@
     </div>
 
     <script>
-        // ==========================================
-        // УВАГА: ЗАМІНІТЬ ЦЕ ПОСИЛАННЯ НА НОВЕ!!!
-        // ==========================================
-        // Опублікуйте ваш новий Google Apps Script як веб-додаток 
-        // і вставте посилання нижче замість старого:
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyKOjvoTsPP_kbi0N9NZ2cyvh_LorSjeyie-r8ZTQZ0NMLA6mlqwFfQ1Z09k2-JXyYL/exec'; 
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwhNiu0QpaTn14eP8PypHHIRDLB-Z0Cw2sJ8mQGhbkJQofAPXLIvPpVn4PagncxF16J/exec'; 
 
         const MOCK_DATA = [
             {
                 name: "Миючі засоби",
                 items: [
                     { sheetName: "Миючі засоби", row: 4, no: "1", model: "Чистолайн Софт (мило)", equipment: "Згідно з І Б - 11 для миття рук", minStock: 5, currentStock: 31.5, supplierName: "Постачальник 1", supplierPhone: "" },
-                    { sheetName: "Миючі засоби", row: 5, no: "2", model: "Бланідас-А Н-Фоам", equipment: "зовнішнє миття обладнання", minStock: 20, currentStock: 38 },
-                    { sheetName: "Миючі засоби", row: 6, no: "3", model: "Септоклін А 14", equipment: "видалення молочних відкладень", minStock: 20, currentStock: 0, supplierName: "Постачальник 2", supplierPhone: "067-111-22-33" },
                 ]
             }
         ];
@@ -304,10 +332,10 @@
             filterHistoryToday: false
         };
         let currentSelectedItem = null;
+        let currentOperation = 'usage'; // 'usage', 'restock', 'inventory'
         
-        // Змінено ключі, щоб не конфліктували зі старим додатком для механіків
-        const OFFLINE_KEY = 'sanitationOfflineQueueV1';
-        const CACHE_KEY = 'sanitationInventoryCacheV1';
+        const OFFLINE_KEY = 'sanitationOfflineQueueV2';
+        const CACHE_KEY = 'sanitationInventoryCacheV2';
 
         // --- Custom Dialog System ---
         const showCustomDialog = (message, isConfirm = false) => {
@@ -356,7 +384,7 @@
                 const msgEl = document.getElementById('customDialogMessage');
                 const btnsEl = document.getElementById('customDialogButtons');
 
-                msgEl.innerHTML = 'Введіть пароль для відправки плану:<br><input type="password" id="reportPassword" class="mt-4 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 text-center text-lg" placeholder="****">';
+                msgEl.innerHTML = 'Введіть пароль:<br><input type="password" id="reportPassword" class="mt-4 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 text-center text-lg" placeholder="****">';
                 btnsEl.innerHTML = '';
 
                 const closeDialog = () => {
@@ -419,11 +447,6 @@
             const queue = JSON.parse(localStorage.getItem(OFFLINE_KEY) || '[]');
             if (queue.length === 0 || !navigator.onLine) return;
 
-            if (GOOGLE_SCRIPT_URL === 'ВАШ_НОВИЙ_URL_GOOGLE_APPS_SCRIPT') {
-                console.warn("Встановіть GOOGLE_SCRIPT_URL для синхронізації!");
-                return;
-            }
-
             const statusDot = document.getElementById('statusDot');
             statusDot.className = 'status-dot syncing';
             document.getElementById('statusText').textContent = 'Синхронізація...';
@@ -450,6 +473,35 @@
             }
         };
 
+        // Заповнення списків контролерів і працівників
+        const populateUsers = (controllers, employees) => {
+            const empSelect = document.getElementById('employeeSelect');
+            const currentVal = empSelect.value || localStorage.getItem('selectedMechanic_Sanitation');
+            
+            // Заповнення Контролерів
+            empSelect.innerHTML = '<option value="">-- Оберіть зі списку --</option>';
+            controllers.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                empSelect.appendChild(opt);
+            });
+            if (currentVal && controllers.includes(currentVal)) {
+                empSelect.value = currentVal;
+            }
+
+            // Заповнення списку "Ким використано" для <datalist>
+            const datalist = document.getElementById('employeesDatalist');
+            if (datalist) {
+                datalist.innerHTML = '';
+                employees.forEach(e => {
+                    const opt = document.createElement('option');
+                    opt.value = e;
+                    datalist.appendChild(opt);
+                });
+            }
+        };
+
         // --- Отримання даних ---
         const fetchData = async (silent = false) => {
             const loader = document.getElementById('loadingState');
@@ -464,12 +516,15 @@
             }
 
             try {
-                if (GOOGLE_SCRIPT_URL === 'ВАШ_НОВИЙ_URL_GOOGLE_APPS_SCRIPT') {
-                    throw new Error("URL не налаштовано");
-                }
-
                 if (!navigator.onLine) {
                     const cached = localStorage.getItem(CACHE_KEY);
+                    const cachedUsers = localStorage.getItem(CACHE_KEY + '_users');
+                    
+                    if (cachedUsers) {
+                        const uData = JSON.parse(cachedUsers);
+                        populateUsers(uData.controllers, uData.employees);
+                    }
+                    
                     if (cached) {
                         allData = JSON.parse(cached);
                         renderState();
@@ -485,8 +540,16 @@
                 const data = await response.json();
                 
                 if (data && data.success) {
-                    allData = data.categories;
+                    // ФІЛЬТРУЄМО "Користувачі", щоб не відображати як категорію товарів
+                    allData = data.categories.filter(cat => cat.name !== "Користувачі");
+                    
+                    populateUsers(data.controllers || [], data.employees || []);
+                    
                     localStorage.setItem(CACHE_KEY, JSON.stringify(allData));
+                    localStorage.setItem(CACHE_KEY + '_users', JSON.stringify({
+                        controllers: data.controllers || [],
+                        employees: data.employees || []
+                    }));
                     renderState();
                 } else {
                     throw new Error("Помилка формату даних");
@@ -494,6 +557,13 @@
             } catch (error) {
                 console.error("Fetch error:", error);
                 const cached = localStorage.getItem(CACHE_KEY);
+                const cachedUsers = localStorage.getItem(CACHE_KEY + '_users');
+                
+                if (cachedUsers) {
+                    const uData = JSON.parse(cachedUsers);
+                    populateUsers(uData.controllers, uData.employees);
+                }
+                
                 if (cached) {
                     allData = JSON.parse(cached);
                 } else {
@@ -506,9 +576,9 @@
         };
 
         const fetchHistory = async (onlyToday = false) => {
-            const mechanic = document.getElementById('employeeSelect').value;
-            if (onlyToday && !mechanic) {
-                customAlert("Оберіть своє ім'я у списку зверху, щоб побачити ваші записи!");
+            const controller = document.getElementById('employeeSelect').value;
+            if (onlyToday && !controller) {
+                customAlert("Оберіть своє ім'я (Контролер) у списку зверху, щоб побачити ваші записи!");
                 document.getElementById('employeeSelect').focus();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
@@ -525,8 +595,8 @@
             loader.classList.remove('hidden');
 
             try {
-                if (!navigator.onLine || GOOGLE_SCRIPT_URL === 'ВАШ_НОВИЙ_URL_GOOGLE_APPS_SCRIPT') {
-                    throw new Error("Offline or No URL");
+                if (!navigator.onLine) {
+                    throw new Error("Offline");
                 }
                 
                 const response = await fetch(GOOGLE_SCRIPT_URL + "?action=getHistory");
@@ -548,18 +618,9 @@
         };
 
         const forceSendReport = async () => {
-            if (GOOGLE_SCRIPT_URL === 'ВАШ_НОВИЙ_URL_GOOGLE_APPS_SCRIPT') {
-                customAlert("❌ Спочатку вкажіть URL Google Script у коді!");
-                return;
-            }
-
             const pwd = await showPasswordDialog();
             if (pwd === null) return; 
-            
-            if (pwd !== '5588') {
-                customAlert("❌ Невірний пароль!");
-                return;
-            }
+            if (pwd !== '5588') { customAlert("❌ Невірний пароль!"); return; }
 
             const confirm = await showCustomDialog("Сформувати та відправити актуальний план закупки засобів на email?", true);
             if (!confirm) return;
@@ -574,9 +635,8 @@
             loader.classList.remove('hidden');
 
             try {
-                if (!navigator.onLine) {
-                    throw new Error("Offline");
-                }
+                if (!navigator.onLine) throw new Error("Offline");
+                
                 const response = await fetch(GOOGLE_SCRIPT_URL + "?action=forceReport");
                 const data = await response.json();
                 if (data && data.success) {
@@ -719,7 +779,7 @@
                             Мін. запас: <span class="font-semibold text-gray-700">${item.minStock}</span>
                         </div>
                         <div class="text-sm text-right">
-                            Залишок: <span class="font-bold text-lg ${isLowStock ? 'text-red-600' : 'text-gray-900'}">${item.currentStock} од.</span>
+                            Залишок: <span class="font-bold text-lg ${isLowStock ? 'text-red-600' : 'text-gray-900'}">${item.currentStock} кг.</span>
                         </div>
                     </div>
                 `;
@@ -735,39 +795,65 @@
             let filteredHistory = historyData;
 
             if (appState.filterHistoryToday) {
-                titleEl.textContent = "Мої видачі за сьогодні";
-                const mechanic = document.getElementById('employeeSelect').value;
+                titleEl.textContent = "Мої дії за сьогодні";
+                const controller = document.getElementById('employeeSelect').value;
                 const todayStr = new Date().toISOString().split('T')[0]; 
                 
                 filteredHistory = historyData.filter(record => {
-                    return record.mechanic === mechanic && record.date.includes(todayStr);
+                    // Перевіряємо по контролеру та даті
+                    return record.controller === controller && record.date.includes(todayStr);
                 });
             } else {
-                titleEl.textContent = "Історія видачі";
+                titleEl.textContent = "Історія операцій";
             }
 
             if (filteredHistory.length === 0) {
-                container.innerHTML = `<div class="text-center w-full text-muted py-8 card rounded-xl border border-gray-200">${appState.filterHistoryToday ? 'Ви сьогодні ще нічого не видавали' : 'Історія порожня або немає зв\'язку'}</div>`;
+                container.innerHTML = `<div class="text-center w-full text-muted py-8 card rounded-xl border border-gray-200">${appState.filterHistoryToday ? 'Ви сьогодні ще нічого не робили' : 'Історія порожня або немає зв\'язку'}</div>`;
                 return;
             }
 
             filteredHistory.forEach(record => {
+                let badgeClass = "bg-gray-100 text-gray-700";
+                let qtyPrefix = "";
+                let actionTitle = record.actionType || "Видача";
+
+                if (actionTitle === "Поповнення") {
+                    badgeClass = "bg-blue-100 text-blue-700";
+                    qtyPrefix = "+";
+                } else if (actionTitle === "Інвентаризація") {
+                    badgeClass = "bg-indigo-100 text-indigo-700";
+                    qtyPrefix = "=";
+                } else {
+                    badgeClass = "bg-red-100 text-red-700";
+                    qtyPrefix = "-";
+                }
+
                 const card = document.createElement('div');
                 card.className = 'card p-4 rounded-xl shadow-sm border border-gray-200';
                 card.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
                         <div>
                             <span class="text-xs font-bold text-gray-500">${record.date} ${record.time || ''}</span>
+                            <span class="text-xs ml-2 font-bold px-1.5 py-0.5 rounded ${actionTitle === 'Видача' ? 'bg-orange-100 text-orange-800' : (actionTitle === 'Поповнення' ? 'bg-blue-100 text-blue-800' : 'bg-indigo-100 text-indigo-800')}">${actionTitle}</span>
                             <h4 class="font-bold text-gray-900 mt-1">${record.model}</h4>
                         </div>
-                        <span class="bg-red-100 text-red-700 font-bold px-2 py-1 rounded text-sm whitespace-nowrap">- ${record.quantity} од.</span>
+                        <span class="${badgeClass} font-bold px-2 py-1 rounded text-sm whitespace-nowrap">${qtyPrefix} ${record.quantity} кг.</span>
                     </div>
                     <div class="text-sm text-gray-600 mb-1">
-                        <span class="font-medium text-gray-500">Хто:</span> ${record.mechanic}
+                        <span class="font-medium text-gray-500">Контролер:</span> ${record.controller}
                     </div>
+                    ${record.usedBy && record.usedBy !== "-" ? `
+                    <div class="text-sm text-gray-600 mb-1">
+                        <span class="font-medium text-gray-500">Ким використано:</span> ${record.usedBy}
+                    </div>` : ''}
+                    ${record.location && record.location !== "-" ? `
                     <div class="text-sm text-gray-600 mb-1">
                         <span class="font-medium text-gray-500">Де:</span> ${record.location}
-                    </div>
+                    </div>` : ''}
+                    ${record.batchInfo && record.batchInfo !== "-" ? `
+                    <div class="text-xs text-cyan-700 bg-cyan-50 p-1.5 rounded inline-block mt-1 border border-cyan-100 font-medium">
+                        🏷️ ${record.batchInfo}
+                    </div>` : ''}
                     <div class="text-xs text-indigo-600 font-medium mt-2">
                         Категорія: ${record.sheetName}
                     </div>
@@ -798,29 +884,85 @@
             renderState();
         });
 
-        // --- Модальне вікно ---
+        // --- Модальне вікно та Вкладки ---
         const modal = document.getElementById('usageModal');
         const modalContent = document.getElementById('usageModalContent');
 
+        const setTab = (op) => {
+            currentOperation = op;
+            const tabs = ['Usage', 'Restock', 'Inventory'];
+            tabs.forEach(t => {
+                const btn = document.getElementById('tab' + t);
+                if (op.toLowerCase() === t.toLowerCase()) {
+                    btn.className = "flex-1 py-1.5 rounded-lg font-bold text-xs sm:text-sm bg-white shadow-sm text-cyan-700 transition-all";
+                } else {
+                    btn.className = "flex-1 py-1.5 rounded-lg font-bold text-xs sm:text-sm text-gray-500 hover:bg-gray-200 transition-all";
+                }
+            });
+
+            const qtyLabel = document.getElementById('qtyLabel');
+            const locGroup = document.getElementById('locationGroup');
+            const batchGroup = document.getElementById('batchGroup');
+            const usedByGroup = document.getElementById('usedByGroup');
+            const submitBtn = document.getElementById('submitUsageBtn');
+
+            if (op === 'usage') {
+                qtyLabel.textContent = "Кількість видано (кг):";
+                locGroup.classList.remove('hidden');
+                batchGroup.classList.remove('hidden');
+                usedByGroup.classList.remove('hidden'); // Відображаємо "Ким використано"
+                submitBtn.innerHTML = '<svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Зареєструвати видачу';
+                submitBtn.className = "flex-1 bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-transform active:scale-95 text-base sm:text-lg flex justify-center items-center";
+            } else if (op === 'restock') {
+                qtyLabel.textContent = "Кількість поповнення (кг):";
+                locGroup.classList.add('hidden');
+                usedByGroup.classList.add('hidden'); // Ховаємо "Ким використано"
+                batchGroup.classList.remove('hidden');
+                submitBtn.innerHTML = '<svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg> Додати поповнення';
+                submitBtn.className = "flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-transform active:scale-95 text-base sm:text-lg flex justify-center items-center";
+            } else if (op === 'inventory') {
+                qtyLabel.textContent = "Фактичний залишок (кг):";
+                locGroup.classList.add('hidden');
+                batchGroup.classList.add('hidden');
+                usedByGroup.classList.add('hidden'); // Ховаємо "Ким використано"
+                submitBtn.innerHTML = '<svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg> Зберегти інвентаризацію';
+                submitBtn.className = "flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-transform active:scale-95 text-base sm:text-lg flex justify-center items-center";
+            }
+        };
+
+        // Кнопка скидання (Скинути)
+        document.getElementById('resetModalBtn').addEventListener('click', () => {
+            document.getElementById('useQuantity').value = 1;
+            document.getElementById('useUsedBy').value = "";
+            document.getElementById('useBatch').value = "";
+            document.getElementById('useExpDate').value = "";
+            document.getElementById('useLocation').value = "";
+            document.getElementById('useDate').value = new Date().toISOString().split('T')[0];
+        });
+
         const openUsageModal = (item) => {
-            const mechanic = document.getElementById('employeeSelect').value;
-            if (!mechanic) {
-                customAlert("Будь ласка, оберіть ваше ім'я у списку зверху!");
+            const controller = document.getElementById('employeeSelect').value;
+            if (!controller) {
+                customAlert("Будь ласка, оберіть ваше ім'я (Контролер) у списку зверху!");
                 document.getElementById('employeeSelect').focus();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
 
             currentSelectedItem = item;
+            setTab('usage'); // Скидаємо на "Видача" при кожному відкритті
             
             document.getElementById('modalPartNo').textContent = `№ ${item.no}`;
             document.getElementById('modalPartCategory').textContent = item.sheetName;
             document.getElementById('modalPartName').textContent = item.model;
             document.getElementById('modalPartEquipment').textContent = item.equipment;
-            document.getElementById('modalCurrentStock').textContent = `${item.currentStock} од.`;
+            document.getElementById('modalCurrentStock').textContent = `${item.currentStock} кг.`;
             
             document.getElementById('useQuantity').value = 1;
-            document.getElementById('useLocation').value = ""; // Очищаємо перед новим вводом
+            document.getElementById('useUsedBy').value = ""; 
+            document.getElementById('useBatch').value = ""; 
+            document.getElementById('useExpDate').value = ""; 
+            document.getElementById('useLocation').value = ""; 
             document.getElementById('useDate').value = new Date().toISOString().split('T')[0];
 
             modal.classList.remove('hidden');
@@ -845,33 +987,47 @@
         document.getElementById('submitUsageBtn').addEventListener('click', async () => {
             if (!currentSelectedItem) return;
 
-            if (GOOGLE_SCRIPT_URL === 'ВАШ_НОВИЙ_URL_GOOGLE_APPS_SCRIPT') {
-                customAlert("❌ Спочатку вкажіть URL Google Script у коді!");
-                return;
-            }
-
-            const mechanic = document.getElementById('employeeSelect').value;
+            const controller = document.getElementById('employeeSelect').value;
             const quantity = parseFloat(document.getElementById('useQuantity').value);
+            const usedBy = document.getElementById('useUsedBy').value.trim();
             const location = document.getElementById('useLocation').value.trim();
+            const batch = document.getElementById('useBatch').value.trim();
+            const expDate = document.getElementById('useExpDate').value;
             const date = document.getElementById('useDate').value; 
 
-            if (!quantity || quantity <= 0) { customAlert("Введіть коректну кількість!"); return; }
-            if (!location) { customAlert("Вкажіть, де був використаний засіб!"); return; }
+            if (isNaN(quantity) || quantity < 0) { customAlert("Введіть коректну кількість!"); return; }
+            
+            if (currentOperation === 'usage') {
+                if (!usedBy) { customAlert("Вкажіть, ким було використано засіб (ПІБ)!"); return; }
+                if (!location) { customAlert("Вкажіть, де був використаний засіб!"); return; }
+            }
 
             const currentStock = parseFloat(currentSelectedItem.currentStock);
-            if (quantity > currentStock) {
-                const confirmOver = await showCustomDialog(`Увага!\nВи списуєте ${quantity} од., але в залишку лише ${currentStock} од. Продовжити?`, true);
+            if (currentOperation === 'usage' && quantity > currentStock) {
+                const confirmOver = await showCustomDialog(`Увага!\nВи списуєте ${quantity} кг., але в залишку лише ${currentStock} кг. Продовжити?`, true);
                 if (!confirmOver) return;
             }
 
+            if (currentOperation === 'inventory') {
+                const confirmInv = await showCustomDialog(`Ви впевнені, що хочете змінити залишок з ${currentStock} кг. на ${quantity} кг.?`, true);
+                if (!confirmInv) return;
+            }
+
+            let actionName = "registerUsage";
+            if (currentOperation === 'restock') actionName = "registerRestock";
+            if (currentOperation === 'inventory') actionName = "registerInventory";
+
             const payload = {
-                action: "registerUsage",
+                action: actionName,
                 sheetName: currentSelectedItem.sheetName,
                 row: currentSelectedItem.row,
                 model: currentSelectedItem.model,
-                mechanic: mechanic,
+                controller: controller, // Змінено mechanic -> controller
+                usedBy: currentOperation === 'usage' ? usedBy : "-", // Нове поле
                 quantity: quantity,
-                location: location,
+                location: currentOperation === 'usage' ? location : "-",
+                batch: batch,
+                expDate: expDate,
                 date: date, 
                 timestamp: new Date().toISOString()
             };
@@ -910,7 +1066,14 @@
                 if (categoryData) {
                     const itemInArray = categoryData.items.find(i => i.row === currentSelectedItem.row);
                     if (itemInArray) {
-                        itemInArray.currentStock = (parseFloat(itemInArray.currentStock) - qty).toString();
+                        let currentStockNum = parseFloat(itemInArray.currentStock);
+                        if (currentOperation === 'usage') {
+                            itemInArray.currentStock = (currentStockNum - qty).toFixed(2);
+                        } else if (currentOperation === 'restock') {
+                            itemInArray.currentStock = (currentStockNum + qty).toFixed(2);
+                        } else if (currentOperation === 'inventory') {
+                            itemInArray.currentStock = qty.toFixed(2);
+                        }
                     }
                 }
                 localStorage.setItem(CACHE_KEY, JSON.stringify(allData));
@@ -924,7 +1087,12 @@
             } else {
                 const toast = document.createElement('div');
                 toast.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg z-[3000] font-bold text-sm flex items-center transition-opacity duration-300';
-                toast.innerHTML = '<svg class="w-5 h-5 text-cyan-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Успішно записано!';
+                
+                let successMsg = "Успішно списано!";
+                if (currentOperation === 'restock') successMsg = "Запаси поповнено!";
+                if (currentOperation === 'inventory') successMsg = "Залишок оновлено!";
+
+                toast.innerHTML = `<svg class="w-5 h-5 text-cyan-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> ${successMsg}`;
                 document.body.appendChild(toast);
                 setTimeout(() => {
                     toast.style.opacity = '0';
