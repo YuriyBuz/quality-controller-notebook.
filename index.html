@@ -31,6 +31,12 @@
         .reclamation-card:hover p,
         .reclamation-card:hover svg { color: #ef4444 !important; }
 
+        /* Стиль для кнопки миючих засобів при наведенні (блакитний колір) */
+        .sanitation-card:hover { border-color: #0891b2 !important; }
+        .sanitation-card:hover h2, 
+        .sanitation-card:hover p,
+        .sanitation-card:hover svg { color: #0891b2 !important; }
+
         .link-card h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; transition: color 0.2s; }
         .link-card p { font-size: 1rem; color: #64748b; transition: color 0.2s; }
     </style>
@@ -126,6 +132,16 @@
                     </svg>
                     <h2>Лаб. Контроль ХВО</h2>
                     <p>Аналіз води та водопідготовка</p>
+                </a>
+
+                <!-- Новий розділ: Миючі та дез. засоби -->
+                <a href="Detergents_and_disinfectants.html" class="link-card sanitation-card group">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <h2>Миючі засоби</h2>
+                    <p>Облік та видача засобів</p>
                 </a>
 
                 <a href="QC_Reclamations.html" class="link-card reclamation-card group">
