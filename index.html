@@ -15,6 +15,7 @@
     <style>
         body { background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         .link-card {
+            position: relative; /* Додано для позиціювання шильдіків */
             background-color: #ffffff; border-radius: 1rem;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
@@ -134,8 +135,9 @@
                     <p>Аналіз води та водопідготовка</p>
                 </a>
 
-                <!-- Новий розділ: Миючі та дез. засоби -->
+                <!-- Розділ з шильдіком "Новинка" -->
                 <a href="Detergents_and_disinfectants.html" class="link-card sanitation-card group">
+                    <span class="absolute top-4 right-4 bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm animate-pulse">Новинка</span>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -150,6 +152,16 @@
                     </svg>
                     <h2>Рекламації</h2>
                     <p>Акти невідповідності товару</p>
+                </a>
+
+                <!-- Кнопка з шильдіком "В розробці" -->
+                <a href="product_specifications.html" class="link-card group">
+                    <span class="absolute top-4 right-4 bg-amber-100 text-amber-700 border border-amber-200 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">В розробці</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9z" />
+                    </svg>
+                    <h2>Специфікації на продукт</h2>
+                    <p>Технологічні параметри та вимоги</p>
                 </a>
 
                 <a href="import_data.html" class="link-card group">
