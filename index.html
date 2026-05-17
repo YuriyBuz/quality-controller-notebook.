@@ -15,7 +15,7 @@
     <style>
         body { background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         .link-card {
-            position: relative; /* Додано для позиціювання шильдіків */
+            position: relative; /* Необхідно для абсолютного позиціювання шильдіків */
             background-color: #ffffff; border-radius: 1rem;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
@@ -24,22 +24,33 @@
             height: 100%; min-height: 240px; border: 1px solid #e2e8f0;
         }
         a.link-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); border-color: #10b981; }
-        .link-card svg { width: 4rem; height: 4rem; margin-bottom: 1.5rem; color: #059669; transition: color 0.2s; }
+        
+        /* ВИПРАВЛЕНО: Використовуємо дочірній селектор (>), щоб стилізувати лише головну іконку картки */
+        .link-card > svg { width: 4rem; height: 4rem; margin-bottom: 1.5rem; color: #059669; transition: color 0.2s; }
         
         /* Стиль для кнопки рекламацій при наведенні */
         .reclamation-card:hover { border-color: #ef4444 !important; }
         .reclamation-card:hover h2, 
         .reclamation-card:hover p,
-        .reclamation-card:hover svg { color: #ef4444 !important; }
+        .reclamation-card:hover > svg { color: #ef4444 !important; }
 
         /* Стиль для кнопки миючих засобів при наведенні (блакитний колір) */
         .sanitation-card:hover { border-color: #0891b2 !important; }
         .sanitation-card:hover h2, 
         .sanitation-card:hover p,
-        .sanitation-card:hover svg { color: #0891b2 !important; }
+        .sanitation-card:hover > svg { color: #0891b2 !important; }
 
         .link-card h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; transition: color 0.2s; }
         .link-card p { font-size: 1rem; color: #64748b; transition: color 0.2s; }
+
+        /* Кастомна повільна анімація обертання для шестірні */
+        @keyframes spin-slow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+            animation: spin-slow 12s linear infinite;
+        }
     </style>
 </head>
 <body class="font-sans text-slate-800">
@@ -135,9 +146,15 @@
                     <p>Аналіз води та водопідготовка</p>
                 </a>
 
-                <!-- Розділ з шильдіком "Новинка" -->
-                <a href="Detergents_and_disinfectants.html" class="link-card sanitation-card group">
-                    <span class="absolute top-4 right-4 bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm animate-pulse">Новинка</span>
+                <!-- Розділ з анімованим інтерактивним шильдіком "Новинка" -->
+                <a href="Detergents_and_disinfectants.html" class="link-card sanitation-card group overflow-hidden">
+                    <span class="absolute top-3.5 right-3.5 flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                    </span>
+                    <span class="absolute top-4 right-4 bg-gradient-to-r from-rose-500 via-red-500 to-amber-500 text-white text-[10px] font-extrabold px-3 py-1.5 rounded-full uppercase tracking-widest shadow-[0_0_15px_rgba(244,63,94,0.4)] border border-white/10 flex items-center gap-1 group-hover:scale-105 transition-transform duration-300">
+                        <span class="animate-bounce">✨</span>Новинка
+                    </span>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -154,9 +171,16 @@
                     <p>Акти невідповідності товару</p>
                 </a>
 
-                <!-- Кнопка з шильдіком "В розробці" -->
-                <a href="product_specifications.html" class="link-card group">
-                    <span class="absolute top-4 right-4 bg-amber-100 text-amber-700 border border-amber-200 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">В розробці</span>
+                <!-- Кнопка з шильдіком "В розробці" (Тепер іконка шестірні крихітна та ідеально вписується) -->
+                <a href="product_specifications.html" class="link-card group overflow-hidden">
+                    <span class="absolute top-4 right-4 bg-slate-900 text-amber-400 border border-slate-700/80 text-[10px] font-extrabold px-3 py-1.5 rounded-full uppercase tracking-widest flex items-center gap-1.5 shadow-inner transition-colors duration-300 group-hover:border-amber-500/50 group-hover:text-amber-300">
+                        <!-- Крихітна шестірня, що плавно обертається -->
+                        <svg class="w-3.5 h-3.5 text-amber-500 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>У розробці</span>
+                    </span>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9z" />
                     </svg>
