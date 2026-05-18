@@ -81,7 +81,7 @@
             width: fit-content;
         }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
-        .status-dot.online { background: #0891b2; } /* Cyan */
+        .status-dot.online { background: #0891b2; }
         .status-dot.offline { background: #ef4444; }
         .status-dot.syncing { background: #f59e0b; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
@@ -113,8 +113,6 @@
     </script>
 
     <div class="container mx-auto max-w-3xl p-4 sm:p-6 relative">
-        
-        <!-- Новий стиль шапки (як у варіннях соусів) -->
         <header class="flex items-center gap-2 sm:gap-4 mb-8 relative">
             <a href="index.html" class="p-2 sm:p-3 bg-white rounded-lg shadow-sm border border-slate-200 text-slate-500 hover:text-cyan-600 transition-colors flex items-center gap-2" title="На головну сторінку">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
@@ -132,7 +130,6 @@
                 </button>
             </div>
             
-            <!-- Статус мережі зміщено вниз шапки -->
             <div class="absolute -bottom-4 right-0">
                 <div class="network-status shadow-sm border border-gray-200 cursor-pointer !mt-0 !bg-white" id="networkStatusBtn" title="Натисніть для синхронізації">
                     <span class="status-dot online" id="statusDot"></span>
@@ -141,16 +138,13 @@
             </div>
         </header>
 
-        <!-- Вибір контролера -->
         <div class="mb-4 card p-4 rounded-xl shadow-sm border border-gray-200 mt-6">
             <label for="employeeSelect" class="block text-sm font-bold mb-2 text-gray-700">Контролер:</label>
             <select id="employeeSelect" class="block w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 font-semibold text-lg text-gray-800">
                 <option value="">-- Оберіть зі списку --</option>
-                <!-- Список підтягується з вкладки "Користувачі" -->
             </select>
         </div>
 
-        <!-- Кнопки дій -->
         <div class="mb-4 flex flex-wrap gap-2">
             <button onclick="fetchHistory(true)" class="flex-1 bg-cyan-50 hover:bg-cyan-100 text-cyan-800 px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center justify-center border border-cyan-200" title="Історія моїх дій за сьогодні">
                 <svg class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -166,7 +160,6 @@
             </button>
         </div>
 
-        <!-- Пошук -->
         <div class="mb-6">
             <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -179,21 +172,17 @@
             </div>
         </div>
 
-        <!-- Статус завантаження -->
         <div id="loadingState" class="flex flex-col items-center justify-center py-10 hidden">
             <div class="loader mb-4"></div>
             <p class="text-muted font-medium" id="loadingText">Завантаження бази засобів...</p>
         </div>
 
-        <!-- В'ю: Список категорій -->
         <div id="categoriesView" class="pb-20">
             <h2 class="text-lg font-bold mb-3 text-cyan-800 px-1">Категорії:</h2>
             <div id="categoriesContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <!-- Категорії генеруються JS -->
-            </div>
+                </div>
         </div>
 
-        <!-- В'ю: Список деталей всередині категорії або результати пошуку -->
         <div id="itemsView" class="hidden pb-20">
             <div class="flex items-center mb-4" id="backBtnContainer">
                 <button id="backToCategoriesBtn" class="flex items-center text-cyan-600 hover:text-cyan-700 font-bold px-2 py-1 -ml-2 rounded-lg transition-colors">
@@ -204,11 +193,9 @@
             <h2 id="currentCategoryTitle" class="text-xl font-bold mb-4 text-gray-800"></h2>
             
             <div id="inventoryContainer" class="flex flex-col gap-3">
-                <!-- Картки деталей генеруються JS -->
-            </div>
+                </div>
         </div>
 
-        <!-- В'ю: Історія -->
         <div id="historyView" class="hidden pb-20">
             <div class="flex items-center justify-between mb-4">
                 <button onclick="appState.view = 'categories'; renderState();" class="flex items-center text-blue-600 hover:text-blue-700 font-bold px-2 py-1 -ml-2 rounded-lg transition-colors">
@@ -219,16 +206,13 @@
             </div>
             
             <div id="historyContainer" class="flex flex-col gap-3">
-                <!-- Історія генерується JS -->
-            </div>
+                </div>
         </div>
     </div>
 
-    <!-- Модальне вікно операцій (Видача / Поповнення / Інвентаризація) -->
     <div id="usageModal" class="fixed inset-0 hidden items-end sm:items-center justify-center modal-overlay p-0 sm:p-4 transition-opacity">
         <div class="card w-full max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl modal-content transform transition-transform translate-y-full sm:translate-y-0" id="usageModalContent">
             <div class="p-6">
-                <!-- Header Modal -->
                 <div class="flex justify-between items-start mb-4">
                     <div>
                         <div class="flex items-center gap-2 mb-1">
@@ -244,7 +228,6 @@
 
                 <p class="text-sm text-muted mb-4" id="modalPartEquipment">Призначення</p>
 
-                <!-- Current Stock & Reset Button -->
                 <div class="flex justify-between items-center mb-4">
                     <div class="bg-gray-100 px-3 py-2 rounded-lg flex items-center gap-2 border border-gray-200 shadow-sm">
                         <span class="font-medium text-xs text-gray-700">Залишок:</span>
@@ -255,7 +238,6 @@
                     </button>
                 </div>
 
-                <!-- Tabs Operation Selection -->
                 <div class="flex gap-1 bg-gray-100 p-1 rounded-xl mb-4 border border-gray-200 shadow-inner">
                     <button id="tabUsage" onclick="setTab('usage')" class="flex-1 py-1.5 rounded-lg font-bold text-sm bg-white shadow-sm text-cyan-700 transition-all">Видача</button>
                     <button id="tabRestock" onclick="setTab('restock')" class="flex-1 py-1.5 rounded-lg font-bold text-sm text-gray-500 hover:bg-gray-200 transition-all">Поповнення</button>
@@ -268,18 +250,15 @@
                         <input type="number" id="useQuantity" min="0.01" step="0.01" value="1" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 font-bold text-lg text-center bg-white shadow-sm" inputmode="decimal">
                     </div>
 
-                    <!-- Поле: Ким було використано -->
                     <div id="usedByGroup">
                         <label class="block text-sm font-bold mb-1 text-gray-700">Ким було використано (ПІБ):</label>
                         <input type="text" id="useUsedBy" list="employeesDatalist" placeholder="Оберіть або введіть ПІБ..." class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 text-base shadow-sm">
-                        <datalist id="employeesDatalist">
-                            <!-- Підтягується скриптом з вкладки "Користувачі" -->
-                        </datalist>
+                        <datalist id="employeesDatalist"></datalist>
                     </div>
                     
                     <div id="batchGroup" class="grid grid-cols-2 gap-3 relative">
                         <div class="col-span-2 hidden" id="fifoHint">
-                            <span class="text-xs font-bold text-cyan-700 bg-cyan-50 border border-cyan-200 px-2 py-1 rounded">💡 Рекомендовано FIFO</span>
+                            <span class="text-xs font-bold text-cyan-700 bg-cyan-50 border border-cyan-200 px-2 py-1 rounded">💡 Рекомендовано FIFO (найстаріша дата)</span>
                         </div>
                         <div>
                             <label class="block text-sm font-bold mb-1 text-gray-700">№ партії:</label>
@@ -312,7 +291,6 @@
         </div>
     </div>
 
-    <!-- Кастомний Alert -->
     <div id="customDialogOverlay" class="fixed inset-0 hidden items-center justify-center modal-overlay z-[2000] p-4">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center transform transition-all border border-gray-100">
             <h3 id="customDialogMessage" class="text-lg font-bold mb-6 text-gray-800 whitespace-pre-wrap"></h3>
@@ -331,12 +309,11 @@
             filterHistoryToday: false
         };
         let currentSelectedItem = null;
-        let currentOperation = 'usage'; // 'usage', 'restock', 'inventory'
+        let currentOperation = 'usage'; 
         
         const OFFLINE_KEY = 'sanitationOfflineQueueV2';
         const CACHE_KEY = 'sanitationInventoryCacheV2';
 
-        // --- Custom Dialog System ---
         const showCustomDialog = (message, isConfirm = false) => {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('customDialogOverlay');
@@ -417,7 +394,6 @@
 
         const customAlert = (msg) => showCustomDialog(msg, false);
 
-        // --- Мережа та Офлайн ---
         const updateNetworkStatus = () => {
             const dot = document.getElementById('statusDot');
             const text = document.getElementById('statusText');
@@ -498,7 +474,7 @@
             }
         };
 
-        // --- FIFO Логіка ---
+        // --- ВАЖЛИВО: Оновлений алгоритм FEFO за датою ---
         function getFifoSuggestion(item) {
             if (!item.ops || !item.qts || !item.bats) return { batch: "", expDate: "" };
             
@@ -518,52 +494,85 @@
                 const qMatch = qStr.match(/[\d.-]+/);
                 const q = qMatch ? parseFloat(qMatch[0]) : 0;
                 
+                let batchName = "";
+                let expDate = "";
+                if (b && b !== "-" && b !== "Залишок") {
+                    let batchMatch = b.match(/Партія:\s*(.*?)\s*(?:\(до\s*(.*?)\))?$/);
+                    if (batchMatch) {
+                        batchName = batchMatch[1].trim();
+                        expDate = batchMatch[2] ? batchMatch[2].trim() : "";
+                    } else {
+                        batchName = b.replace('Партія:', '').trim();
+                    }
+                }
+                
                 if (op === "Поповнення" || qStr.includes('+')) {
-                    ledger.push({ batchStr: b, qty: q });
+                    ledger.push({ batch: batchName, expDate: expDate, qty: q });
                 } else if (op === "Видача" || qStr.includes('-')) {
                     let toSubtract = Math.abs(q);
-                    for (let j = 0; j < ledger.length; j++) {
-                        if (ledger[j].qty > 0) {
-                            let sub = Math.min(ledger[j].qty, toSubtract);
-                            ledger[j].qty -= sub;
-                            toSubtract -= sub;
-                            if (toSubtract <= 0.001) break;
+                    
+                    // Відбираємо ті, що є на залишку, і сортуємо по даті (FEFO)
+                    let availableIndices = [];
+                    for(let k=0; k<ledger.length; k++) {
+                        if (ledger[k].qty > 0) {
+                            let ed = ledger[k].expDate ? new Date(ledger[k].expDate).getTime() : 9999999999999;
+                            availableIndices.push({ index: k, sortDate: ed });
                         }
+                    }
+                    availableIndices.sort((a,b) => a.sortDate - b.sortDate);
+
+                    for (let j = 0; j < availableIndices.length; j++) {
+                        let idx = availableIndices[j].index;
+                        let sub = Math.min(ledger[idx].qty, toSubtract);
+                        ledger[idx].qty -= sub;
+                        toSubtract -= sub;
+                        if (toSubtract <= 0.001) break;
                     }
                 } else if (op === "Інвентаризація" || qStr.includes('=')) {
                     let currentSum = ledger.reduce((sum, entry) => sum + entry.qty, 0);
                     let diff = q - currentSum;
+                    
                     if (diff < -0.001) {
                         let toSubtract = Math.abs(diff);
-                        for (let j = 0; j < ledger.length; j++) {
-                            if (ledger[j].qty > 0) {
-                                let sub = Math.min(ledger[j].qty, toSubtract);
-                                ledger[j].qty -= sub;
-                                toSubtract -= sub;
-                                if (toSubtract <= 0.001) break;
+                        let availableIndices = [];
+                        for(let k=0; k<ledger.length; k++) {
+                            if (ledger[k].qty > 0) {
+                                let ed = ledger[k].expDate ? new Date(ledger[k].expDate).getTime() : 9999999999999;
+                                availableIndices.push({ index: k, sortDate: ed });
                             }
                         }
+                        availableIndices.sort((a,b) => a.sortDate - b.sortDate);
+
+                        for (let j = 0; j < availableIndices.length; j++) {
+                            let idx = availableIndices[j].index;
+                            let sub = Math.min(ledger[idx].qty, toSubtract);
+                            ledger[idx].qty -= sub;
+                            toSubtract -= sub;
+                            if (toSubtract <= 0.001) break;
+                        }
                     } else if (diff > 0.001) {
-                        ledger.push({ batchStr: b !== "-" ? b : "Залишок", qty: diff });
+                        ledger.push({ batch: batchName, expDate: expDate, qty: diff });
                     }
                 }
             }
             
-            let oldest = ledger.find(l => l.qty > 0.001);
-            if (oldest && oldest.batchStr && oldest.batchStr !== "-" && oldest.batchStr !== "Залишок") {
-                let batchMatch = oldest.batchStr.match(/Партія:\s*(.*?)\s*(?:\(до\s*(.*?)\))?$/);
-                if (batchMatch) {
-                    return { 
-                        batch: batchMatch[1].trim(), 
-                        expDate: batchMatch[2] ? batchMatch[2].trim() : "" 
-                    };
+            // Збираємо фактичні залишки після всієї історії та знаходимо найстарішу дату
+            let finalAvailable = [];
+            for(let k=0; k<ledger.length; k++) {
+                if (ledger[k].qty > 0.001 && ledger[k].batch) {
+                    let ed = ledger[k].expDate ? new Date(ledger[k].expDate).getTime() : 9999999999999;
+                    finalAvailable.push({ ...ledger[k], sortDate: ed });
                 }
-                return { batch: oldest.batchStr.replace('Партія:', '').trim(), expDate: "" };
+            }
+
+            finalAvailable.sort((a,b) => a.sortDate - b.sortDate);
+
+            if (finalAvailable.length > 0) {
+                return { batch: finalAvailable[0].batch, expDate: finalAvailable[0].expDate };
             }
             return { batch: "", expDate: "" };
         }
 
-        // --- Отримання даних ---
         const fetchData = async (silent = false) => {
             const loader = document.getElementById('loadingState');
             const loadText = document.getElementById('loadingText');
@@ -601,7 +610,6 @@
                 const data = await response.json();
                 
                 if (data && data.success) {
-                    // ФІЛЬТРУЄМО "Користувачі", щоб не відображати як категорію товарів
                     allData = data.categories.filter(cat => cat.name !== "Користувачі");
                     
                     populateUsers(data.controllers || [], data.employees || []);
@@ -709,7 +717,6 @@
             }
         };
 
-        // --- Рендеринг (Відображення) ---
         const renderState = () => {
             const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
             
@@ -920,7 +927,6 @@
             });
         };
 
-        // --- Логіка пошуку та переходів ---
         const searchInput = document.getElementById('searchInput');
         const clearBtn = document.getElementById('clearSearchBtn');
 
@@ -942,7 +948,6 @@
             renderState();
         });
 
-        // --- Модальне вікно та Вкладки ---
         const modal = document.getElementById('usageModal');
         const modalContent = document.getElementById('usageModalContent');
 
@@ -971,7 +976,6 @@
                 batchGroup.classList.remove('hidden');
                 usedByGroup.classList.remove('hidden'); 
                 
-                // Застосовуємо FIFO
                 if (currentSelectedItem) {
                     const fifo = getFifoSuggestion(currentSelectedItem);
                     document.getElementById('useBatch').value = fifo.batch || "";
@@ -988,7 +992,6 @@
                 batchGroup.classList.remove('hidden');
                 fifoHint.classList.add('hidden');
                 
-                // Очищаємо партію для нового вводу
                 document.getElementById('useBatch').value = "";
                 document.getElementById('useExpDate').value = "";
                 
@@ -997,7 +1000,7 @@
             } else if (op === 'inventory') {
                 qtyLabel.textContent = "Фактичний залишок (кг):";
                 locGroup.classList.add('hidden');
-                batchGroup.classList.remove('hidden'); // Увімкнено відображення партії та дати
+                batchGroup.classList.remove('hidden'); 
                 usedByGroup.classList.add('hidden'); 
                 fifoHint.classList.add('hidden');
                 
@@ -1009,13 +1012,12 @@
             }
         };
 
-        // Кнопка скидання (Скинути)
         document.getElementById('resetModalBtn').addEventListener('click', () => {
             document.getElementById('useQuantity').value = 1;
             document.getElementById('useUsedBy').value = "";
             document.getElementById('useLocation').value = "";
             document.getElementById('useDate').value = new Date().toISOString().split('T')[0];
-            setTab(currentOperation); // Це перевикличе логіку скидання/встановлення FIFO
+            setTab(currentOperation); 
         });
 
         const openUsageModal = (item) => {
@@ -1040,7 +1042,6 @@
             document.getElementById('useLocation').value = ""; 
             document.getElementById('useDate').value = new Date().toISOString().split('T')[0];
             
-            // Вкладка "Видача" за замовчуванням (у ній спрацює FIFO)
             setTab('usage'); 
 
             modal.classList.remove('hidden');
@@ -1061,7 +1062,6 @@
         document.getElementById('closeUsageModalBtn').addEventListener('click', closeUsageModal);
         modal.addEventListener('click', (e) => { if (e.target === modal) closeUsageModal(); });
 
-        // --- Відправка даних ---
         document.getElementById('submitUsageBtn').addEventListener('click', async () => {
             if (!currentSelectedItem) return;
 
