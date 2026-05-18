@@ -113,31 +113,36 @@
     </script>
 
     <div class="container mx-auto max-w-3xl p-4 sm:p-6 relative">
-        <header class="relative text-center mb-6 pt-14 sm:pt-0">
-            <!-- Змінений блок з кнопкою "Меню" та "Оновити" -->
-            <div class="absolute top-0 left-0 flex gap-2">
-                <a href="index.html" class="px-3 py-2 bg-white rounded-xl shadow-sm border border-gray-200 text-gray-600 hover:text-cyan-700 transition-colors flex items-center gap-2" title="На головну сторінку">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 sm:w-6 sm:h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
-                    <span class="font-bold hidden sm:inline text-sm">Меню</span>
-                </a>
-                <button onclick="fetchData()" class="p-2 sm:p-2.5 bg-white rounded-xl shadow-sm border border-gray-200 text-gray-600 hover:text-cyan-700 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 flex items-center" title="Оновити дані">
-                    <svg class="h-5 w-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+        
+        <!-- Новий стиль шапки (як у варіннях соусів) -->
+        <header class="flex items-center gap-2 sm:gap-4 mb-8 relative">
+            <a href="index.html" class="p-2 sm:p-3 bg-white rounded-lg shadow-sm border border-slate-200 text-slate-500 hover:text-cyan-600 transition-colors flex items-center gap-2" title="На головну сторінку">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+                <span class="font-bold hidden sm:inline">Меню</span>
+            </a>
+            
+            <div class="flex-1 text-center">
+                <h1 class="text-xl sm:text-3xl font-bold text-cyan-700">Облік миючих засобів</h1>
+                <p class="text-cyan-600 text-xs sm:text-sm font-bold mt-1 uppercase tracking-wide">Видача та поповнення</p>
+            </div>
+            
+            <div class="flex flex-col gap-1 items-end">
+                <button onclick="fetchData()" class="p-2 sm:p-3 bg-white rounded-lg shadow-sm border border-slate-200 text-slate-500 hover:text-cyan-600 transition-colors focus:outline-none" title="Оновити дані">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                 </button>
             </div>
-
-            <div class="absolute top-0 right-0 flex flex-col items-end">
-                <div class="network-status shadow-sm border border-gray-200 cursor-pointer" id="networkStatusBtn" title="Натисніть для синхронізації">
+            
+            <!-- Статус мережі зміщено вниз шапки -->
+            <div class="absolute -bottom-4 right-0">
+                <div class="network-status shadow-sm border border-gray-200 cursor-pointer !mt-0 !bg-white" id="networkStatusBtn" title="Натисніть для синхронізації">
                     <span class="status-dot online" id="statusDot"></span>
                     <span id="statusText">Онлайн</span>
                 </div>
             </div>
-            
-            <img src="https://foodline-production.com/wp-content/uploads/2021/10/3752781497_3752781497.webp" alt="Логотип" class="w-16 h-auto mx-auto mb-2 rounded-lg" onerror="this.style.display='none'">
-            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Видача миючих засобів</h1>
         </header>
 
         <!-- Вибір контролера -->
-        <div class="mb-4 card p-4 rounded-xl shadow-sm border border-gray-200">
+        <div class="mb-4 card p-4 rounded-xl shadow-sm border border-gray-200 mt-6">
             <label for="employeeSelect" class="block text-sm font-bold mb-2 text-gray-700">Контролер:</label>
             <select id="employeeSelect" class="block w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 font-semibold text-lg text-gray-800">
                 <option value="">-- Оберіть зі списку --</option>
@@ -272,7 +277,10 @@
                         </datalist>
                     </div>
                     
-                    <div id="batchGroup" class="grid grid-cols-2 gap-3">
+                    <div id="batchGroup" class="grid grid-cols-2 gap-3 relative">
+                        <div class="col-span-2 hidden" id="fifoHint">
+                            <span class="text-xs font-bold text-cyan-700 bg-cyan-50 border border-cyan-200 px-2 py-1 rounded">💡 Рекомендовано FIFO</span>
+                        </div>
                         <div>
                             <label class="block text-sm font-bold mb-1 text-gray-700">№ партії:</label>
                             <input type="text" id="useBatch" placeholder="Номер..." class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-cyan-500 text-sm shadow-sm">
@@ -313,16 +321,7 @@
     </div>
 
     <script>
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwhNiu0QpaTn14eP8PypHHIRDLB-Z0Cw2sJ8mQGhbkJQofAPXLIvPpVn4PagncxF16J/exec'; 
-
-        const MOCK_DATA = [
-            {
-                name: "Миючі засоби",
-                items: [
-                    { sheetName: "Миючі засоби", row: 4, no: "1", model: "Чистолайн Софт (мило)", equipment: "Згідно з І Б - 11 для миття рук", minStock: 5, currentStock: 31.5, supplierName: "Постачальник 1", supplierPhone: "" },
-                ]
-            }
-        ];
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_5c_lnak8zE1rCP4DI7rSfnjgIbzuBy4zrJOguyG9NLseopQ3BGU4XFL5QnEcK61L/exec'; 
 
         let allData = []; 
         let historyData = [];
@@ -473,12 +472,10 @@
             }
         };
 
-        // Заповнення списків контролерів і працівників
         const populateUsers = (controllers, employees) => {
             const empSelect = document.getElementById('employeeSelect');
             const currentVal = empSelect.value || localStorage.getItem('selectedMechanic_Sanitation');
             
-            // Заповнення Контролерів
             empSelect.innerHTML = '<option value="">-- Оберіть зі списку --</option>';
             controllers.forEach(c => {
                 const opt = document.createElement('option');
@@ -490,7 +487,6 @@
                 empSelect.value = currentVal;
             }
 
-            // Заповнення списку "Ким використано" для <datalist>
             const datalist = document.getElementById('employeesDatalist');
             if (datalist) {
                 datalist.innerHTML = '';
@@ -501,6 +497,71 @@
                 });
             }
         };
+
+        // --- FIFO Логіка ---
+        function getFifoSuggestion(item) {
+            if (!item.ops || !item.qts || !item.bats) return { batch: "", expDate: "" };
+            
+            const splitRegex = /,\s*\n?/;
+            const ops = item.ops.split(splitRegex).map(s => s.trim());
+            const qts = item.qts.split(splitRegex).map(s => s.trim());
+            const bats = item.bats.split(splitRegex).map(s => s.trim());
+            
+            let ledger = [];
+            const maxLength = Math.max(ops.length, qts.length, bats.length);
+            
+            for (let i = 0; i < maxLength; i++) {
+                const op = ops[i] || "";
+                const qStr = qts[i] || "0";
+                const b = bats[i] || "-";
+                
+                const qMatch = qStr.match(/[\d.-]+/);
+                const q = qMatch ? parseFloat(qMatch[0]) : 0;
+                
+                if (op === "Поповнення" || qStr.includes('+')) {
+                    ledger.push({ batchStr: b, qty: q });
+                } else if (op === "Видача" || qStr.includes('-')) {
+                    let toSubtract = Math.abs(q);
+                    for (let j = 0; j < ledger.length; j++) {
+                        if (ledger[j].qty > 0) {
+                            let sub = Math.min(ledger[j].qty, toSubtract);
+                            ledger[j].qty -= sub;
+                            toSubtract -= sub;
+                            if (toSubtract <= 0.001) break;
+                        }
+                    }
+                } else if (op === "Інвентаризація" || qStr.includes('=')) {
+                    let currentSum = ledger.reduce((sum, entry) => sum + entry.qty, 0);
+                    let diff = q - currentSum;
+                    if (diff < -0.001) {
+                        let toSubtract = Math.abs(diff);
+                        for (let j = 0; j < ledger.length; j++) {
+                            if (ledger[j].qty > 0) {
+                                let sub = Math.min(ledger[j].qty, toSubtract);
+                                ledger[j].qty -= sub;
+                                toSubtract -= sub;
+                                if (toSubtract <= 0.001) break;
+                            }
+                        }
+                    } else if (diff > 0.001) {
+                        ledger.push({ batchStr: b !== "-" ? b : "Залишок", qty: diff });
+                    }
+                }
+            }
+            
+            let oldest = ledger.find(l => l.qty > 0.001);
+            if (oldest && oldest.batchStr && oldest.batchStr !== "-" && oldest.batchStr !== "Залишок") {
+                let batchMatch = oldest.batchStr.match(/Партія:\s*(.*?)\s*(?:\(до\s*(.*?)\))?$/);
+                if (batchMatch) {
+                    return { 
+                        batch: batchMatch[1].trim(), 
+                        expDate: batchMatch[2] ? batchMatch[2].trim() : "" 
+                    };
+                }
+                return { batch: oldest.batchStr.replace('Партія:', '').trim(), expDate: "" };
+            }
+            return { batch: "", expDate: "" };
+        }
 
         // --- Отримання даних ---
         const fetchData = async (silent = false) => {
@@ -566,8 +627,6 @@
                 
                 if (cached) {
                     allData = JSON.parse(cached);
-                } else {
-                    allData = MOCK_DATA; 
                 }
                 renderState();
             } finally {
@@ -800,7 +859,6 @@
                 const todayStr = new Date().toISOString().split('T')[0]; 
                 
                 filteredHistory = historyData.filter(record => {
-                    // Перевіряємо по контролеру та даті
                     return record.controller === controller && record.date.includes(todayStr);
                 });
             } else {
@@ -904,27 +962,48 @@
             const locGroup = document.getElementById('locationGroup');
             const batchGroup = document.getElementById('batchGroup');
             const usedByGroup = document.getElementById('usedByGroup');
+            const fifoHint = document.getElementById('fifoHint');
             const submitBtn = document.getElementById('submitUsageBtn');
 
             if (op === 'usage') {
                 qtyLabel.textContent = "Кількість видано (кг):";
                 locGroup.classList.remove('hidden');
                 batchGroup.classList.remove('hidden');
-                usedByGroup.classList.remove('hidden'); // Відображаємо "Ким використано"
+                usedByGroup.classList.remove('hidden'); 
+                
+                // Застосовуємо FIFO
+                if (currentSelectedItem) {
+                    const fifo = getFifoSuggestion(currentSelectedItem);
+                    document.getElementById('useBatch').value = fifo.batch || "";
+                    document.getElementById('useExpDate').value = fifo.expDate || "";
+                    if (fifo.batch) fifoHint.classList.remove('hidden');
+                }
+                
                 submitBtn.innerHTML = '<svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Зареєструвати видачу';
                 submitBtn.className = "flex-1 bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-transform active:scale-95 text-base sm:text-lg flex justify-center items-center";
             } else if (op === 'restock') {
                 qtyLabel.textContent = "Кількість поповнення (кг):";
                 locGroup.classList.add('hidden');
-                usedByGroup.classList.add('hidden'); // Ховаємо "Ким використано"
+                usedByGroup.classList.add('hidden'); 
                 batchGroup.classList.remove('hidden');
+                fifoHint.classList.add('hidden');
+                
+                // Очищаємо партію для нового вводу
+                document.getElementById('useBatch').value = "";
+                document.getElementById('useExpDate').value = "";
+                
                 submitBtn.innerHTML = '<svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg> Додати поповнення';
                 submitBtn.className = "flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-transform active:scale-95 text-base sm:text-lg flex justify-center items-center";
             } else if (op === 'inventory') {
                 qtyLabel.textContent = "Фактичний залишок (кг):";
                 locGroup.classList.add('hidden');
-                batchGroup.classList.add('hidden');
-                usedByGroup.classList.add('hidden'); // Ховаємо "Ким використано"
+                batchGroup.classList.remove('hidden'); // Увімкнено відображення партії та дати
+                usedByGroup.classList.add('hidden'); 
+                fifoHint.classList.add('hidden');
+                
+                document.getElementById('useBatch').value = "";
+                document.getElementById('useExpDate').value = "";
+
                 submitBtn.innerHTML = '<svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg> Зберегти інвентаризацію';
                 submitBtn.className = "flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-transform active:scale-95 text-base sm:text-lg flex justify-center items-center";
             }
@@ -934,10 +1013,9 @@
         document.getElementById('resetModalBtn').addEventListener('click', () => {
             document.getElementById('useQuantity').value = 1;
             document.getElementById('useUsedBy').value = "";
-            document.getElementById('useBatch').value = "";
-            document.getElementById('useExpDate').value = "";
             document.getElementById('useLocation').value = "";
             document.getElementById('useDate').value = new Date().toISOString().split('T')[0];
+            setTab(currentOperation); // Це перевикличе логіку скидання/встановлення FIFO
         });
 
         const openUsageModal = (item) => {
@@ -950,7 +1028,6 @@
             }
 
             currentSelectedItem = item;
-            setTab('usage'); // Скидаємо на "Видача" при кожному відкритті
             
             document.getElementById('modalPartNo').textContent = `№ ${item.no}`;
             document.getElementById('modalPartCategory').textContent = item.sheetName;
@@ -960,10 +1037,11 @@
             
             document.getElementById('useQuantity').value = 1;
             document.getElementById('useUsedBy').value = ""; 
-            document.getElementById('useBatch').value = ""; 
-            document.getElementById('useExpDate').value = ""; 
             document.getElementById('useLocation').value = ""; 
             document.getElementById('useDate').value = new Date().toISOString().split('T')[0];
+            
+            // Вкладка "Видача" за замовчуванням (у ній спрацює FIFO)
+            setTab('usage'); 
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -1022,8 +1100,8 @@
                 sheetName: currentSelectedItem.sheetName,
                 row: currentSelectedItem.row,
                 model: currentSelectedItem.model,
-                controller: controller, // Змінено mechanic -> controller
-                usedBy: currentOperation === 'usage' ? usedBy : "-", // Нове поле
+                controller: controller, 
+                usedBy: currentOperation === 'usage' ? usedBy : "-", 
                 quantity: quantity,
                 location: currentOperation === 'usage' ? location : "-",
                 batch: batch,
