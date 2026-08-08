@@ -175,7 +175,7 @@
                         <select id="check-docs" class="w-40 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold cursor-pointer" onchange="checkStatus(this)">
                             <option value="" disabled selected>Оберіть...</option>
                             <option value="✅ Наявні/ОК">✅ Наявні/ОК</option>
-                            <option value="❌ Відсутні/Не коректні">❌ Відсутні/Bad</option>
+                            <option value="❌ Відсутні/Не коректні">❌ Відсутні/Не коректні</option>
                         </select>
                     </div>
                     
@@ -194,7 +194,7 @@
                 <div class="flex items-center justify-between mb-4">
                     <div>
                         <h4 class="font-bold text-sm mb-1 text-slate-700 dark:text-slate-200">Фото звіт</h4>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Можна додати декілька фото</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400" id="photoCounter">Можна додати до 6 фото</p>
                     </div>
                     <label class="cursor-pointer bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg shadow flex items-center gap-2 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
@@ -232,9 +232,60 @@
         </div>
     </div>
 
+    <script src="qc-core.js"></script>
     <script>
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxG2c79RC60lVRubR8jspev9qGDEH63w7ksGYiJZnvCdxStGaygstDrZiof4kM_a8-oig/exec";
         const employees = ["Соботович Л.М.", "Огаркова М.В.", "Попадюк А.М."];
+
+        // ==========================================================
+        //  КОНФІГУРАЦІЯ СТОРІНКИ
+        //  Уся спільна механіка (черга, перевірена відправка, стиснення
+        //  фото, тости) живе в qc-core.js — один файл на всі форми.
+        // ==========================================================
+        QC.configure({ url: GOOGLE_SCRIPT_URL, section: 'incoming', token: '' });
+
+        const showToast   = QC.toast;
+        const fmtDateTime = QC.fmtDateTime;
+
+        const DRAFT_KEY    = "qc_draft_incoming_v2";
+        const DRAFT_TTL_MS = 12 * 60 * 60 * 1000;
+
+        // ==========================================================
+        //  ЧЕРНЕТКА (тільки текст; фото у чернетку не пишемо)
+        // ==========================================================
+        const DRAFT_FIELDS = ['inc-datetime','inc-supplier','inc-doc-num','inc-category','inc-product-input',
+                              'inc-batch','inc-qty','inc-prod-date','inc-exp-date','inc-comment',
+                              'check-transport','check-package','check-marking','check-docs','check-organoleptic'];
+
+        function saveDraft() {
+            try {
+                const d = { ts: Date.now(), fields: {} };
+                DRAFT_FIELDS.forEach(id => { const el = document.getElementById(id); if (el) d.fields[id] = el.value; });
+                localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+            } catch (e) { /* приватний режим / переповнення */ }
+        }
+        function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch (e) {} }
+        function restoreDraft() {
+            let d = null;
+            try { d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch (e) { return; }
+            if (!d || !d.fields) return;
+            if (Date.now() - d.ts > DRAFT_TTL_MS) { clearDraft(); return; }
+            const meaningful = ['inc-supplier','inc-doc-num','inc-product-input'].some(id => d.fields[id]);
+            if (!meaningful) { clearDraft(); return; }
+            if (!confirm('Знайдено незавершений запис.\nВідновити введені дані?\n\n(Фото у чернетці не зберігаються)')) { clearDraft(); return; }
+            if (d.fields['inc-category']) {
+                document.getElementById('inc-category').value = d.fields['inc-category'];
+                updateProductList(true);
+            }
+            Object.keys(d.fields).forEach(id => {
+                const el = document.getElementById(id);
+                if (el && d.fields[id]) el.value = d.fields[id];
+            });
+            ['check-transport','check-package','check-marking','check-docs','check-organoleptic']
+                .forEach(id => { const el = document.getElementById(id); if (el) checkStatus(el); });
+            showToast('Чернетку відновлено');
+        }
+
         
         // --- Database constructed from uploaded files ---
         const itemsDatabase = {
@@ -833,16 +884,15 @@
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         document.getElementById('inc-datetime').value = now.toISOString().slice(0,16);
 
-        let uploadedFiles = []; 
         let pendingData = null;
 
-        function updateProductList() {
+        function updateProductList(keepValue) {
             const category = document.getElementById('inc-category').value;
             const datalist = document.getElementById('product-datalist');
             const input = document.getElementById('inc-product-input');
-            
+
             datalist.innerHTML = '';
-            input.value = '';
+            if (!keepValue) input.value = '';
 
             if (category && itemsDatabase[category]) {
                 itemsDatabase[category].forEach(item => {
@@ -853,36 +903,11 @@
             }
         }
 
-        function handleFiles(input) {
-            const files = input.files;
-            if (files && files.length > 0) {
-                const container = document.getElementById('gallery-container');
-                container.classList.remove('hidden');
-
-                Array.from(files).forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const base64 = e.target.result;
-                        uploadedFiles.push({ name: file.name, type: file.type, data: base64 });
-                        const index = uploadedFiles.length - 1;
-                        const div = document.createElement('div');
-                        div.className = 'photo-preview-item';
-                        div.innerHTML = `<img src="${base64}"><div class="photo-remove-btn" onclick="removeFile(${index}, this)">✕</div>`;
-                        container.appendChild(div);
-                    };
-                    reader.readAsDataURL(file);
-                });
-            }
-            input.value = '';
-        }
-
-        function removeFile(index, btnElement) {
-            const parent = btnElement.parentElement;
-            parent.remove();
-            const src = parent.querySelector('img').src;
-            uploadedFiles = uploadedFiles.filter(f => f.data !== src);
-            if(uploadedFiles.length === 0) document.getElementById('gallery-container').classList.add('hidden');
-        }
+        // Галерея і стиснення — у qc-core.js
+        const photos = QC.gallery({ container: 'gallery-container', counter: 'photoCounter' });
+        function handleFiles(input) { photos.add(input); }
+        function removeFile(id) { photos.remove(id); }
+        function updatePhotoCounter() { photos.updateCounter(); }
 
         function checkStatus(el) {
             if (el.value.includes('❌')) el.classList.add('input-alert');
@@ -895,11 +920,14 @@
         function performReset() {
              document.querySelectorAll('input, textarea').forEach(el => el.value = '');
              document.querySelectorAll('select').forEach(el => { el.value = ""; el.classList.remove('input-alert'); });
-             uploadedFiles = [];
-             document.getElementById('gallery-container').innerHTML = '';
+             photos.clear();
              closeModal('confirmationModal');
-             const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-             document.getElementById('inc-datetime').value = now.toISOString().slice(0,16);
+             const n = new Date(); n.setMinutes(n.getMinutes() - n.getTimezoneOffset());
+             document.getElementById('inc-datetime').value = n.toISOString().slice(0,16);
+             const savedUser = localStorage.getItem('qc_user');
+             if (savedUser) empSel.value = savedUser;   // контролер між записами не змінюється
+             clearDraft();
+             updatePhotoCounter();
         }
 
         const saved = localStorage.getItem('qc_user');
@@ -910,9 +938,14 @@
             document.documentElement.classList.toggle('dark');
             localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
         });
-        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        }
+        // try/catch: на старих заводських планшетах відсутність matchMedia
+        // раніше обірвала б УВЕСЬ скрипт нижче — разом з чергою і чернеткою
+        try {
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            }
+        } catch (e) { /* ignore */ }
 
         function initiateSend() {
             const emp = empSel.value;
@@ -921,7 +954,38 @@
             const category = document.getElementById('inc-category').value;
             const product = document.getElementById('inc-product-input').value;
             
-            if(!emp || !supplier || !docNum || !category || !product) { alert("Заповніть всі обов'язкові поля!"); return; }
+            const dtLocal  = document.getElementById('inc-datetime').value;
+            const prodDate = document.getElementById('inc-prod-date').value;
+            const expDate  = document.getElementById('inc-exp-date').value;
+
+            const missing = [];
+            if (!emp)      missing.push('Контролер');
+            if (!dtLocal)  missing.push('Дата та час');
+            if (!supplier) missing.push('Постачальник');
+            if (!docNum)   missing.push('№ документа');
+            if (!category) missing.push('Категорія');
+            if (!product)  missing.push('Товар');
+            // Контрольні точки тепер ОБОВ'ЯЗКОВІ: раніше запис міг піти
+            // з порожніми перевірками і виглядав як «все ОК».
+            ['check-transport','check-package','check-marking','check-docs','check-organoleptic'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el && !el.value) {
+                    const lbl = el.previousElementSibling;
+                    missing.push(lbl ? lbl.textContent.trim() : id);
+                }
+            });
+            if (missing.length) { showToast('Не заповнено: ' + missing.join(', '), true); return; }
+
+            // Логічні перевірки дат — раніше їх не було зовсім
+            if (prodDate && expDate && new Date(expDate) <= new Date(prodDate)) {
+                showToast('Дата придатності має бути пізніше дати виробництва', true); return;
+            }
+            if (prodDate && new Date(prodDate) > new Date()) {
+                showToast('Дата виробництва вказана в майбутньому — перевірте', true); return;
+            }
+            if (expDate && new Date(expDate) < new Date()) {
+                if (!confirm('Термін придатності товару вже минув.\nВсе одно записати приймання?')) return;
+            }
 
             const trans = document.getElementById('check-transport').value;
             const pack = document.getElementById('check-package').value;
@@ -959,15 +1023,18 @@
    • Документи: ${docs}
    • Органолептика: ${organoleptic}
 
-📷 Фото: ${uploadedFiles.length} шт.
+📷 Фото: ${photos.count} шт.
 
 💬 Коментар: ${document.getElementById('inc-comment').value}
 ${alerts}
 ===========================`;
 
             pendingData = {
-                type: 'incoming', 
-                time: new Date().toLocaleString('uk-UA'),
+                type: 'incoming',
+                // Раніше сюди йшов момент НАТИСКАННЯ кнопки, а не час приймання,
+                // який ввів контролер. Тепер у таблиці — фактичний час.
+                time: dtLocal ? fmtDateTime(new Date(dtLocal)) : fmtDateTime(new Date()),
+                submittedAt: new Date().toISOString(),
                 employee: emp,
                 supplier: supplier, docNum: docNum,
                 category: category, product: product,
@@ -979,9 +1046,16 @@ ${alerts}
                 checkDocs: docs, checkOrganoleptic: organoleptic,
                 comment: document.getElementById('inc-comment').value,
                 report: report,
-                files: uploadedFiles, 
-                photo: uploadedFiles.length > 0 ? uploadedFiles[0].data : ""
+                files: photos.files,
+                photo: photos.first
             };
+
+            const size = QC.checkSize(pendingData);
+            if (!size.ok) {
+                showToast('Забагато даних (~' + size.mb + ' МБ). Видаліть частину фото.', true);
+                pendingData = null;
+                return;
+            }
 
             document.getElementById('reportPreview').innerText = report;
             document.getElementById('sendStatus').innerText = "";
@@ -991,40 +1065,28 @@ ${alerts}
             document.getElementById('sendModal').classList.add('flex');
         }
 
-        async function executeSend() {
-            const actions = document.getElementById('sendActions'); 
-            const spinner = document.getElementById('sendSpinner'); 
-            const status = document.getElementById('sendStatus');
-            
-            actions.style.display = 'none'; 
-            spinner.classList.remove('hidden'); 
-            status.innerText = "Відправка...";
-            
-            try {
-                await fetch(GOOGLE_SCRIPT_URL, { 
-                    method: 'POST', 
-                    mode: 'no-cors', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(pendingData) 
-                });
-                
-                status.innerText = "✅ Дані відправлено (черга)!"; 
-                status.classList.add('text-emerald-600');
-                
-                setTimeout(() => {
-                    closeModal('sendModal');
-                    performReset(); 
-                }, 1500);
-                
-            } catch(e) { 
-                status.innerText = "❌ Помилка з'єднання"; 
-                status.classList.add('text-red-500'); 
-                actions.style.display = 'flex'; 
-                spinner.classList.add('hidden'); 
-            }
+        function executeSend() {
+            return QC.submit(pendingData, {
+                status: 'sendStatus', actions: 'sendActions', spinner: 'sendSpinner', button: 'confirmSendBtn',
+                onDone: () => { clearDraft(); closeModal('sendModal'); performReset(); }
+            });
         }
-        
+
         document.getElementById('confirmSendBtn').onclick = executeSend;
+
+        // ==========================================================
+        //  ІНІЦІАЛІЗАЦІЯ
+        // ==========================================================
+        DRAFT_FIELDS.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('change', saveDraft);
+        });
+        document.getElementById('inc-comment').addEventListener('input', saveDraft);
+        document.getElementById('inc-product-input').addEventListener('input', saveDraft);
+
+        // online/offline, черга та індикатор — усе в qc-core.js
+        restoreDraft();
+        updatePhotoCounter();
     </script>
 </body>
 </html>
