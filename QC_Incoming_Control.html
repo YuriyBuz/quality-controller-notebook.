@@ -927,10 +927,20 @@
             const icon = document.getElementById('catalogIcon');
             if (icon) icon.style.opacity = info.loading ? '0.4' : '1';
             if (!box) return;
-            if (info.loading) { box.textContent = 'Оновлення довідників...'; return; }
-            if (!info.fetchedAt) { box.textContent = 'Довідники: вбудований список'; return; }
+            if (info.loading) { box.textContent = 'Оновлення довідників...'; box.style.color = ''; return; }
+            // Причину показуємо прямо на сторінці — раніше збій каталогу
+            // виглядав просто як «нічого не сталося».
+            if (!info.fetchedAt) {
+                box.textContent = info.error
+                    ? ('Довідники: вбудований список \u2014 ' + info.error)
+                    : 'Довідники: вбудований список';
+                box.style.color = info.error ? '#dc2626' : '';
+                return;
+            }
             const d = new Date(info.fetchedAt);
-            box.textContent = 'Довідники оновлено ' + QC.fmtDateTime(d) + (info.stale ? ' (застарілі)' : '');
+            box.textContent = 'Довідники оновлено ' + QC.fmtDateTime(d) +
+                              (info.stale ? (' (застарілі' + (info.error ? ': ' + info.error : '') + ')') : '');
+            box.style.color = info.stale ? '#d97706' : '';
         }
 
         QC.catalog.onUpdate(function (data, info) {
