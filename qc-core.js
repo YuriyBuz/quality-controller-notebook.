@@ -421,7 +421,7 @@
        --------------------------------------------------------------- */
     var CAT_KEY  = 'qc_catalog_v1';
     var catData  = null;
-    var catMeta  = { fetchedAt: 0, stale: true, source: 'none' };
+    var catMeta  = { fetchedAt: 0, stale: true, source: 'none', error: '' };
     var catSubs  = [];
     var catBusy  = false;
 
@@ -455,7 +455,8 @@
     }
 
     function catInfo() {
-        return { fetchedAt: catMeta.fetchedAt, stale: catMeta.stale, source: catMeta.source, loading: catBusy };
+        return { fetchedAt: catMeta.fetchedAt, stale: catMeta.stale, source: catMeta.source,
+                 loading: catBusy, error: catMeta.error || '' };
     }
 
     function catFetch(manual) {
@@ -469,27 +470,47 @@
 
         var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
         var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 20000) : null;
-        var opts = { method: 'POST', body: JSON.stringify({ action: 'getCatalog', token: cfg.token }), redirect: 'follow' };
+        // force:true — примусове читання аркуша в обхід серверного кешу.
+        // Кнопка 🔄 має показувати таблицю ЗАРАЗ, а не знімок 6-годинної давнини.
+        var opts = { method: 'POST', redirect: 'follow',
+                     body: JSON.stringify({ action: 'getCatalog', token: cfg.token, force: !!manual }) };
         if (ctrl) opts.signal = ctrl.signal;
 
         return fetch(cfg.url, opts).then(function (r) {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
+            if (!r.ok) { var e1 = new Error('HTTP ' + r.status); e1.kind = 'http'; throw e1; }
             return r.text();
         }).then(function (t) {
-            var j = JSON.parse(t);
-            // Бекенд ще без обробника getCatalog — тихо лишаємось на кеші
-            if (!j || !j.catalog) throw new Error('no-catalog-endpoint');
+            // Діагностика: сирі перші 200 символів відповіді завжди в консолі.
+            console.log('[QC catalog] відповідь сервера:', String(t).substring(0, 200));
+            var j;
+            try { j = JSON.parse(t); }
+            catch (e) {
+                // Найчастіша причина: /exec віддав HTML сторінки входу Google,
+                // бо у розгортанні «У кого есть доступ» стоїть не «Все».
+                var e2 = new Error(/<html|accounts\.google/i.test(String(t))
+                    ? 'Закритий доступ до скрипта'
+                    : 'Сервер відповів не JSON');
+                e2.kind = 'auth'; throw e2;
+            }
+            if (!j || !j.catalog) {
+                var e3 = new Error(j && j.error ? String(j.error) : 'Розгорнута стара версія скрипта');
+                e3.kind = 'stale-deploy'; throw e3;
+            }
             catData = j.catalog;
-            catMeta = { fetchedAt: Date.now(), stale: false, source: 'server' };
+            catMeta = { fetchedAt: Date.now(), stale: false, source: 'server', error: '' };
             catSaveCache();
             if (manual) toast('Довідники оновлено');
             return catInfo();
         }).catch(function (err) {
             catMeta.stale = true;
+            catMeta.error = String(err && err.message ? err.message : err);
+            console.warn('[QC catalog] не вдалося оновити:', catMeta.error, '| тип:', err.kind || 'network');
             if (manual) {
-                toast(err.message === 'no-catalog-endpoint'
-                    ? 'Сервер ще не віддає довідники — працюємо на вбудованому списку'
-                    : 'Не вдалося оновити довідники', true);
+                var hint = 'Не вдалося оновити довідники';
+                if (err.kind === 'auth')         hint = 'Закритий доступ до скрипта. Розгортання → У кого есть доступ → «Все»';
+                else if (err.kind === 'stale-deploy') hint = 'На сервері стара версія. Розгортання → Версия → «Новая версия»';
+                else if (err.kind === 'http')    hint = 'Сервер відповів ' + catMeta.error;
+                toast(hint, true);
             }
             return catInfo();
         }).finally(function () {
