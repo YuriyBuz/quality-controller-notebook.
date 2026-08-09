@@ -327,12 +327,35 @@ label.shot.add{cursor:pointer}
    елемент у панелі — .eyebrow */
 .eyebrow + .cp{border-top:none;padding-top:0}
 
-@media (max-width:430px){
-  .hud{padding:9px 10px;gap:9px}
-  .back{padding:9px 10px;font-size:0;gap:0}
+/* На телефоні шапка в один ряд не вміщується: телеметрія лізла на
+   кнопки. Розкладаємо сіткою у два рядки — назва зверху, показники
+   окремою смугою під нею. */
+@media (max-width:720px){
+  .hud{
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr) auto;
+    grid-template-areas:"back brand act" "tel tel tel";
+    gap:9px 10px; padding:10px 12px;
+  }
+  .back{grid-area:back;padding:9px 10px;font-size:0;gap:0}
   .back svg{width:17px;height:17px}
+  .brand{grid-area:brand;min-width:0}
+  .hud-act{grid-area:act}
+  .hud-tel{
+    grid-area:tel;
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:8px;font-size:9px;
+    border-top:1px solid var(--line);padding-top:8px;
+  }
+  .tel b{font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wordmark{font-size:13px;letter-spacing:.12em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brand-sub{font-size:7.5px;letter-spacing:.16em}
+  .brand{gap:8px}
   .mark svg{width:24px;height:24px}
-  .hud-tel{gap:12px;font-size:10px}
+  .btn-ic{padding:8px 9px}
+}
+@media (max-width:360px){
+  .hud-tel{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:7px}
 }
 
 @media (prefers-reduced-motion:no-preference){
@@ -1384,14 +1407,16 @@ label.shot.add{cursor:pointer}
         document.getElementById('themeToggle').addEventListener('click', () => {
             const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
             document.documentElement.dataset.theme = next;
-            localStorage.setItem('theme', next);
+            localStorage.setItem('qc_theme', next);
         });
         // try/catch: на старих заводських планшетах відсутність matchMedia
         // раніше обірвала б УВЕСЬ скрипт нижче — разом з чергою і чернеткою
-        // Темна тема за замовчуванням: світлу вмикає лише явний вибір.
+        // Темна за замовчуванням. Ключ саме 'qc_theme', а не 'theme':
+        // стара версія сторінки писала 'theme' і могла лишити там 'light',
+        // через що нова відкривалась світлою всупереч замовчуванню.
         try {
             document.documentElement.dataset.theme =
-                (localStorage.getItem('theme') === 'light') ? 'light' : 'dark';
+                (localStorage.getItem('qc_theme') === 'light') ? 'light' : 'dark';
         } catch (e) { document.documentElement.dataset.theme = 'dark'; }
 
         function initiateSend() {
