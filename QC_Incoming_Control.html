@@ -1,260 +1,617 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="uk" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вхідний контроль | QC Master</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: { colors: { slate: { 50: '#f8fafc', 800: '#1e293b', 900: '#0f172a' }, teal: { 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e' } } }
-            }
-        }
-    </script>
-    <style>
-        :root { --bg-color: #f8fafc; --card-bg: #fff; --text: #1e293b; }
-        .dark { --bg-color: #0f172a; --card-bg: #1e293b; --text: #f1f5f9; }
-        body { background-color: var(--bg-color); color: var(--text); padding-bottom: 2rem; transition: background-color 0.3s ease; }
-        .card { background-color: var(--card-bg); transition: background-color 0.3s ease; }
-        
-        input, select, textarea {
-            background-color: transparent;
-            width: 100%;
-            color: inherit;
-        }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: #14b8a6; box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2); }
-        
-        /* Стиль для пустих селектів */
-        select:required:invalid { color: #94a3b8; }
-        option[value=""][disabled] { display: none; }
-        option { color: var(--text); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Вхідний контроль · Цифровий блокнот QC</title>
+<meta name="theme-color" content="#04060D">
+<link rel="apple-touch-icon" href="https://foodline-production.com/wp-content/uploads/2021/10/3752781497_3752781497.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
 
-        .spinner { border: 3px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #14b8a6; animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        
-        .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 50; }
-        .input-alert { border-color: #ef4444 !important; background-color: rgba(239, 68, 68, 0.05) !important; }
-        
-        /* Styles for photo gallery */
-        .photo-preview-item { position: relative; width: 100%; padding-top: 100%; }
-        .photo-preview-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; border: 1px solid #e2e8f0; }
-        .photo-remove-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-    </style>
+/* ================= ТЕМИ (перенесено з MRP_Import без змін) ================= */
+html[data-theme="dark"]{
+  --void:#04060D; --deck:#0C1626; --hull:#132038; --hull2:#1A2A47;
+  --line:rgba(150,195,255,.24); --line2:rgba(150,195,255,.42); --grid:rgba(120,180,255,.055);
+  --ion:#5FD4FF; --ion-soft:rgba(95,212,255,.16);
+  --gold:#FFBC4D; --flare:#FF6B85; --jade:#4EE8A6; --violet:#A78BFA;
+  --ink:#F2F7FF; --mute:#AFC4E0; --dim:#8AA2C0;
+  --glow:0 0 26px rgba(95,212,255,.30);
+  --shadow:0 20px 50px -34px rgba(0,0,0,.9);
+  --sheen:rgba(255,255,255,.03); --scrim:rgba(4,6,13,.78);
+}
+html[data-theme="light"]{
+  --void:#EEF2F8; --deck:#FFFFFF; --hull:#FFFFFF; --hull2:#F2F6FB;
+  --line:#CBD8E8; --line2:#A7BCD4; --grid:rgba(12,60,120,.045);
+  --ion:#0A62C4; --ion-soft:rgba(10,98,196,.10);
+  --gold:#9A5B00; --flare:#C01741; --jade:#0B7047; --violet:#6D4AC9;
+  --ink:#0B1626; --mute:#42566E; --dim:#61758F;
+  --glow:0 0 0 1px rgba(10,98,196,.14);
+  --shadow:0 12px 32px -26px rgba(11,22,38,.5);
+  --sheen:rgba(11,22,38,.02); --scrim:rgba(20,34,56,.55);
+}
+:root{--radius:14px}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--void); color:var(--ink);
+  font-family:'Exo 2',system-ui,sans-serif; font-size:14px;
+  background-image:
+    radial-gradient(1200px 620px at 50% -12%, var(--ion-soft), transparent 62%),
+    linear-gradient(transparent 95%, var(--grid) 95%),
+    linear-gradient(90deg, transparent 95%, var(--grid) 95%);
+  background-size:auto, 34px 34px, 34px 34px;
+  min-height:100vh; padding-bottom:104px;
+  transition:background-color .2s, color .2s;
+}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit}
+input:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--ion);outline-offset:2px}
+
+/* ================= HUD ================= */
+.hud{
+  position:sticky;top:0;z-index:60;
+  background:color-mix(in srgb, var(--deck) 92%, transparent);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+  box-shadow:0 1px 0 var(--ion-soft), var(--shadow);
+  padding:10px 14px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+}
+.wordmark{font-weight:800;font-size:15px;letter-spacing:.22em;text-transform:uppercase;white-space:nowrap}
+.wordmark span{color:var(--ion)}
+.hud-tel{display:flex;gap:16px;flex:1;flex-wrap:wrap;font-size:10.5px;color:var(--mute);min-width:0}
+.tel b{display:block;color:var(--ink);font-size:12px;letter-spacing:.03em;margin-top:2px}
+.tel .warn{color:var(--gold)}
+.tel .ok{color:var(--jade)}
+.hud-act{display:flex;gap:6px}
+
+.btn{
+  border:1px solid var(--line2); background:var(--hull); color:var(--ink);
+  padding:8px 14px; border-radius:9px; font-size:11.5px; font-weight:600;
+  letter-spacing:.1em; text-transform:uppercase; display:inline-flex; align-items:center; gap:7px;
+  transition:.18s;
+}
+.btn:hover{border-color:var(--ion);box-shadow:var(--glow)}
+.btn-ic{padding:8px 10px}
+
+
+/* ================= каркас ================= */
+.shell{max-width:820px;margin:0 auto;padding:16px 14px}
+.panel{
+  background:linear-gradient(180deg,var(--hull),var(--deck));
+  border:1px solid var(--line); border-radius:var(--radius);
+  position:relative; overflow:hidden; box-shadow:var(--shadow);
+  margin-bottom:14px;
+}
+.panel::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--ion),transparent);opacity:.55;
+}
+.pad{padding:16px}
+.eyebrow{
+  font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--dim);
+  display:flex;align-items:center;gap:10px;margin-bottom:14px;
+}
+.eyebrow::after{content:'';flex:1;height:1px;background:var(--line)}
+.eyebrow b{color:var(--ion);font-weight:600;letter-spacing:.3em}
+
+/* ================= ПІДПИС ПРОЄКТУ: шлюз приймання ================= */
+.gate{padding:16px 16px 14px}
+.gate-rail{display:flex;gap:4px;margin:2px 0 12px}
+.gate-rail .seg{
+  flex:1;height:34px;border-radius:6px;border:1px solid var(--line);
+  background:var(--deck);position:relative;transition:.2s;overflow:hidden;
+}
+.gate-rail .seg i{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:8.5px;font-weight:700;letter-spacing:.12em;color:var(--dim);font-style:normal;
+}
+.gate-rail .seg.pass{background:color-mix(in srgb, var(--jade) 22%, var(--deck));border-color:var(--jade)}
+.gate-rail .seg.pass i{color:var(--jade)}
+.gate-rail .seg.fail{background:color-mix(in srgb, var(--flare) 22%, var(--deck));border-color:var(--flare)}
+.gate-rail .seg.fail i{color:var(--flare)}
+.gate-rail .seg.cur{box-shadow:var(--glow);border-color:var(--ion)}
+
+.verdict{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.verdict .word{font-size:26px;font-weight:800;letter-spacing:.04em;line-height:1}
+.verdict .word.idle{color:var(--dim)}
+.verdict .word.ok{color:var(--jade)}
+.verdict .word.warn{color:var(--gold)}
+.verdict .word.bad{color:var(--flare)}
+.verdict .meta{font-size:10.5px;color:var(--mute);text-align:right}
+.verdict .meta b{color:var(--ink)}
+.rim{height:2px;background:linear-gradient(90deg,transparent,var(--ion),transparent);opacity:.4}
+.rim.bad{background:linear-gradient(90deg,transparent,var(--flare),transparent);opacity:.85}
+.rim.ok{background:linear-gradient(90deg,transparent,var(--jade),transparent);opacity:.7}
+
+/* ================= поля ================= */
+.lab{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:6px}
+.req{color:var(--flare)}
+.field{
+  width:100%;background:var(--deck);border:1px solid var(--line);border-radius:9px;
+  color:var(--ink);padding:11px 12px;font-size:14px;
+}
+.field:focus{border-color:var(--ion);box-shadow:var(--glow);outline:none}
+.field.mono{color:var(--ion);font-weight:700}
+select.field{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:34px}
+html[data-theme="dark"] .field::-webkit-calendar-picker-indicator{filter:invert(.85) sepia(1) saturate(4) hue-rotate(165deg)}
+textarea.field{resize:vertical;min-height:74px;font-size:13px;line-height:1.6}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row{margin-bottom:13px}
+.row:last-child{margin-bottom:0}
+.hint{font-size:10px;color:var(--dim);margin-top:5px;letter-spacing:.02em}
+
+/* сегментований вибір категорії */
+.segs{display:flex;gap:5px}
+.segs button{
+  flex:1;border:1px solid var(--line);background:var(--deck);color:var(--mute);
+  padding:11px 6px;border-radius:9px;font-size:11px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;transition:.15s;
+}
+.segs button:hover{border-color:var(--ion)}
+.segs button.on{background:color-mix(in srgb, var(--ion) 18%, var(--deck));border-color:var(--ion);color:var(--ion)}
+
+/* ================= контрольні точки ================= */
+.cp{border-top:1px solid var(--line);padding:13px 0}
+.cp:first-of-type{border-top:none;padding-top:0}
+.cp:last-of-type{padding-bottom:0}
+.cp-h{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.cp-n{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:.1em}
+.cp-t{font-size:13.5px;font-weight:600;flex:1}
+.cp-opts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.cp-opts button{
+  border:1px solid var(--line);background:var(--deck);color:var(--mute);
+  padding:12px 10px;border-radius:9px;font-size:12.5px;font-weight:600;
+  text-align:left;transition:.15s;display:flex;align-items:center;gap:8px;
+}
+.cp-opts button:hover{border-color:var(--line2)}
+.cp-opts button .dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--dim);flex-shrink:0}
+.cp-opts button.on.pass{background:color-mix(in srgb, var(--jade) 16%, var(--deck));border-color:var(--jade);color:var(--jade)}
+.cp-opts button.on.pass .dot{background:var(--jade);border-color:var(--jade)}
+.cp-opts button.on.fail{background:color-mix(in srgb, var(--flare) 16%, var(--deck));border-color:var(--flare);color:var(--flare)}
+.cp-opts button.on.fail .dot{background:var(--flare);border-color:var(--flare)}
+
+/* ================= фото ================= */
+.shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.shot{
+  aspect-ratio:1;border:1px solid var(--line);border-radius:10px;background:var(--deck);
+  position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;
+}
+.shot img{width:100%;height:100%;object-fit:cover}
+.shot .x{
+  position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;
+  background:color-mix(in srgb, var(--void) 78%, transparent);border:1px solid var(--line2);
+  color:var(--ink);font-size:11px;display:flex;align-items:center;justify-content:center;
+}
+.shot.add{border-style:dashed;color:var(--dim);flex-direction:column;gap:4px;font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+.shot.add:hover{border-color:var(--ion);color:var(--ion)}
+.shot.add .plus{font-size:22px;line-height:1}
+
+/* ================= нижня панель дій ================= */
+.dock{
+  position:fixed;left:0;right:0;bottom:0;z-index:70;
+  background:color-mix(in srgb, var(--deck) 94%, transparent);
+  backdrop-filter:blur(14px);border-top:1px solid var(--line);
+  box-shadow:0 -1px 0 var(--ion-soft), var(--shadow);
+  padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+}
+.dock-in{max-width:820px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.send{
+  flex:1;border:1px solid var(--ion);border-radius:11px;
+  background:color-mix(in srgb, var(--ion) 20%, var(--hull));color:var(--ion);
+  padding:15px;font-size:13.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
+  transition:.18s;
+}
+.send:hover{box-shadow:var(--glow)}
+.send:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;border-color:var(--line2);color:var(--dim);background:var(--hull)}
+.send.bad{border-color:var(--flare);color:var(--flare);background:color-mix(in srgb, var(--flare) 18%, var(--hull))}
+.reset{
+  border:1px solid var(--line2);background:transparent;color:var(--dim);
+  padding:15px 16px;border-radius:11px;font-size:11px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;
+}
+.reset:hover{border-color:var(--gold);color:var(--gold)}
+
+.flags{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.flag{
+  font-size:9.5px;padding:4px 10px;border-radius:20px;letter-spacing:.08em;
+  border:1px solid var(--flare);color:var(--flare);
+  background:color-mix(in srgb, var(--flare) 12%, transparent);
+}
+
+
+
+
+@media (min-width:640px){
+  .shell{padding:20px 18px}
+  
+  .cp-opts{grid-template-columns:1fr 1fr;max-width:480px}
+}
+@media (prefers-reduced-motion:no-preference){
+  @keyframes sweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+  .scan{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .scan i{position:absolute;top:0;bottom:0;width:34%;
+    background:linear-gradient(90deg,transparent,var(--ion-soft),transparent);
+    animation:sweep 9s linear infinite}
+}
+
+/* =========================================================================
+   ДОДАТКОВО ДО МАКЕТА — те, чого в ньому не було, бо він нічого не робив:
+   модалки, галерея фото, тости, стан помилки, анімації.
+   ========================================================================= */
+.hidden{display:none !important}
+
+/* шапка: кнопка меню + піктограма + назва */
+.back{
+  border:1px solid var(--line2); background:var(--hull); color:var(--ink);
+  padding:9px 13px; border-radius:9px; font-size:11.5px; font-weight:600;
+  letter-spacing:.12em; text-transform:uppercase; display:inline-flex; align-items:center; gap:8px;
+  text-decoration:none; transition:.18s; flex-shrink:0;
+}
+.back:hover{border-color:var(--ion);box-shadow:var(--glow)}
+.back svg{width:15px;height:15px;transition:transform .2s}
+.back:hover svg{transform:translateX(-3px)}
+.brand{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.mark{color:var(--ion);display:flex}
+.mark svg{width:28px;height:28px}
+.brand-sub{font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--ion);font-weight:600;margin-top:3px}
+.tel.act{cursor:pointer}
+.tel.act:hover b{color:var(--ion)}
+#catalogIcon.spin{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* поле з невідповідністю */
+.field.input-alert{border-color:var(--flare);box-shadow:0 0 0 1px var(--flare)}
+
+/* фото: плитки з qc-core потрапляють у ту саму сітку, що й кнопка «+ Фото» */
+#gallery-container{display:contents}
+@supports not (display:contents){
+  #gallery-container{display:grid;grid-column:1/-1;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+}
+.photo-preview-item{
+  aspect-ratio:1;border:1px solid var(--line);border-radius:10px;background:var(--deck);
+  position:relative;overflow:hidden;
+}
+.photo-preview-item img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-remove-btn{
+  position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;
+  background:color-mix(in srgb, var(--void) 78%, transparent);border:1px solid var(--line2);
+  color:var(--ink);font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.photo-remove-btn:hover{border-color:var(--flare);color:var(--flare)}
+label.shot.add{cursor:pointer}
+
+/* модалки */
+.modal{
+  position:fixed;inset:0;z-index:120;display:none;
+  align-items:center;justify-content:center;padding:16px;
+  background:var(--scrim);backdrop-filter:blur(6px);
+}
+.modal.flex{display:flex}
+.sheet{
+  width:100%;max-width:540px;max-height:88vh;overflow:auto;
+  background:linear-gradient(180deg,var(--hull),var(--deck));
+  border:1px solid var(--line2);border-radius:16px;box-shadow:var(--shadow);
+  position:relative;padding:20px;
+}
+.sheet::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--ion),transparent);opacity:.7;
+}
+.sheet h2{margin:0 0 14px;font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--ion);font-weight:600}
+.sheet p{color:var(--mute);font-size:13px;line-height:1.6;margin:0 0 18px}
+#reportPreview{
+  white-space:pre-wrap;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.7;
+  color:var(--mute);background:var(--deck);border:1px solid var(--line);border-radius:10px;
+  padding:14px;max-height:40vh;overflow:auto;margin-bottom:16px;
+}
+#sendStatus{text-align:center;font-size:15px;font-weight:700;margin-bottom:14px;min-height:1.5em}
+#sendSpinner{display:flex;justify-content:center;padding:4px 0 16px}
+.spinner{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--ion);animation:spin .8s linear infinite}
+.acts{display:flex;gap:10px}
+.acts button{flex:1;padding:14px;border-radius:10px;font-size:11.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;transition:.18s}
+.act-go{border:1px solid var(--ion);background:color-mix(in srgb, var(--ion) 20%, var(--hull));color:var(--ion)}
+.act-go:hover{box-shadow:var(--glow)}
+.act-go:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.act-no{border:1px solid var(--line2);background:transparent;color:var(--dim)}
+.act-no:hover{border-color:var(--flare);color:var(--flare)}
+.act-warn{border:1px solid var(--gold);background:color-mix(in srgb, var(--gold) 18%, var(--hull));color:var(--gold)}
+
+#toast-container{position:fixed;top:14px;right:14px;z-index:2000;display:flex;flex-direction:column;gap:8px}
+
+/* перша контрольна точка: .cp:first-of-type не спрацьовує, бо перший
+   елемент у панелі — .eyebrow */
+.eyebrow + .cp{border-top:none;padding-top:0}
+
+@media (max-width:430px){
+  .hud{padding:9px 10px;gap:9px}
+  .back{padding:9px 10px;font-size:0;gap:0}
+  .back svg{width:17px;height:17px}
+  .mark svg{width:24px;height:24px}
+  .hud-tel{gap:12px;font-size:10px}
+}
+
+@media (prefers-reduced-motion:no-preference){
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .panel{animation:rise .5s cubic-bezier(.2,.7,.3,1) backwards}
+  .panel:nth-of-type(1){animation-delay:.02s}
+  .panel:nth-of-type(2){animation-delay:.07s}
+  .panel:nth-of-type(3){animation-delay:.12s}
+  .panel:nth-of-type(4){animation-delay:.17s}
+  .panel:nth-of-type(5){animation-delay:.22s}
+  .panel:nth-of-type(6){animation-delay:.27s}
+
+  @keyframes segpop{0%{transform:scaleY(.72)}60%{transform:scaleY(1.1)}100%{transform:scaleY(1)}}
+  .gate-rail .seg.just{animation:segpop .34s cubic-bezier(.2,.8,.3,1)}
+
+  @keyframes verdictIn{from{opacity:0;transform:translateY(6px);letter-spacing:.18em}to{opacity:1;transform:none;letter-spacing:.04em}}
+  .verdict .word.just{animation:verdictIn .38s cubic-bezier(.2,.8,.3,1)}
+
+  @keyframes readyGlow{0%,100%{box-shadow:0 0 0 rgba(0,0,0,0)}50%{box-shadow:var(--glow)}}
+  .send.ready{animation:readyGlow 2.4s ease-in-out 2}
+
+  @keyframes shotIn{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:none}}
+  .photo-preview-item{animation:shotIn .3s cubic-bezier(.2,.8,.3,1)}
+
+  @keyframes sheetIn{from{opacity:0;transform:translateY(22px) scale(.98)}to{opacity:1;transform:none}}
+  .modal.flex .sheet{animation:sheetIn .3s cubic-bezier(.2,.8,.3,1)}
+  @keyframes scrimIn{from{opacity:0}to{opacity:1}}
+  .modal.flex{animation:scrimIn .22s ease}
+
+  @keyframes toastIn{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+  #toast-container > div{animation:toastIn .26s cubic-bezier(.2,.8,.3,1)}
+
+  @keyframes flagIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+  .flag{animation:flagIn .26s ease backwards}
+
+  .cp-opts button:active,.segs button:active{transform:scale(.975)}
+}
+</style>
 </head>
-<body class="font-sans antialiased">
-    
-    <div id="toast-container" class="fixed top-4 right-4 z-[2000] flex flex-col gap-2"></div>
+<body>
 
-    <div class="container mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
-        <header class="flex items-center gap-4 mb-8">
-            <a href="index.html" class="p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-teal-600 transition-colors flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
-                <span class="font-bold hidden sm:inline">Меню</span>
-            </a>
-            
-            <div class="flex-1 text-center">
-                <h1 class="text-3xl font-bold text-teal-700 dark:text-teal-500">Вхідний контроль</h1>
-                <p class="text-teal-600 dark:text-teal-400 text-sm font-bold mt-1 uppercase tracking-wide">Сировина та Матеріали</p>
-                <p id="catalogStatus" class="text-[11px] text-slate-400 mt-1"></p>
-            </div>
-            
-             <div class="p-2 text-teal-500">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                    <polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline>
-                    <polyline points="7.5 19.79 7.5 14.6 3 12"></polyline>
-                    <polyline points="21 12 16.5 14.6 16.5 19.79"></polyline>
-                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                </svg>
-            </div>
-            
-            <button id="catalogRefresh" title="Оновити довідники з таблиці" class="p-3 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                <svg id="catalogIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            </button>
+<header class="hud">
+  <a class="back" href="index.html" title="До меню">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+    <span>Меню</span>
+  </a>
 
-            <button id="themeToggle" class="p-3 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-            </button>
-        </header>
+  <div class="brand">
+    <span class="mark" aria-hidden="true">
+      <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/>
+      </svg>
+    </span>
+    <div>
+      <div class="wordmark">Вхідний<span>·</span>контроль</div>
+      <div class="brand-sub">Сировина та матеріали</div>
+    </div>
+  </div>
 
-        <div class="card p-8 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 space-y-6 relative">
-            <button onclick="resetForm()" class="absolute top-4 right-4 text-xs font-bold text-orange-600 hover:text-orange-800 bg-orange-100 hover:bg-orange-200 px-3 py-1.5 rounded-lg transition-colors dark:bg-orange-900/30 dark:text-orange-300 border border-transparent hover:border-orange-300">Скинути</button>
+  <div class="hud-tel">
+    <div class="tel">Контролер<b id="telEmp">не обрано</b></div>
+    <div class="tel">Довідники<b class="mono" id="catalogStatus">—</b></div>
+    <div class="tel act" id="telQueueBox" title="Натисніть, щоб дослати чергу">Черга<b class="mono" id="telQueue">0</b></div>
+    <div class="tel">Сьогодні<b class="mono" id="telToday">0</b></div>
+  </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
-                <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер *</label>
-                    <select id="employeeSelect" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors"><option value="">Оберіть...</option></select>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Дата та Час *</label>
-                    <input type="datetime-local" id="inc-datetime" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors">
-                </div>
-            </div>
+  <div class="hud-act">
+    <button class="btn btn-ic" id="catalogRefresh" title="Оновити довідники з таблиці">
+      <svg id="catalogIcon" width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+    </button>
+    <button class="btn btn-ic" id="themeToggle" title="Тема">
+      <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+    </button>
+  </div>
+</header>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Постачальник / Виробник *</label>
-                    <input type="text" id="inc-supplier" placeholder="Назва постачальника..." class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">№ Документа (ТТН/Інвойс) *</label>
-                    <input type="text" id="inc-doc-num" placeholder="№..." class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors">
-                </div>
-            </div>
+<div class="shell">
 
-            <div class="bg-teal-50 dark:bg-slate-800/80 p-5 rounded-lg border border-teal-100 dark:border-slate-700 space-y-4">
-                <h3 class="text-sm font-bold text-teal-800 dark:text-teal-400 uppercase mb-2 border-b border-teal-200 dark:border-slate-600 pb-2">Ідентифікація товару</h3>
-                
-                <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Категорія *</label>
-                    <select id="inc-category" class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 text-lg transition-colors" onchange="updateProductList()">
-                        <option value="" disabled selected>Оберіть категорію...</option>
-                        <option value="raw">Сировина / Інгредієнти</option>
-                        <option value="packaging">Тара та Упаковка</option>
-                        <option value="label">Етикетка</option>
-                    </select>
-                </div>
+  <section class="panel">
+    <div class="scan"><i></i></div>
+    <div class="gate">
+      <div class="eyebrow"><b>Шлюз приймання</b></div>
+      <div class="gate-rail" id="gateRail"></div>
+      <div class="verdict">
+        <div class="word idle" id="verdictWord">ОЧІКУЄ</div>
+        <div class="meta" id="verdictMeta">пройдено <b class="mono">0/5</b> контрольних точок</div>
+      </div>
+      <div class="flags" id="gateFlags"></div>
+    </div>
+    <div class="rim" id="gateRim"></div>
+  </section>
 
-                <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Назва (Артикул) *</label>
-                    <input type="text" id="inc-product-input" list="product-datalist" placeholder="Почніть вводити назву або код..." class="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-3 px-4 text-lg transition-colors" autocomplete="off">
-                    <datalist id="product-datalist"></datalist>
-                </div>
+  <section class="panel"><div class="pad">
+    <div class="eyebrow">Приймання</div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                     <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">№ Партії (Batch)</label>
-                        <input type="text" id="inc-batch" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">Кількість (кг/шт)</label>
-                        <input type="text" id="inc-qty" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600">
-                    </div>
-                     <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">Дата виробництва</label>
-                        <input type="date" id="inc-prod-date" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600">
-                    </div>
-                     <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">Термін придатності (до)</label>
-                        <input type="date" id="inc-exp-date" class="w-full p-2 border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600">
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-lg border border-slate-200 dark:border-slate-700">
-                <h3 class="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase mb-4 border-b border-slate-200 dark:border-slate-600 pb-2">Результати контролю</h3>
-                
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-2">
-                        <label class="text-sm font-bold text-slate-700 dark:text-slate-200 flex-1">Санітарний стан транспорту</label>
-                        <select id="check-transport" class="w-40 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold cursor-pointer" onchange="checkStatus(this)">
-                            <option value="" disabled selected>Оберіть...</option>
-                            <option value="✅ Відповідає">✅ Відповідає</option>
-                            <option value="❌ Бруд/Шкідники">❌ Бруд/Шкідники</option>
-                        </select>
-                    </div>
-
-                    <div class="flex items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-2">
-                         <label class="text-sm font-bold text-slate-700 dark:text-slate-200 flex-1">Цілісність пакування</label>
-                        <select id="check-package" class="w-40 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold cursor-pointer" onchange="checkStatus(this)">
-                            <option value="" disabled selected>Оберіть...</option>
-                            <option value="✅ Ціле">✅ Ціле</option>
-                            <option value="❌ Пошкоджене">❌ Пошкоджене</option>
-                        </select>
-                    </div>
-
-                     <div class="flex items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-2">
-                         <label class="text-sm font-bold text-slate-700 dark:text-slate-200 flex-1">Відповідність маркування</label>
-                        <select id="check-marking" class="w-40 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold cursor-pointer" onchange="checkStatus(this)">
-                            <option value="" disabled selected>Оберіть...</option>
-                            <option value="✅ Відповідає">✅ Відповідає</option>
-                            <option value="❌ Помилка">❌ Помилка</option>
-                        </select>
-                    </div>
-
-                    <div class="flex items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-2">
-                         <label class="text-sm font-bold text-slate-700 dark:text-slate-200 flex-1">Супровідні документи (Якість)</label>
-                        <select id="check-docs" class="w-40 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold cursor-pointer" onchange="checkStatus(this)">
-                            <option value="" disabled selected>Оберіть...</option>
-                            <option value="✅ Наявні/ОК">✅ Наявні/ОК</option>
-                            <option value="❌ Відсутні/Не коректні">❌ Відсутні/Не коректні</option>
-                        </select>
-                    </div>
-                    
-                    <div class="flex items-center justify-between gap-4">
-                         <label class="text-sm font-bold text-slate-700 dark:text-slate-200 flex-1">Органолептика / Зовнішній вигляд</label>
-                        <select id="check-organoleptic" class="w-40 bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-lg py-2 px-3 text-sm font-bold cursor-pointer" onchange="checkStatus(this)">
-                            <option value="" disabled selected>Оберіть...</option>
-                            <option value="✅ Відповідає">✅ Відповідає</option>
-                            <option value="❌ Невідповідність">❌ Невідповідність</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h4 class="font-bold text-sm mb-1 text-slate-700 dark:text-slate-200">Фото звіт</h4>
-                        <p class="text-xs text-slate-500 dark:text-slate-400" id="photoCounter">Можна додати до 6 фото</p>
-                    </div>
-                    <label class="cursor-pointer bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg shadow flex items-center gap-2 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        <span>Обрати фото</span>
-                        <input type="file" id="photo-upload" accept="image/*" multiple class="hidden" onchange="handleFiles(this)">
-                    </label>
-                </div>
-                
-                <div id="gallery-container" class="grid grid-cols-3 gap-2 hidden">
-                </div>
-            </div>
-
-            <textarea id="inc-comment" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg focus:outline-none focus:border-teal-500 transition-colors" rows="2" placeholder="Коментар / Опис невідповідностей..."></textarea>
-
-            <button onclick="initiateSend()" class="w-full mt-8 bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 rounded-lg shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2 text-lg"><span>📤 Відправити звіт</span></button>
-        </div>
+    <div class="row">
+      <label class="lab" for="employeeSelect">Контролер <span class="req">*</span></label>
+      <select class="field" id="employeeSelect"></select>
     </div>
 
-    <div id="confirmationModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50"><div class="card p-8 rounded-lg shadow-2xl max-w-sm w-full"><h3 class="font-bold text-xl mb-3 text-center">Скидання</h3><p class="mb-8 text-center text-slate-500">Очистити всю форму?</p><div class="flex justify-center gap-4"><button onclick="closeModal('confirmationModal')" class="px-6 py-3 bg-slate-100 rounded-lg font-bold">Ні</button><button onclick="performReset()" class="px-6 py-3 bg-red-600 text-white rounded-lg font-bold">Так</button></div></div></div>
-    
-    <div id="sendModal" class="hidden fixed inset-0 items-center justify-center modal-overlay p-4 z-50">
-        <div class="card p-8 rounded-lg shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
-            <div class="text-center mb-4">
-                <div class="text-4xl mb-2">📤</div>
-                <h3 class="text-xl font-bold">Підтвердження відправки</h3>
-                <p class="text-sm text-slate-500">Перевірте введені дані</p>
-            </div>
-            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-lg overflow-y-auto mb-6 text-sm font-mono whitespace-pre-wrap flex-1 shadow-inner max-h-80" id="reportPreview"></div>
-            <p id="sendStatus" class="text-center text-lg font-bold mb-4 text-emerald-600 min-h-[1.5em]"></p>
-            <div id="sendActions" class="flex flex-col gap-3">
-                <button id="confirmSendBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg text-lg">✅ Підтвердити</button>
-                <button onclick="closeModal('sendModal')" class="w-full bg-transparent border-2 border-slate-300 hover:bg-slate-100 text-slate-500 font-bold py-4 rounded-lg text-lg">Скасувати</button>
-            </div>
-            <div id="sendSpinner" class="hidden py-6 flex justify-center"><div class="spinner"></div></div>
-        </div>
+    <div class="row duo">
+      <div>
+        <label class="lab" for="inc-datetime">Дата та час <span class="req">*</span></label>
+        <input class="field mono" id="inc-datetime" type="datetime-local">
+      </div>
+      <div>
+        <label class="lab" for="inc-doc-num">№ документа <span class="req">*</span></label>
+        <input class="field mono" id="inc-doc-num" placeholder="ТТН / інвойс">
+      </div>
     </div>
 
-    <script src="qc-core.js"></script>
-    <script>
-        // Якщо qc-core.js не завантажився (не залитий у репозиторій, помилка
-        // мережі, кеш CDN), уся сторінка нижче мовчки переставала виконуватись:
-        // списки не заповнювались і форма виглядала просто зламаною.
-        // Тепер причина видно одразу.
-        if (typeof QC === 'undefined') {
-            document.addEventListener('DOMContentLoaded', function () {
-                var b = document.createElement('div');
-                b.style.cssText = 'position:fixed;inset:0 0 auto 0;z-index:9999;background:#b91c1c;color:#fff;' +
-                    'padding:1rem;font:700 14px system-ui;text-align:center;line-height:1.5';
-                b.innerHTML = 'Не завантажено <b>qc-core.js</b>. Форма не працюватиме.<br>' +
-                    'Файл має лежати в корені репозиторію поряд із цією сторінкою.';
-                document.body.appendChild(b);
-            });
-        }
-    </script>
-    <script>
+    <div class="row">
+      <label class="lab" for="inc-supplier">Постачальник <span class="req">*</span></label>
+      <input class="field" id="inc-supplier" placeholder="Назва компанії">
+    </div>
+  </div></section>
+
+  <section class="panel"><div class="pad">
+    <div class="eyebrow">Товар</div>
+
+    <div class="row">
+      <label class="lab" for="inc-category">Категорія <span class="req">*</span></label>
+      <select class="field" id="inc-category" data-seg="pick" onchange="updateProductList()">
+        <option value="" disabled selected>Оберіть категорію...</option>
+        <option value="raw">Сировина</option>
+        <option value="packaging">Тара</option>
+        <option value="label">Етикетка</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label class="lab" for="inc-product-input">Назва або артикул <span class="req">*</span></label>
+      <input class="field" id="inc-product-input" list="product-datalist" placeholder="Спочатку оберіть категорію" autocomplete="off">
+      <datalist id="product-datalist"></datalist>
+      <div class="hint" id="catCount"></div>
+    </div>
+
+    <div class="row duo">
+      <div>
+        <label class="lab" for="inc-batch">№ партії</label>
+        <input class="field mono" id="inc-batch" placeholder="Batch">
+      </div>
+      <div>
+        <label class="lab" for="inc-qty">Кількість</label>
+        <input class="field mono" id="inc-qty" placeholder="кг / шт">
+      </div>
+    </div>
+
+    <div class="row duo">
+      <div>
+        <label class="lab" for="inc-prod-date">Вироблено</label>
+        <input class="field mono" id="inc-prod-date" type="date">
+      </div>
+      <div>
+        <label class="lab" for="inc-exp-date">Придатний до</label>
+        <input class="field mono" id="inc-exp-date" type="date">
+      </div>
+    </div>
+  </div></section>
+
+  <section class="panel"><div class="pad">
+    <div class="eyebrow">Контрольні точки</div>
+
+    <div class="cp">
+      <div class="cp-h"><span class="cp-n">01</span><label class="cp-t" for="check-transport">Санітарний стан транспорту</label></div>
+      <select id="check-transport" data-seg="pf" onchange="checkStatus(this)">
+        <option value="">Оберіть...</option>
+        <option value="✅ Відповідає">✅ Відповідає</option>
+        <option value="❌ Бруд/Шкідники">❌ Бруд/Шкідники</option>
+      </select>
+    </div>
+
+    <div class="cp">
+      <div class="cp-h"><span class="cp-n">02</span><label class="cp-t" for="check-package">Цілісність пакування</label></div>
+      <select id="check-package" data-seg="pf" onchange="checkStatus(this)">
+        <option value="">Оберіть...</option>
+        <option value="✅ Ціле">✅ Ціле</option>
+        <option value="❌ Пошкоджене">❌ Пошкоджене</option>
+      </select>
+    </div>
+
+    <div class="cp">
+      <div class="cp-h"><span class="cp-n">03</span><label class="cp-t" for="check-marking">Відповідність маркування</label></div>
+      <select id="check-marking" data-seg="pf" onchange="checkStatus(this)">
+        <option value="">Оберіть...</option>
+        <option value="✅ Відповідає">✅ Відповідає</option>
+        <option value="❌ Помилка">❌ Помилка</option>
+      </select>
+    </div>
+
+    <div class="cp">
+      <div class="cp-h"><span class="cp-n">04</span><label class="cp-t" for="check-docs">Супровідні документи (Якість)</label></div>
+      <select id="check-docs" data-seg="pf" onchange="checkStatus(this)">
+        <option value="">Оберіть...</option>
+        <option value="✅ Наявні/ОК">✅ Наявні/ОК</option>
+        <option value="❌ Відсутні/Не коректні">❌ Відсутні/Не коректні</option>
+      </select>
+    </div>
+
+    <div class="cp">
+      <div class="cp-h"><span class="cp-n">05</span><label class="cp-t" for="check-organoleptic">Органолептика / Зовнішній вигляд</label></div>
+      <select id="check-organoleptic" data-seg="pf" onchange="checkStatus(this)">
+        <option value="">Оберіть...</option>
+        <option value="✅ Відповідає">✅ Відповідає</option>
+        <option value="❌ Невідповідність">❌ Невідповідність</option>
+      </select>
+    </div>
+  </div></section>
+
+  <section class="panel"><div class="pad">
+    <div class="eyebrow">Фото</div>
+    <div class="shots">
+      <div id="gallery-container" class="hidden"></div>
+      <label class="shot add" for="photo-upload">
+        <span class="plus">+</span>Фото
+        <input type="file" id="photo-upload" accept="image/*" multiple class="hidden" onchange="handleFiles(this)">
+      </label>
+    </div>
+    <div class="hint" id="photoCounter">Можна додати до 6 фото</div>
+  </div></section>
+
+  <section class="panel"><div class="pad">
+    <div class="eyebrow">Коментар</div>
+    <textarea class="field" id="inc-comment" placeholder="Номер пломби, що саме не так, дії за результатом..."></textarea>
+  </div></section>
+
+</div>
+
+<div class="dock"><div class="dock-in">
+  <button class="reset" onclick="resetForm()">Скинути</button>
+  <button class="send" id="mainSend" onclick="initiateSend()" disabled>Заповніть 5 точок</button>
+</div></div>
+
+<div id="toast-container"></div>
+
+<div id="confirmationModal" class="modal hidden">
+  <div class="sheet">
+    <h2>Скинути форму</h2>
+    <p>Усі введені дані та додані фото буде видалено. Запис на сервер не піде.</p>
+    <div class="acts">
+      <button class="act-no" onclick="closeModal('confirmationModal')">Залишити</button>
+      <button class="act-warn" onclick="performReset()">Скинути</button>
+    </div>
+  </div>
+</div>
+
+<div id="sendModal" class="modal hidden">
+  <div class="sheet">
+    <h2>Звіт до відправки</h2>
+    <div id="reportPreview"></div>
+    <div id="sendStatus"></div>
+    <div id="sendSpinner" class="hidden"><div class="spinner"></div></div>
+    <div class="acts" id="sendActions">
+      <button class="act-no" onclick="closeModal('sendModal')">Назад</button>
+      <button class="act-go" id="confirmSendBtn">Відправити</button>
+    </div>
+  </div>
+</div>
+
+<script src="qc-core.js"></script>
+<script>
+    // Якщо qc-core.js не завантажився, уся сторінка нижче мовчки
+    // переставала виконуватись і форма виглядала просто зламаною.
+    if (typeof QC === 'undefined') {
+        document.addEventListener('DOMContentLoaded', function () {
+            var b = document.createElement('div');
+            b.style.cssText = 'position:fixed;inset:0 0 auto 0;z-index:9999;background:#b91c1c;color:#fff;' +
+                'padding:1rem;font:700 14px system-ui;text-align:center;line-height:1.5';
+            b.innerHTML = '<b>qc-core.js</b> не завантажено — форма показана без двигуна.<br>' +
+                'Це нормально у режимі попереднього перегляду. На сайті файл має лежати ' +
+                'у корені репозиторію поряд із цією сторінкою.';
+            b.style.background = '#92400e';
+            document.body.appendChild(b);
+        });
+    }
+</script>
+<script>
+
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxuLOjrKUjJ4j7Xcp-xQ9c9Lzl2WjElHxey9CTFnxi819NWe8EVjSLycC6tYEPauRmfwg/exec";
         // Резервний список на випадок, коли таблиця недоступна і кешу ще немає.
         // Основне джерело — вкладка довідника в QC Data 2.0 (див. нижче).
@@ -265,7 +622,7 @@
         //  Уся спільна механіка (черга, перевірена відправка, стиснення
         //  фото, тости) живе в qc-core.js — один файл на всі форми.
         // ==========================================================
-        QC.configure({ url: GOOGLE_SCRIPT_URL, section: 'incoming', token: '' });
+        QC.configure({ url: GOOGLE_SCRIPT_URL, section: 'incoming', token: '', showBadge: false });
 
         const showToast   = QC.toast;
         const fmtDateTime = QC.fmtDateTime;
@@ -306,6 +663,9 @@
             });
             ['check-transport','check-package','check-marking','check-docs','check-organoleptic']
                 .forEach(id => { const el = document.getElementById(id); if (el) checkStatus(el); });
+            // checkStatus не знає про поле категорії — синхронізуємо все явно
+            syncAllSegs();
+            renderGate();
             showToast('Чернетку відновлено');
         }
 
@@ -927,20 +1287,21 @@
             const icon = document.getElementById('catalogIcon');
             if (icon) icon.style.opacity = info.loading ? '0.4' : '1';
             if (!box) return;
-            if (info.loading) { box.textContent = 'Оновлення довідників...'; box.style.color = ''; return; }
+            if (info.loading) { box.textContent = '...'; box.style.color = ''; box.title = 'Оновлення довідників'; return; }
             // Причину показуємо прямо на сторінці — раніше збій каталогу
             // виглядав просто як «нічого не сталося».
+            // У телеметрії місця мало: показуємо час, а причину збою —
+            // кольором і в підказці при наведенні.
             if (!info.fetchedAt) {
-                box.textContent = info.error
-                    ? ('Довідники: вбудований список \u2014 ' + info.error)
-                    : 'Довідники: вбудований список';
-                box.style.color = info.error ? '#dc2626' : '';
+                box.textContent = 'вбудовані';
+                box.style.color = 'var(--flare)';
+                box.title = info.error || 'Довідники з таблиці не завантажені';
                 return;
             }
             const d = new Date(info.fetchedAt);
-            box.textContent = 'Довідники оновлено ' + QC.fmtDateTime(d) +
-                              (info.stale ? (' (застарілі' + (info.error ? ': ' + info.error : '') + ')') : '');
-            box.style.color = info.stale ? '#d97706' : '';
+            box.textContent = QC.fmtTime(d);
+            box.style.color = info.stale ? 'var(--gold)' : 'var(--jade)';
+            box.title = 'Довідники оновлено ' + QC.fmtDateTime(d) + (info.stale ? ' — застарілі: ' + (info.error || '') : '');
         }
 
         QC.catalog.onUpdate(function (data, info) {
@@ -975,9 +1336,11 @@
                 frag.appendChild(option);
             });
             datalist.appendChild(frag);
-            input.placeholder = items.length
-                ? ('Введіть назву або артикул (' + items.length + ' позицій)...')
-                : 'Довідник порожній — введіть вручну';
+            input.placeholder = items.length ? 'Введіть назву або артикул...' : 'Довідник порожній — введіть вручну';
+            const cc = document.getElementById('catCount');
+            if (cc) cc.textContent = items.length
+                ? (items.length + ' ' + plural(items.length, 'позиція', 'позиції', 'позицій') + ' з довідника')
+                : '';
         }
 
         // Галерея і стиснення — у qc-core.js
@@ -989,6 +1352,11 @@
         function checkStatus(el) {
             if (el.value.includes('❌')) el.classList.add('input-alert');
             else el.classList.remove('input-alert');
+            // Сегментовані кнопки і шлюз — представлення того самого <select>.
+            // Значення завжди читається із select, тому валідація, звіт,
+            // чернетка і payload не змінились.
+            syncSeg(el);
+            renderGate();
         }
 
         function resetForm() { document.getElementById('confirmationModal').classList.remove('hidden'); document.getElementById('confirmationModal').classList.add('flex'); }
@@ -1005,6 +1373,8 @@
              if (savedUser) empSel.value = savedUser;   // контролер між записами не змінюється
              clearDraft();
              updatePhotoCounter();
+             syncAllSegs();
+             renderGate();
         }
 
         const saved = localStorage.getItem('qc_user');
@@ -1012,17 +1382,17 @@
         empSel.onchange = () => localStorage.setItem('qc_user', empSel.value);
 
         document.getElementById('themeToggle').addEventListener('click', () => {
-            document.documentElement.classList.toggle('dark');
-            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+            const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+            document.documentElement.dataset.theme = next;
+            localStorage.setItem('theme', next);
         });
         // try/catch: на старих заводських планшетах відсутність matchMedia
         // раніше обірвала б УВЕСЬ скрипт нижче — разом з чергою і чернеткою
+        // Темна тема за замовчуванням: світлу вмикає лише явний вибір.
         try {
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && prefersDark)) {
-                document.documentElement.classList.add('dark');
-            }
-        } catch (e) { /* ignore */ }
+            document.documentElement.dataset.theme =
+                (localStorage.getItem('theme') === 'light') ? 'light' : 'dark';
+        } catch (e) { document.documentElement.dataset.theme = 'dark'; }
 
         function initiateSend() {
             const emp = empSel.value;
@@ -1047,7 +1417,9 @@
             ['check-transport','check-package','check-marking','check-docs','check-organoleptic'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el && !el.value) {
-                    const lbl = el.previousElementSibling;
+                    // шукаємо саме <label for>, бо select тепер прихований
+                    // і його попередній сусід — не підпис
+                    const lbl = document.querySelector('label[for="' + id + '"]') || el.previousElementSibling;
                     missing.push(lbl ? lbl.textContent.trim() : id);
                 }
             });
@@ -1145,11 +1517,230 @@ ${alerts}
         function executeSend() {
             return QC.submit(pendingData, {
                 status: 'sendStatus', actions: 'sendActions', spinner: 'sendSpinner', button: 'confirmSendBtn',
-                onDone: () => { clearDraft(); closeModal('sendModal'); performReset(); }
+                onDone: (how) => { bumpToday(how); clearDraft(); closeModal('sendModal'); performReset(); }
             });
         }
 
         document.getElementById('confirmSendBtn').onclick = executeSend;
+
+
+
+        // ==========================================================
+        //  СЕГМЕНТОВАНІ КНОПКИ ПОВЕРХ <select>
+        //  На планшеті випадаючий список — тап, скрол, тап. Кнопка — один
+        //  тап, і відповідь видно не розгортаючи. Сам <select> лишається
+        //  в DOM і лишається джерелом істини.
+        // ==========================================================
+        function buildSegs(sel) {
+            const kind = sel.dataset.seg;                    // 'pf' або 'pick'
+            const box = document.createElement('div');
+            box.className = (kind === 'pf') ? 'cp-opts' : 'segs';
+            box.dataset.segFor = sel.id;
+
+            Array.from(sel.options).forEach(opt => {
+                if (!opt.value) return;                      // плейсхолдер не показуємо
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.dataset.val = opt.value;
+                if (kind === 'pf') {
+                    b.className = opt.value.indexOf('❌') !== -1 ? 'fail' : 'pass';
+                    const dot = document.createElement('span');
+                    dot.className = 'dot';
+                    b.appendChild(dot);
+                }
+                const t = document.createElement('span');
+                t.textContent = opt.textContent.replace(/^[✅❌]\s*/, '');
+                b.appendChild(t);
+                b.onclick = () => {
+                    sel.value = (sel.value === opt.value && kind === 'pf') ? '' : opt.value;
+                    sel.dispatchEvent(new Event('change', { bubbles: true }));
+                    syncSeg(sel);   // у категорії в onchange інший обробник
+                };
+                box.appendChild(b);
+            });
+
+            sel.classList.add('hidden');
+            sel.insertAdjacentElement('afterend', box);
+        }
+
+        function syncSeg(sel) {
+            const box = document.querySelector('[data-seg-for="' + sel.id + '"]');
+            if (!box) return;
+            Array.from(box.children).forEach(b => {
+                b.classList.toggle('on', b.dataset.val === sel.value && sel.value !== '');
+            });
+        }
+
+        const SEG_SELECTS = Array.from(document.querySelectorAll('select[data-seg]'));
+        SEG_SELECTS.forEach(buildSegs);
+        function syncAllSegs() { SEG_SELECTS.forEach(syncSeg); }
+
+        // Українське відмінювання: 1 точка / 2-4 точки / 5 точок,
+        // з винятком для 11-14. Дрібниця, але «5 точки» одразу видно.
+        function plural(n, one, few, many) {
+            const m10 = n % 10, m100 = n % 100;
+            if (m100 >= 11 && m100 <= 14) return many;
+            if (m10 === 1) return one;
+            if (m10 >= 2 && m10 <= 4) return few;
+            return many;
+        }
+
+        // ==========================================================
+        //  ШЛЮЗ ПРИЙМАННЯ
+        //  Раніше контролер дізнавався результат лише з листа після
+        //  відправки. Тепер вердикт видно до неї.
+        // ==========================================================
+        const GATE_POINTS = [
+            { id: 'check-transport',    tag: 'ТРАНСП' },
+            { id: 'check-package',      tag: 'ПАКУВ'  },
+            { id: 'check-marking',      tag: 'МАРКУВ' },
+            { id: 'check-docs',         tag: 'ДОКУМ'  },
+            { id: 'check-organoleptic', tag: 'ОРГАН'  }
+        ];
+
+        const gateRail = document.getElementById('gateRail');
+        GATE_POINTS.forEach(p => {
+            const s = document.createElement('div');
+            s.className = 'seg';
+            const i = document.createElement('i');
+            i.textContent = p.tag;
+            s.appendChild(i);
+            gateRail.appendChild(s);
+        });
+
+        let lastVerdict = null;
+        function renderGate() {
+            const segs = gateRail.children;
+            let done = 0;
+            const fails = [];
+
+            GATE_POINTS.forEach((p, i) => {
+                const v = (document.getElementById(p.id) || {}).value || '';
+                const cls = v ? (v.indexOf('❌') !== -1 ? 'fail' : 'pass') : '';
+                const had = segs[i].classList.contains('pass') || segs[i].classList.contains('fail');
+                segs[i].className = 'seg' + (cls ? ' ' + cls : '');
+                if (cls && !had) {
+                    segs[i].classList.add('just');
+                    setTimeout(() => segs[i].classList.remove('just'), 360);
+                }
+                if (v) done++;
+                if (v.indexOf('❌') !== -1) {
+                    const lbl = document.querySelector('label[for="' + p.id + '"]');
+                    fails.push(lbl ? lbl.textContent.trim() : p.tag);
+                }
+            });
+
+            const nextEmpty = GATE_POINTS.findIndex(p => !((document.getElementById(p.id) || {}).value));
+            if (nextEmpty >= 0) segs[nextEmpty].classList.add('cur');
+
+            const word = document.getElementById('verdictWord');
+            const meta = document.getElementById('verdictMeta');
+            const rim  = document.getElementById('gateRim');
+            const send = document.getElementById('mainSend');
+            const flagBox = document.getElementById('gateFlags');
+
+            meta.innerHTML = 'пройдено <b class="mono">' + done + '/5</b> контрольних точок';
+
+            const verdict = (done < 5) ? 'idle' : (fails.length ? 'bad' : 'ok');
+
+            if (verdict === 'idle') {
+                const left = 5 - done;
+                word.className = 'word idle'; word.textContent = 'ОЧІКУЄ';
+                rim.className = 'rim';
+                send.className = 'send'; send.disabled = true;
+                send.textContent = 'Заповніть ' + left + ' ' + plural(left, 'точку', 'точки', 'точок');
+            } else if (verdict === 'ok') {
+                word.className = 'word ok'; word.textContent = 'ПРИЙНЯТО';
+                rim.className = 'rim ok';
+                send.className = 'send'; send.disabled = false;
+                send.textContent = 'Записати приймання';
+            } else {
+                word.className = 'word bad'; word.textContent = 'ВІДХИЛЕНО';
+                rim.className = 'rim bad';
+                send.className = 'send bad'; send.disabled = false;
+                send.textContent = 'Записати невідповідність';
+            }
+
+            if (verdict !== lastVerdict) {
+                if (lastVerdict !== null) {
+                    word.classList.add('just');
+                    setTimeout(() => word.classList.remove('just'), 400);
+                    if (verdict !== 'idle') {
+                        send.classList.add('ready');
+                        setTimeout(() => send.classList.remove('ready'), 5000);
+                    }
+                }
+                lastVerdict = verdict;
+            }
+
+            flagBox.innerHTML = '';
+            fails.forEach((t, i) => {
+                const f = document.createElement('span');
+                f.className = 'flag';
+                f.style.animationDelay = (i * 0.05) + 's';
+                f.textContent = t;
+                flagBox.appendChild(f);
+            });
+        }
+
+        // ==========================================================
+        //  ТЕЛЕМЕТРІЯ В ШАПЦІ
+        // ==========================================================
+        const TODAY_KEY = 'qc_today_incoming';
+
+        function todayStamp() {
+            const d = new Date();
+            return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+        }
+        function readToday() {
+            try {
+                const r = JSON.parse(localStorage.getItem(TODAY_KEY) || 'null');
+                return (r && r.day === todayStamp()) ? r.n : 0;
+            } catch (e) { return 0; }
+        }
+        function bumpToday(how) {
+            if (how !== 'sent' && how !== 'queued') return;
+            const n = readToday() + 1;
+            try { localStorage.setItem(TODAY_KEY, JSON.stringify({ day: todayStamp(), n: n })); } catch (e) {}
+            const el = document.getElementById('telToday');
+            if (el) el.textContent = n;
+        }
+
+        function telEmpUpdate() {
+            const el = document.getElementById('telEmp');
+            if (el) el.textContent = empSel.value || 'не обрано';
+        }
+
+        async function telQueueUpdate() {
+            const el = document.getElementById('telQueue');
+            if (!el) return;
+            let items = [];
+            try { items = (await QC.outbox.all()) || []; } catch (e) { return; }
+            el.textContent = items.length;
+            const stuck = items.filter(i => (i.attempts || 0) >= 5).length;
+            el.style.color = stuck ? 'var(--flare)' : (items.length ? 'var(--gold)' : '');
+            const box = document.getElementById('telQueueBox');
+            if (box) box.title = items.length
+                ? 'Натисніть, щоб дослати ' + items.length + ' ' + plural(items.length, 'запис', 'записи', 'записів')
+                : 'Черга порожня';
+        }
+
+        empSel.addEventListener('change', telEmpUpdate);
+        const qBox = document.getElementById('telQueueBox');
+        if (qBox) qBox.onclick = () => QC.flush(false).then(telQueueUpdate);
+        setInterval(telQueueUpdate, 5000);
+
+        // Іконка оновлення довідників обертається, поки триває запит
+        QC.catalog.onUpdate((data, info) => {
+            const icon = document.getElementById('catalogIcon');
+            if (icon) icon.classList.toggle('spin', !!info.loading);
+        });
+
+        document.getElementById('telToday').textContent = readToday();
+        syncAllSegs();
+        renderGate();
+        telEmpUpdate();
+        telQueueUpdate();
 
         // ==========================================================
         //  ІНІЦІАЛІЗАЦІЯ
@@ -1164,6 +1755,8 @@ ${alerts}
         // online/offline, черга та індикатор — усе в qc-core.js
         restoreDraft();
         updatePhotoCounter();
-    </script>
+        telEmpUpdate();
+    
+</script>
 </body>
 </html>
