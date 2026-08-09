@@ -57,6 +57,7 @@
             <div class="flex-1 text-center">
                 <h1 class="text-3xl font-bold text-teal-700 dark:text-teal-500">Вхідний контроль</h1>
                 <p class="text-teal-600 dark:text-teal-400 text-sm font-bold mt-1 uppercase tracking-wide">Сировина та Матеріали</p>
+                <p id="catalogStatus" class="text-[11px] text-slate-400 mt-1"></p>
             </div>
             
              <div class="p-2 text-teal-500">
@@ -70,6 +71,10 @@
                 </svg>
             </div>
             
+            <button id="catalogRefresh" title="Оновити довідники з таблиці" class="p-3 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <svg id="catalogIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            </button>
+
             <button id="themeToggle" class="p-3 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
             </button>
@@ -234,8 +239,26 @@
 
     <script src="qc-core.js"></script>
     <script>
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxG2c79RC60lVRubR8jspev9qGDEH63w7ksGYiJZnvCdxStGaygstDrZiof4kM_a8-oig/exec";
-        const employees = ["Соботович Л.М.", "Огаркова М.В.", "Попадюк А.М."];
+        // Якщо qc-core.js не завантажився (не залитий у репозиторій, помилка
+        // мережі, кеш CDN), уся сторінка нижче мовчки переставала виконуватись:
+        // списки не заповнювались і форма виглядала просто зламаною.
+        // Тепер причина видно одразу.
+        if (typeof QC === 'undefined') {
+            document.addEventListener('DOMContentLoaded', function () {
+                var b = document.createElement('div');
+                b.style.cssText = 'position:fixed;inset:0 0 auto 0;z-index:9999;background:#b91c1c;color:#fff;' +
+                    'padding:1rem;font:700 14px system-ui;text-align:center;line-height:1.5';
+                b.innerHTML = 'Не завантажено <b>qc-core.js</b>. Форма не працюватиме.<br>' +
+                    'Файл має лежати в корені репозиторію поряд із цією сторінкою.';
+                document.body.appendChild(b);
+            });
+        }
+    </script>
+    <script>
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxuLOjrKUjJ4j7Xcp-xQ9c9Lzl2WjElHxey9CTFnxi819NWe8EVjSLycC6tYEPauRmfwg/exec";
+        // Резервний список на випадок, коли таблиця недоступна і кешу ще немає.
+        // Основне джерело — вкладка довідника в QC Data 2.0 (див. нижче).
+        const EMPLOYEES_FALLBACK = ["Соботович Л.М.", "Огаркова М.В.", "Попадюк А.М."];
 
         // ==========================================================
         //  КОНФІГУРАЦІЯ СТОРІНКИ
@@ -877,7 +900,46 @@
         };
 
         const empSel = document.getElementById('employeeSelect');
-        employees.forEach(e => empSel.add(new Option(e, e)));
+
+        // ==========================================================
+        //  ДОВІДНИКИ: контролери та товари з таблиці QC Data 2.0
+        //  cache-first — списки зʼявляються миттєво з кешу, оновлення
+        //  з сервера підтягується у фоні. Кеш чинний до найближчої
+        //  23:00; кнопка 🔄 у шапці робить примусове оновлення.
+        //  Якщо сервер недоступний — працюємо на кеші, а якщо і кешу
+        //  немає — на вбудованих списках нижче.
+        // ==========================================================
+        function renderEmployees() {
+            const list = QC.catalog.get('employees') || EMPLOYEES_FALLBACK;
+            const keep = empSel.value || localStorage.getItem('qc_user') || '';
+            empSel.innerHTML = '';
+            empSel.add(new Option('Оберіть...', ''));
+            list.forEach(e => empSel.add(new Option(e, e)));
+            if (keep && list.indexOf(keep) !== -1) empSel.value = keep;
+        }
+
+        function productSource(category) {
+            return QC.catalog.get(category) || (itemsDatabase[category] || []);
+        }
+
+        function renderCatalogStatus(info) {
+            const box = document.getElementById('catalogStatus');
+            const icon = document.getElementById('catalogIcon');
+            if (icon) icon.style.opacity = info.loading ? '0.4' : '1';
+            if (!box) return;
+            if (info.loading) { box.textContent = 'Оновлення довідників...'; return; }
+            if (!info.fetchedAt) { box.textContent = 'Довідники: вбудований список'; return; }
+            const d = new Date(info.fetchedAt);
+            box.textContent = 'Довідники оновлено ' + QC.fmtDateTime(d) + (info.stale ? ' (застарілі)' : '');
+        }
+
+        QC.catalog.onUpdate(function (data, info) {
+            renderEmployees();
+            if (document.getElementById('inc-category').value) updateProductList(true);
+            renderCatalogStatus(info);
+        });
+
+        document.getElementById('catalogRefresh').onclick = function () { QC.catalog.refresh(true); };
         
         // Set current datetime
         const now = new Date();
@@ -894,13 +956,18 @@
             datalist.innerHTML = '';
             if (!keepValue) input.value = '';
 
-            if (category && itemsDatabase[category]) {
-                itemsDatabase[category].forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item;
-                    datalist.appendChild(option);
-                });
-            }
+            if (!category) return;
+            const items = productSource(category);
+            const frag = document.createDocumentFragment();
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item;
+                frag.appendChild(option);
+            });
+            datalist.appendChild(frag);
+            input.placeholder = items.length
+                ? ('Введіть назву або артикул (' + items.length + ' позицій)...')
+                : 'Довідник порожній — введіть вручну';
         }
 
         // Галерея і стиснення — у qc-core.js
