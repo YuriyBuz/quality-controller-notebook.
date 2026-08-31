@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Облік: Миючі та дез. засоби</title>
     
-    <link rel="manifest" id="manifest-link">
+    <link rel="manifest" href="manifest-detergents.json">
     <meta name="theme-color" content="#f8fafc">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Облік Миючих">
-    <link rel="apple-touch-icon" href="https://foodline-production.com/wp-content/uploads/2021/10/3752781497_3752781497.webp">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
@@ -100,16 +100,14 @@
 <body class="font-sans">
 
     <script>
-        const manifest = {
-            "name": "Облік Миючих Засобів",
-            "short_name": "Миючі Засоби",
-            "description": "Додаток для реєстрації використання миючих та дезінфікуючих засобів",
-            "start_url": ".",
-            "display": "standalone",
-            "background_color": "#f8fafc",
-            "theme_color": "#0891b2"
-        };
-        document.getElementById('manifest-link').href = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifest));
+        // Service worker кешує оболонку застосунку, щоб він відкривався
+        // в цеху без зв'язку. Реєстрація нічого не ламає, якщо не вдалась.
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .catch(error => console.warn('Service worker не зареєстровано:', error));
+            });
+        }
     </script>
 
     <div class="container mx-auto max-w-3xl p-4 sm:p-6 relative">
@@ -210,6 +208,18 @@
             
             <div id="inventoryContainer" class="flex flex-col gap-3">
                 </div>
+        </div>
+
+        <div id="queueView" class="hidden pb-20">
+            <div class="flex items-center justify-between mb-4">
+                <button onclick="appState.view = 'categories'; renderState();" class="flex items-center text-blue-600 hover:text-blue-700 font-bold px-2 py-1 -ml-2 rounded-lg transition-colors">
+                    <svg class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    Назад
+                </button>
+                <h2 class="text-xl font-bold text-gray-800">Черга записів</h2>
+            </div>
+            <div id="queueContainer" class="flex flex-col gap-3">
+            </div>
         </div>
 
         <div id="historyView" class="hidden pb-20">
@@ -348,7 +358,6 @@
         let currentSelectedItem = null;
         let currentOperation = 'usage'; 
         
-        const OFFLINE_KEY = 'sanitationOfflineQueueV2';
         const CACHE_KEY = 'sanitationInventoryCacheV2';
         const SYNC_KEY = 'sanitationLastSyncV2';
         const DEVICE_KEY = 'sanitationDeviceIdV1';
@@ -382,9 +391,57 @@
             localStorage.setItem(SESSION_KEY, JSON.stringify(value));
             localStorage.setItem(ACTIVITY_KEY, String(Date.now()));
         };
-        const clearSession = () => {
+        const clearSession = (forget) => {
             session = null;
             localStorage.removeItem(SESSION_KEY);
+            // Ручний вихід забирає і локальний перевірник: пристрій передали
+            // іншій людині. Автовихід і закінчення сесії його лишають —
+            // інакше зміна в підвалі лишилась би без застосунку.
+            if (forget) localStorage.removeItem(UNLOCK_KEY);
+        };
+
+        // --- Локальне розблокування без мережі ---
+        // На пристрої зберігається не PIN, а повільно обчислений перевірник.
+        // Це дає змогу відкрити застосунок у цеху без зв'язку; справжній
+        // бар'єр — токен, який перевіряє сервер під час запису.
+        const UNLOCK_KEY = 'sanitationOfflineUnlockV1';
+        const UNLOCK_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;   // не довше тижня від входу онлайн
+        const UNLOCK_ITERATIONS = 150000;
+        const OFFLINE_PERMISSIONS = ['registerUsage', 'registerRestock', 'registerInventory'];
+        const OFFLINE_SESSION_MS = 12 * 60 * 60 * 1000;
+
+        const toHex = (buffer) => Array.from(new Uint8Array(buffer))
+            .map(byte => byte.toString(16).padStart(2, '0')).join('');
+
+        const derivePinHash = async (pin, saltHex) => {
+            const salt = Uint8Array.from(saltHex.match(/.{2}/g).map(pair => parseInt(pair, 16)));
+            const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pin),
+                                                      'PBKDF2', false, ['deriveBits']);
+            const bits = await crypto.subtle.deriveBits(
+                { name: 'PBKDF2', salt: salt, iterations: UNLOCK_ITERATIONS, hash: 'SHA-256' }, key, 256);
+            return toHex(bits);
+        };
+
+        const saveOfflineUnlock = async (pin, data) => {
+            if (!window.crypto || !crypto.subtle) return;
+            try {
+                const salt = toHex(crypto.getRandomValues(new Uint8Array(16)));
+                localStorage.setItem(UNLOCK_KEY, JSON.stringify({
+                    salt: salt, hash: await derivePinHash(pin, salt), verifiedAt: Date.now(),
+                    name: data.name, shortName: data.shortName, permissions: data.permissions || []
+                }));
+            } catch (e) { /* без крипто-API офлайн-входу просто не буде */ }
+        };
+
+        const tryOfflineUnlock = async (pin) => {
+            if (!window.crypto || !crypto.subtle) return null;
+            let record = null;
+            try { record = JSON.parse(localStorage.getItem(UNLOCK_KEY) || 'null'); } catch (e) { return null; }
+            if (!record || !record.salt) return null;
+            if (Date.now() - record.verifiedAt > UNLOCK_MAX_AGE_MS) return null;
+            try {
+                return (await derivePinHash(pin, record.salt)) === record.hash ? record : null;
+            } catch (e) { return null; }
         };
 
         const authQuery = () => '&token=' + encodeURIComponent(session ? session.token : '') +
@@ -603,7 +660,9 @@
             select.innerHTML = '';
             const option = document.createElement('option');
             option.value = session ? session.name : '';
-            option.textContent = session ? session.name : '— не увійшли —';
+            option.textContent = session
+                ? session.name + (session.offline ? ' · офлайн-режим' : '')
+                : '— не увійшли —';
             select.appendChild(option);
             select.value = option.value;
             select.disabled = true;
@@ -624,12 +683,40 @@
                 });
                 applySession();
                 hideLogin();
+                // Похідну від PIN рахуємо у фоні: 150 000 ітерацій — це відчутна
+                // пауза, і користувач не має її чекати, щоб увійти
+                saveOfflineUnlock(pin, result);
                 if (result.warning) customAlert('⚠️ ' + result.warning);
                 await fetchData();
+                flushOutbox();
                 flushEvents();
             } catch (e) {
                 logEvent('error', 'login.failed', (e.code || 'ERROR') + ': ' + e.message);
-                showLogin(e.message);
+
+                // Невірний PIN сервер назвав прямо — локальний вхід тут ні до чого
+                if (e.code === 'BAD_PIN' || e.code === 'PIN_NOT_UNIQUE' || e.code === 'THROTTLED') {
+                    showLogin(e.message);
+                    return;
+                }
+
+                // Сервер недоступний — пробуємо локальне розблокування
+                const record = await tryOfflineUnlock(pin);
+                if (!record) {
+                    showLogin(navigator.onLine ? e.message
+                        : 'Немає зв\'язку. Локальний вхід недоступний — спершу увійдіть один раз онлайн.');
+                    return;
+                }
+                saveSession({
+                    token: '', name: record.name, shortName: record.shortName,
+                    permissions: (record.permissions || [])
+                        .filter(p => OFFLINE_PERMISSIONS.indexOf(p) !== -1),
+                    expiresAt: Date.now() + OFFLINE_SESSION_MS, offline: true
+                });
+                applySession();
+                hideLogin();
+                logEvent('tech', 'login.offline', 'локальне розблокування');
+                await fetchData();
+                showToast('Офлайн-режим: записи чекатимуть на зв\'язок');
             } finally {
                 btn.textContent = original;
                 btn.disabled = false;
@@ -638,7 +725,7 @@
 
         const logout = (reason) => {
             logEvent('tech', 'logout', reason || 'вручну');
-            clearSession();
+            clearSession(reason === 'вручну');
             applySession();
             allData = [];
             renderState();
@@ -664,58 +751,205 @@
             return false;
         };
 
+        // --- Черга операцій ---
+        // Кожна операція спершу лягає в localStorage і лише потім вирушає на
+        // сервер. Тому нічого не губиться, навіть якщо вкладку закрили просто
+        // в момент запиту. Раніше черга була простим масивом: запис або пішов,
+        // або зник, а причину ніхто не бачив.
+        const OUTBOX_KEY = 'sanitationOutboxV1';
+        const OUTBOX_DONE_TTL_MS = 24 * 60 * 60 * 1000;   // «надіслані» лишаються добу — щоб було видно
+        const SENDING_STUCK_MS = 2 * 60 * 1000;           // «в польоті» довше двох хвилин = вкладку вбили
+        const BACKOFF_MS = [5000, 15000, 60000, 300000];
+        const SYNC_INTERVAL_MS = 30000;
+        let syncing = false;
+
+        const readOutbox = () => {
+            try {
+                const stored = JSON.parse(localStorage.getItem(OUTBOX_KEY) || 'null');
+                if (stored && stored.items) return stored;
+            } catch (e) { /* зіпсований запис — починаємо з порожньої черги */ }
+            return { version: 1, items: {} };
+        };
+
+        // Читаємо-зливаємо-пишемо: дві вкладки не затирають записи одна одної
+        const updateOutbox = (mutate) => {
+            const box = readOutbox();
+            const result = mutate(box.items);
+            localStorage.setItem(OUTBOX_KEY, JSON.stringify(box));
+            updateNetworkStatus();
+            return result;
+        };
+
+        const outboxItem = (opId) => readOutbox().items[opId] || null;
+        const patchItem = (opId, patch) => updateOutbox(items => {
+            if (items[opId]) Object.assign(items[opId], patch);
+            return items[opId];
+        });
+        const removeItem = (opId) => updateOutbox(items => { delete items[opId]; });
+
+        const outboxList = () => {
+            const items = readOutbox().items;
+            return Object.keys(items).map(opId => items[opId])
+                .sort((a, b) => (a.createdAt < b.createdAt ? -1 : 1));
+        };
+
+        const outboxCounts = () => {
+            const counts = { pending: 0, sending: 0, failed: 0, done: 0 };
+            outboxList().forEach(item => { counts[item.status] = (counts[item.status] || 0) + 1; });
+            counts.unsent = counts.pending + counts.sending;
+            return counts;
+        };
+
+        const pruneOutbox = () => updateOutbox(items => {
+            const now = Date.now();
+            Object.keys(items).forEach(opId => {
+                const item = items[opId];
+                if (item.status === 'done' && now - (item.syncedAt || 0) > OUTBOX_DONE_TTL_MS) {
+                    delete items[opId];
+                } else if (item.status === 'sending' && now - (item.sendingAt || 0) > SENDING_STUCK_MS) {
+                    // Застрягло: повертаємо в чергу. Дубля не буде — сервер
+                    // відсіє повтор за міткою часу, позицією й автором.
+                    item.status = 'pending';
+                    item.nextAttemptAt = 0;
+                    item.lastError = 'Відправку перервано — повторюємо';
+                }
+            });
+        });
+
+        const enqueueOperation = (payload) => {
+            const createdAt = payload.timestamp || new Date().toISOString();
+            const opId = createdAt + '-' + getDeviceId().slice(0, 8) + '-' + Math.random().toString(36).slice(2, 6);
+            const item = {
+                opId: opId, createdAt: createdAt,
+                payload: Object.assign({}, payload, { timestamp: createdAt }),
+                status: 'pending', attempts: 0, nextAttemptAt: 0,
+                lastError: '', code: '', syncedAt: null, serverStock: null
+            };
+            updateOutbox(items => { items[opId] = item; });
+            return item;
+        };
+
+        // kind розрізняє дві біди з однаковим наслідком «спробуємо ще раз»:
+        // мережі немає — чекаємо мовчки; сервер відповів помилкою — це видно
+        const retryLater = (item, error, kind) => {
+            const attempts = (item.attempts || 0) + 1;
+            const delay = BACKOFF_MS[Math.min(attempts - 1, BACKOFF_MS.length - 1)];
+            if (attempts === 3) {
+                logEvent('error', 'sync.stuck', 'спроб: 3, причина: ' + error,
+                         item.payload.sheetName + ' · ' + item.payload.model);
+            }
+            patchItem(item.opId, {
+                status: 'pending', attempts: attempts, nextAttemptAt: Date.now() + delay,
+                lastError: error, lastErrorKind: kind || 'network'
+            });
+            return 'pending';
+        };
+
+        /** Одна спроба відправки. Повертає 'done' | 'failed' | 'pending' | 'auth'. */
+        const sendItem = async (opId) => {
+            const item = outboxItem(opId);
+            if (!item || item.status === 'done') return 'done';
+
+            if (!session || !session.token) {
+                patchItem(opId, { status: 'pending', lastError: 'Потрібен вхід онлайн' });
+                return 'auth';
+            }
+
+            patchItem(opId, { status: 'sending', sendingAt: Date.now() });
+            try {
+                const result = await postToServer(item.payload);
+                patchItem(opId, {
+                    status: 'done', syncedAt: Date.now(), lastError: '', code: '',
+                    serverStock: (result && typeof result.newStock === 'number') ? result.newStock : null
+                });
+                return 'done';
+            } catch (e) {
+                const code = e && e.code;
+                if (code === 'AUTH') {
+                    patchItem(opId, { status: 'pending', lastError: 'Сесія завершилась' });
+                    return 'auth';
+                }
+                if (code && PERMANENT_CODES.indexOf(code) !== -1) {
+                    patchItem(opId, { status: 'failed', code: code, lastError: e.message });
+                    logEvent('error', 'sync.rejected', code + ': ' + e.message,
+                             item.payload.sheetName + ' · ' + item.payload.model);
+                    return 'failed';
+                }
+                return retryLater(item, e.message || 'Немає зв\'язку', code ? 'server' : 'network');
+            }
+        };
+
+        // Пауза між спробами має сенс, поки причина — мовчання мережі. Щойно
+        // зв'язок повернувся, чекати немає підстав: таймери скидаємо,
+        // лічильник спроб лишаємо.
+        const resetBackoff = () => updateOutbox(items => {
+            Object.keys(items).forEach(opId => {
+                if (items[opId].status === 'pending') items[opId].nextAttemptAt = 0;
+            });
+        });
+
+        /** Відправляє чергу по одному запису, зберігаючи порядок. */
+        const flushOutbox = async () => {
+            if (syncing || !navigator.onLine) return;
+            syncing = true;
+            updateNetworkStatus();
+            try {
+                pruneOutbox();
+                let sent = 0;
+                const list = outboxList();
+                for (let i = 0; i < list.length; i++) {
+                    const item = list[i];
+                    if (item.status !== 'pending') continue;
+                    if ((item.nextAttemptAt || 0) > Date.now()) continue;
+
+                    const outcome = await sendItem(item.opId);
+                    if (outcome === 'done') sent++;
+                    if (outcome === 'auth') {
+                        if (navigator.onLine) {
+                            clearSession(); applySession();
+                            showLogin('Увійдіть за PIN, щоб надіслати збережені записи');
+                        }
+                        break;
+                    }
+                    if (outcome === 'pending') break;   // немає зв'язку — далі немає сенсу
+                }
+
+                const counts = outboxCounts();
+                if (sent) {
+                    showToast(counts.failed
+                        ? 'Надіслано ' + sent + ', не пройшло ' + counts.failed + ' — відкрийте чергу'
+                        : 'Надіслано ' + sent + (sent === 1 ? ' запис' : ' записів'));
+                    if (!counts.unsent) fetchData(true);
+                }
+                if (appState.view === 'queue') renderState();
+            } finally {
+                syncing = false;
+                updateNetworkStatus();
+                flushEvents();
+            }
+        };
+
         const updateNetworkStatus = () => {
             const dot = document.getElementById('statusDot');
             const text = document.getElementById('statusText');
-            const queue = JSON.parse(localStorage.getItem(OFFLINE_KEY) || '[]');
-            
-            if (!navigator.onLine) {
+            if (!dot || !text) return;
+
+            const counts = outboxCounts();
+            if (syncing) {
+                dot.className = 'status-dot syncing';
+                text.textContent = 'Синхронізація…';
+            } else if (counts.failed) {
                 dot.className = 'status-dot offline';
-                text.textContent = `Офлайн (${queue.length})`;
-            } else if (queue.length > 0) {
+                text.textContent = 'Помилок ' + counts.failed;
+            } else if (counts.unsent) {
+                dot.className = 'status-dot syncing';
+                text.textContent = 'Черга ' + counts.unsent;
+            } else if (!navigator.onLine) {
                 dot.className = 'status-dot offline';
-                text.textContent = `Черга (${queue.length})`;
+                text.textContent = 'Немає зв\'язку';
             } else {
                 dot.className = 'status-dot online';
                 text.textContent = 'Онлайн';
-            }
-        };
-
-        const saveToOfflineQueue = (data) => {
-            const queue = JSON.parse(localStorage.getItem(OFFLINE_KEY) || '[]');
-            queue.push(data);
-            localStorage.setItem(OFFLINE_KEY, JSON.stringify(queue));
-            updateNetworkStatus();
-        };
-
-        const processOfflineQueue = async () => {
-            const queue = JSON.parse(localStorage.getItem(OFFLINE_KEY) || '[]');
-            if (queue.length === 0 || !navigator.onLine || !session) return;
-
-            const statusDot = document.getElementById('statusDot');
-            statusDot.className = 'status-dot syncing';
-            document.getElementById('statusText').textContent = 'Синхронізація...';
-
-            const newQueue = [];
-            let lastError = null;
-            for (const item of queue) {
-                if (lastError) { newQueue.push(item); continue; }
-                try {
-                    await postToServer(item);
-                } catch (e) {
-                    lastError = e;
-                    newQueue.push(item);
-                }
-            }
-
-            localStorage.setItem(OFFLINE_KEY, JSON.stringify(newQueue));
-            updateNetworkStatus();
-
-            if (newQueue.length === 0) {
-                hideDbError();
-                fetchData(true);
-            } else if (lastError) {
-                showDbError('Не вдалося відправити чергу: ' + lastError.message);
             }
         };
 
@@ -999,7 +1233,17 @@
             const titleEl = document.getElementById('currentCategoryTitle');
             const backBtnContainer = document.getElementById('backBtnContainer');
 
+            const queueViewEl = document.getElementById('queueView');
             historyViewEl.classList.add('hidden');
+            queueViewEl.classList.add('hidden');
+
+            if (appState.view === 'queue') {
+                catView.classList.add('hidden');
+                itemsViewEl.classList.add('hidden');
+                queueViewEl.classList.remove('hidden');
+                renderQueueList();
+                return;
+            }
 
             if (searchTerm && appState.view !== 'history') {
                 catView.classList.add('hidden');
@@ -1125,6 +1369,84 @@
                 `;
                 container.appendChild(card);
             });
+        };
+
+        const QUEUE_STATUS = {
+            pending: { label: 'Чекає', badge: 'bg-amber-100 text-amber-800' },
+            sending: { label: 'Відправляється', badge: 'bg-blue-100 text-blue-800' },
+            failed:  { label: 'Відхилено', badge: 'bg-red-100 text-red-700' },
+            done:    { label: 'Надіслано', badge: 'bg-cyan-100 text-cyan-800' }
+        };
+
+        const renderQueueList = () => {
+            const container = document.getElementById('queueContainer');
+            container.innerHTML = '';
+            const list = outboxList().slice().reverse();
+
+            if (!list.length) {
+                container.innerHTML = '<div class="text-center w-full text-muted py-8 card rounded-xl border border-gray-200">Черга порожня — усе записано в таблицю</div>';
+                return;
+            }
+
+            list.forEach(item => {
+                const status = QUEUE_STATUS[item.status] || QUEUE_STATUS.pending;
+                const op = OPERATION_LABELS[item.payload.action] || item.payload.action;
+                const card = document.createElement('div');
+                card.className = 'card p-4 rounded-xl shadow-sm border border-gray-200';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <span class="text-xs font-bold text-gray-500">${formatDayForUi(item.payload.date)}</span>
+                            <span class="text-xs ml-2 font-bold px-1.5 py-0.5 rounded ${status.badge}">${status.label}</span>
+                            <h4 class="font-bold text-gray-900 mt-1">${item.payload.model}</h4>
+                        </div>
+                        <span class="bg-gray-100 text-gray-700 font-bold px-2 py-1 rounded text-sm whitespace-nowrap">${op} ${item.payload.quantity} кг.</span>
+                    </div>
+                    ${item.lastError ? `
+                    <div class="text-sm text-gray-600 mb-1">
+                        <span class="font-medium text-gray-500">Причина:</span> ${item.lastError}
+                    </div>` : ''}
+                    ${item.attempts ? `
+                    <div class="text-xs text-gray-500">Спроб: ${item.attempts}</div>` : ''}
+                    <div class="text-xs text-indigo-600 font-medium mt-2">Категорія: ${item.payload.sheetName}</div>
+                `;
+
+                if (item.status === 'failed') {
+                    // Відхилений запис нікуди не піде сам — рішення за людиною
+                    const actions = document.createElement('div');
+                    actions.className = 'flex gap-2 mt-3';
+                    const retry = document.createElement('button');
+                    retry.className = 'flex-1 bg-cyan-50 hover:bg-cyan-100 text-cyan-800 px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-colors border border-cyan-200';
+                    retry.textContent = 'Спробувати ще раз';
+                    retry.onclick = async () => {
+                        patchItem(item.opId, { status: 'pending', code: '', lastError: '',
+                                               attempts: 0, nextAttemptAt: 0 });
+                        renderQueueList();
+                        await flushOutbox();
+                        renderQueueList();
+                    };
+                    const drop = document.createElement('button');
+                    drop.className = 'flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-colors border border-gray-200';
+                    drop.textContent = 'Прибрати';
+                    drop.onclick = async () => {
+                        const sure = await showCustomDialog('Прибрати запис із черги? Він не потрапить у таблицю.', true);
+                        if (!sure) return;
+                        logEvent('abandoned', 'queue.dropped', item.code + ': ' + item.lastError,
+                                 item.payload.sheetName + ' · ' + item.payload.model);
+                        removeItem(item.opId);
+                        renderQueueList();
+                    };
+                    actions.appendChild(retry);
+                    actions.appendChild(drop);
+                    card.appendChild(actions);
+                }
+                container.appendChild(card);
+            });
+        };
+
+        const OPERATION_LABELS = {
+            registerUsage: 'Видача', registerRestock: 'Поповнення',
+            registerInventory: 'Інвентаризація', setStorage: 'Місце'
         };
 
         const renderHistoryList = () => {
@@ -1442,58 +1764,72 @@
             btn.disabled = true;
 
             try {
-                if (!navigator.onLine) {
-                    throw new Error("Offline");
-                }
-
-                let result;
-                try {
-                    result = await postToServer(payload);
-                } catch (first) {
-                    // Сервер порахував залишок із журналу і побачив, що його не
-                    // вистачає. Питаємо підтвердження і повторюємо з причиною —
-                    // щоб перевитрата лишила слід, а не пройшла мовчки.
-                    if (first.code !== 'OVERDRAW') throw first;
-                    const confirmOver = await showCustomDialog(first.message + "\nСписати попри це?", true);
-                    if (!confirmOver) { closeUsageModal(); return; }
-                    payload.overdrawReason = "підтверджено контролером у застосунку";
-                    result = await postToServer(payload);
-                }
-
-                localStorage.setItem(SYNC_KEY, new Date().toISOString());
-                hideDbError();
-                logEvent('tech', 'operation.saved', payload.action + ' ' + payload.quantity,
+                // Операція спершу лягає в чергу і лише потім вирушає на сервер:
+                // якщо вкладку закриють просто в момент запиту, запис уціліє.
+                // Перевірка зв'язку — ПІСЛЯ постановки в чергу: інакше офлайн
+                // запис не зберігався б узагалі.
+                const queued = enqueueOperation(payload);
+                logEvent('tech', 'operation.queued', payload.action + ' ' + payload.quantity,
                          payload.sheetName + ' · ' + payload.model);
-                showSuccessAndClose(false, result);
+
+                if (!navigator.onLine) { showSuccessAndClose(true); return; }
+
+                let outcome = await sendItem(queued.opId);
+                let stored = outboxItem(queued.opId);
+
+                // Сервер порахував залишок із журналу і побачив, що його не
+                // вистачає. Питаємо підтвердження і повторюємо з причиною —
+                // щоб перевитрата лишила слід, а не пройшла мовчки.
+                if (outcome === 'failed' && stored && stored.code === 'OVERDRAW') {
+                    const confirmOver = await showCustomDialog(stored.lastError + "\nСписати попри це?", true);
+                    if (!confirmOver) { removeItem(queued.opId); closeUsageModal(); return; }
+                    patchItem(queued.opId, {
+                        status: 'pending', code: '', lastError: '', attempts: 0, nextAttemptAt: 0,
+                        payload: Object.assign({}, stored.payload,
+                                 { overdrawReason: 'підтверджено контролером у застосунку' })
+                    });
+                    outcome = await sendItem(queued.opId);
+                    stored = outboxItem(queued.opId);
+                }
+
+                if (outcome === 'done') {
+                    localStorage.setItem(SYNC_KEY, new Date().toISOString());
+                    hideDbError();
+                    showSuccessAndClose(false, { newStock: stored ? stored.serverStock : null });
+                } else if (outcome === 'auth') {
+                    // Запис лишається в черзі й піде після входу
+                    closeUsageModal();
+                    clearSession(); applySession();
+                    showLogin('Сесію завершено. Увійдіть за PIN — збережений запис піде одразу після входу.');
+                } else if (outcome === 'failed') {
+                    closeUsageModal();
+                    await customAlert("❌ ЗАПИС НЕ ПРИЙНЯТО\n\n" + (stored ? stored.lastError : ''));
+                } else {
+                    showDbError(stored ? stored.lastError : 'Сервер не відповів');
+                    showSuccessAndClose(true);
+                }
                 flushEvents();
             } catch (e) {
                 logEvent('error', 'operation.failed', (e.code || 'ERROR') + ': ' + e.message,
                          payload.sheetName + ' · ' + payload.model);
-
-                if (e.code === 'AUTH') {
-                    // Сесія закінчилась — операцію не втрачаємо, вона піде після входу
-                    saveToOfflineQueue(payload);
-                    closeUsageModal();
-                    handleAuthFailure(e);
-                } else if (navigator.onLine && PERMANENT_CODES.indexOf(e.code) !== -1) {
-                    // Повторювати немає сенсу: у чергу не ставимо, щоб запис
-                    // не висів там вічно й не списався потім несподівано
-                    closeUsageModal();
-                    await customAlert("❌ ЗАПИС НЕ ПРИЙНЯТО\n\n" + e.message);
-                } else if (navigator.onLine) {
-                    saveToOfflineQueue(payload);
-                    showDbError(e.message);
-                    closeUsageModal();
-                    await customAlert("❌ ЗАПИС НЕ ПОТРАПИВ У ТАБЛИЦЮ!\n\n" + e.message + "\n\nОперацію збережено в черзі на цьому пристрої — вона відправиться, щойно зв'язок відновлять.");
-                } else {
-                    saveToOfflineQueue(payload);
-                    showSuccessAndClose(true);
-                }
+                closeUsageModal();
+                await customAlert("❌ ЗАПИС НЕ ПРИЙНЯТО\n\n" + e.message);
             } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
         });
+
+        const showToast = (message) => {
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg z-[3000] font-bold text-sm flex items-center transition-opacity duration-300';
+            toast.innerHTML = '<svg class="w-5 h-5 text-cyan-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> ' + message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 2200);
+        };
 
         const showSuccessAndClose = (isOffline = false, result = null) => {
             if (currentSelectedItem) {
@@ -1526,21 +1862,12 @@
             closeUsageModal();
             
             if (isOffline) {
-                customAlert("Відсутній зв'язок.\nЗапис збережено в телефоні і буде відправлено автоматично при появі інтернету!");
+                customAlert("Немає зв'язку.\nЗапис збережено на цьому пристрої й піде автоматично, щойно з'явиться інтернет.\nПодивитись чергу — значок стану у шапці.");
             } else {
-                const toast = document.createElement('div');
-                toast.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg z-[3000] font-bold text-sm flex items-center transition-opacity duration-300';
-                
                 let successMsg = "Успішно списано!";
                 if (currentOperation === 'restock') successMsg = "Запаси поповнено!";
                 if (currentOperation === 'inventory') successMsg = "Залишок оновлено!";
-
-                toast.innerHTML = `<svg class="w-5 h-5 text-cyan-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> ${successMsg}`;
-                document.body.appendChild(toast);
-                setTimeout(() => {
-                    toast.style.opacity = '0';
-                    setTimeout(() => toast.remove(), 300);
-                }, 2000);
+                showToast(successMsg);
             }
         };
 
@@ -1560,9 +1887,18 @@
                 document.addEventListener(type, touchActivity, { passive: true }));
             setInterval(checkIdle, 30000);
 
-            window.addEventListener('online', () => { updateNetworkStatus(); processOfflineQueue(); flushEvents(); });
+            window.addEventListener('online', () => {
+                updateNetworkStatus(); resetBackoff(); flushOutbox(); flushEvents();
+            });
             window.addEventListener('offline', updateNetworkStatus);
-            document.getElementById('networkStatusBtn').addEventListener('click', processOfflineQueue);
+            // Значок стану відкриває чергу — і одразу пробує її відправити
+            document.getElementById('networkStatusBtn').addEventListener('click', () => {
+                resetBackoff();
+                appState.view = 'queue';
+                renderState();
+                flushOutbox();
+            });
+            setInterval(() => { if (session) flushOutbox(); }, SYNC_INTERVAL_MS);
 
             logEvent('tech', 'app.opened', 'версія ' + APP_VERSION);
             if (session) {
