@@ -1361,6 +1361,7 @@
                         <div class="text-xs text-gray-500">
                             Мін. запас: <span class="font-semibold text-gray-700">${item.minStock}</span>
                             ${item.storage ? `<br>📍 <span class="font-semibold text-gray-700">${item.storage}</span>` : ''}
+                            ${(item.expiring && item.expiring.length) ? `<br>⏳ <span class="font-semibold text-red-600">${item.expiring[0].expired ? 'партія прострочена' : 'партія до ' + formatDayForUi(item.expiring[0].expDate)}</span>` : ''}
                         </div>
                         <div class="text-sm text-right">
                             Залишок: <span class="font-bold text-lg ${isLowStock ? 'text-red-600' : 'text-gray-900'}">${item.currentStock} кг.</span>
@@ -1473,6 +1474,11 @@
                 return;
             }
 
+            const canCancelAny = !!(session && session.permissions
+                && session.permissions.indexOf('cancelAny') !== -1);
+            const canCancelOwn = !!(session && session.permissions
+                && session.permissions.indexOf('cancelOwn') !== -1);
+
             filteredHistory.forEach(record => {
                 let badgeClass = "bg-gray-100 text-gray-700";
                 let qtyPrefix = "";
@@ -1519,8 +1525,55 @@
                         Категорія: ${record.sheetName}
                     </div>
                 `;
+
+                // Скасувати можна лише свіжу операцію, яку ще не скасували.
+                // Рядок журналу не зникне: він позначиться, а поруч ляже
+                // «Скасування …» — видно, хто і коли.
+                const ageHours = record.id
+                    ? (Date.now() - new Date(record.id).getTime()) / 3600000 : 999;
+                const mine = session && record.controller === session.name;
+                const allowed = !record.cancelled && !record.isCancellation && ageHours <= 24
+                    && (canCancelAny || (mine && canCancelOwn));
+
+                if (record.cancelled) {
+                    const mark = document.createElement('div');
+                    mark.className = 'text-xs font-bold text-red-600 mt-2';
+                    mark.textContent = 'Скасовано';
+                    card.appendChild(mark);
+                } else if (allowed) {
+                    const btn = document.createElement('button');
+                    btn.className = 'w-full mt-3 bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-2 rounded-xl text-sm font-bold shadow-sm transition-colors border border-gray-200';
+                    btn.textContent = 'Скасувати операцію';
+                    btn.onclick = () => cancelOperation(record, btn);
+                    card.appendChild(btn);
+                }
                 container.appendChild(card);
             });
+        };
+
+        const cancelOperation = async (record, btn) => {
+            const sure = await showCustomDialog(
+                'Скасувати ' + (record.actionType || '').toLowerCase() + ' ' + record.quantity +
+                ' кг «' + record.model + '»?\nЗапис у журналі не зникне — він позначиться як скасований.', true);
+            if (!sure) return;
+
+            const original = btn.textContent;
+            btn.textContent = 'Скасовую…';
+            btn.disabled = true;
+            try {
+                await postToServer({ action: 'cancelOperation', id: record.id });
+                logEvent('tech', 'operation.cancelled', record.actionType + ' ' + record.quantity,
+                         record.sheetName + ' · ' + record.model);
+                showToast('Операцію скасовано');
+                await fetchData(true);
+                await fetchHistory(appState.filterHistoryToday);
+            } catch (e) {
+                logEvent('error', 'cancel.failed', (e.code || 'ERROR') + ': ' + e.message,
+                         record.sheetName + ' · ' + record.model);
+                if (!handleAuthFailure(e)) customAlert('❌ Не вдалося скасувати:\n' + e.message);
+                btn.textContent = original;
+                btn.disabled = false;
+            }
         };
 
         const searchInput = document.getElementById('searchInput');
@@ -1573,7 +1626,12 @@
                 usedByGroup.classList.remove('hidden'); 
                 
                 if (currentSelectedItem) {
-                    const fifo = getFifoSuggestion(currentSelectedItem);
+                    // Сервер рахує партії з журналу — того самого джерела, що й
+                    // залишок. Розбір склеєного блоку F..K лишається запасним
+                    // варіантом: для кешу, знятого старою версією.
+                    const fifo = currentSelectedItem.fefo
+                        ? currentSelectedItem.fefo
+                        : getFifoSuggestion(currentSelectedItem);
                     document.getElementById('useBatch').value = fifo.batch || "";
                     document.getElementById('useExpDate').value = fifo.expDate || "";
                     if (fifo.batch) fifoHint.classList.remove('hidden');

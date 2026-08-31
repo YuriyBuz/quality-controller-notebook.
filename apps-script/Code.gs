@@ -55,9 +55,12 @@ const ATTEMPT_WINDOW_SECONDS = 300;
  * скасовувати чужі, qc.use — лише власні.
  */
 const ROLE_PERMISSIONS = {
-  'qc.use':   ['registerUsage', 'registerRestock', 'registerInventory', 'setStorage', 'forceReport'],
-  'qc.admin': ['registerUsage', 'registerRestock', 'registerInventory', 'setStorage', 'forceReport'],
-  'admin':    ['registerUsage', 'registerRestock', 'registerInventory', 'setStorage', 'forceReport']
+  'qc.use':   ['registerUsage', 'registerRestock', 'registerInventory', 'setStorage',
+               'forceReport', 'cancelOwn'],
+  'qc.admin': ['registerUsage', 'registerRestock', 'registerInventory', 'setStorage',
+               'forceReport', 'cancelOwn', 'cancelAny'],
+  'admin':    ['registerUsage', 'registerRestock', 'registerInventory', 'setStorage',
+               'forceReport', 'cancelOwn', 'cancelAny']
 };
 
 function loginWithPin_(pin, deviceId) {
@@ -382,6 +385,15 @@ const OPERATIONS = {
   registerInventory: { label: 'Інвентаризація', prefix: '=', genitive: 'інвентаризації', direction: 0 }
 };
 
+// Партія, до кінця терміну якої лишилось стільки днів, потрапляє в звіт
+const EXPIRY_WARN_DAYS = 30;
+// Залишок, більший за мінімум у стільки разів, потрапляє в блок «Надлишок»
+const EXCESS_FACTOR = 5;
+// Період блоку «Рух» у звіті
+const MOVEMENT_DAYS = 7;
+// Скасувати операцію можна протягом цього часу
+const CANCEL_WINDOW_HOURS = 24;
+
 const CANCELLED_SUFFIX = ' (скасовано)';
 const CANCEL_PREFIX = 'Скасування ';
 
@@ -485,6 +497,9 @@ function doGet(e) {
       const session = requireSession_(request);   // застосунок закритий без входу за PIN
       const people = readPeople();
       const categories = [];
+      // Партії рахуються з журналу — того самого джерела, що й залишок.
+      // Раніше це робив браузер, розбираючи склеєний блок F..K регуляркою.
+      const log = readLog_();
 
       forEachCatalogSheet(function (sheet) {
         const values = readCatalog(sheet);
@@ -508,6 +523,12 @@ function doGet(e) {
             supplierPhone: String(row[13] || ''),
             storage: String(row[14] || '').trim()
           });
+          const lots = batchLedger_(log, sheet.getName(), String(row[1]),
+                                    row[0] === '' || row[0] === null ? '' : row[0]);
+          const last = items[items.length - 1];
+          last.fefo = fefoSuggestion_(lots);
+          last.expiring = expiringLots_(lots, EXPIRY_WARN_DAYS);
+          last.unnamedQty = unnamedQty_(lots);
         });
         if (items.length) categories.push({ name: sheet.getName(), items: items });
       });
@@ -602,6 +623,7 @@ function doPost(e) {
     // Діагностика: приймаємо навіть без сесії — саме тоді, коли ламається вхід
     if (payload.action === 'logEvents') return json(logClientEvents_(payload));
     if (payload.action === 'setStorage') return json(setStorage_(payload));
+    if (payload.action === 'cancelOperation') return json(cancelOperation_(payload));
 
     return json(registerOperation_(payload));
 
@@ -776,6 +798,103 @@ function buildBatchLabel_(payload) {
   if (expDate) text += '(до ' + expDate + ')';
   text = text.trim();
   return text || '-';
+}
+
+/**
+ * Скасування операції. Рядок журналу не видаляється: початковий помічається
+ * як скасований, а поруч дописується рядок «Скасування …» — видно, хто і коли.
+ * Залишок перераховується з журналу, тож обидва рядки просто гасять один одного.
+ */
+function cancelOperation_(payload) {
+  const session = requireSession_(payload);
+
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) throw fail_('BUSY', 'Сервер зайнятий іншим записом. Спробуйте ще раз.');
+  try {
+    const log = readLog_();
+    const entry = findLogEntry_(log, payload.id, null);
+    if (!entry) throw fail_('NOT_FOUND', 'Операцію не знайдено в журналі.');
+
+    const values = entry.values;
+    const label = String(values[5]).trim();
+    if (label.indexOf(CANCELLED_SUFFIX) !== -1) {
+      throw fail_('ALREADY_CANCELLED', 'Цю операцію вже скасовано.');
+    }
+    if (label.indexOf(CANCEL_PREFIX) === 0) {
+      throw fail_('BAD_TARGET', 'Це рядок скасування — його не скасовують.');
+    }
+
+    const operation = operationByLabel_(label);
+    if (!operation) throw fail_('BAD_TARGET', 'Скасувати можна лише видачу, поповнення чи інвентаризацію.');
+
+    const author = String(values[6]).trim();
+    const own = author === session.name;
+    if (!own && session.permissions.indexOf('cancelAny') === -1) {
+      throw fail_('FORBIDDEN', 'Скасувати чужу операцію може лише технолог або адміністратор.');
+    }
+    if (own && session.permissions.indexOf('cancelOwn') === -1) {
+      throw fail_('FORBIDDEN', 'Ваша роль не дозволяє скасування.');
+    }
+
+    const when = new Date(normalizeTimestamp_(values[0]));
+    const ageHours = (Date.now() - when.getTime()) / 3600000;
+    if (isFinite(ageHours) && ageHours > CANCEL_WINDOW_HOURS) {
+      throw fail_('TOO_LATE', 'Скасувати можна протягом ' + CANCEL_WINDOW_HOURS +
+        ' годин. Ця операція старша — проведіть інвентаризацію.');
+    }
+
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(String(values[2]).trim());
+    if (!sheet) throw fail_('BAD_TARGET', 'Аркуш не знайдено: ' + values[2]);
+
+    // Позначаємо оригінал і дописуємо рядок скасування
+    log.sheet.getRange(entry.row, 6).setValue(label + CANCELLED_SUFFIX);
+    values[5] = label + CANCELLED_SUFFIX;
+
+    const now = new Date();
+    const cancelRow = [localStamp_(now), localDateKey_(now), values[2], values[3], values[4],
+      CANCEL_PREFIX + operation.genitive, session.name,
+      'Скасовано операцію від ' + formatTimestamp_(values[0]) + ' (' + author + ')',
+      values[8], values[9], '-'];
+    log.sheet.appendRow(cancelRow);
+    log.rows.push({ row: log.sheet.getLastRow(), values: cancelRow });
+
+    const position = resolvePosition_(sheet, { model: values[4], no: values[3], row: 0 });
+    const stock = readStock_(sheet, position.row);
+    const quantity = toNumber(values[9]);
+
+    // Якщо в журналі є інвентаризація, залишок перераховується з нього самого:
+    // обидва рядки вже гасять один одного. Якщо точки відліку немає, рахувати
+    // нема від чого — тоді просто відкочуємо саме цю операцію.
+    const fromLog = computeStockFromLog_(log, values[2], values[4], values[3], null);
+    let newVal;
+    let warning = '';
+    if (fromLog !== null) {
+      newVal = fromLog;
+    } else if (operation.direction === 0) {
+      // Інвентаризацію відкотити нема до чого: вона сама була точкою відліку
+      newVal = stock.value;
+      warning = 'Скасовано запис інвентаризації, але залишок лишився як був — ' +
+                'у журналі немає попередньої точки відліку. Проведіть інвентаризацію заново.';
+    } else {
+      newVal = round_(stock.value - operation.direction * quantity);
+    }
+    sheet.getRange(position.row, 5).setValue(newVal);
+
+    appendOperation(sheet, position.row, [
+      CANCEL_PREFIX + operation.genitive, formatDate(localDateKey_(now)),
+      '~' + quantity, values[8] || '-', 'Скасування', '-'
+    ]);
+
+    logEvent_('tech', 'operation.cancelled', {
+      actor: session.name, device: payload.deviceId,
+      position: values[2] + ' · ' + values[4],
+      details: label + ' ' + values[9] + ' від ' + formatTimestamp_(values[0]) + ', автор ' + author
+    });
+
+    return { success: true, newStock: newVal, actor: session.name, warning: warning };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // ==========================================
@@ -1023,6 +1142,130 @@ function auditStockDrift() {
 }
 
 // ==========================================
+// 2.2a ПАРТІЇ Й ТЕРМІНИ ПРИДАТНОСТІ
+// ==========================================
+/**
+ * Чи є це справжнім номером партії. У журналі «0» — не партія, а заглушка:
+ * застосунок підставляв її, коли контролер лишав поле порожнім, і термін
+ * придатності в таких рядках дорівнює даті операції. Якщо вважати їх
+ * справжніми, звіт кричав би «прострочено» по восьми позиціях з одинадцяти.
+ */
+function isRealBatch_(batch) {
+  const value = String(batch || '').trim();
+  return value !== '' && ['0', '-', '—', '+'].indexOf(value) === -1;
+}
+
+/** «Партія: 26061121 (до 2026-12-30)» → { batch, expDate }. */
+function parseBatchLabel_(text) {
+  const value = String(text === null || text === undefined ? '' : text).trim();
+  if (!value || value === '-' || value === 'Залишок') return { batch: '', expDate: '' };
+
+  const withDate = value.match(/Партія:\s*(.*?)\s*\(до\s*(.*?)\)\s*$/);
+  if (withDate) {
+    return { batch: withDate[1].trim(), expDate: localDateKey_(withDate[2].trim()) };
+  }
+  return { batch: value.replace(/^Партія:\s*/, '').trim(), expDate: '' };
+}
+
+/**
+ * Які партії лишились на складі. Рахується з журналу, а не з клейкого рядка
+ * F..K: поповнення додає партію, видача знімає за FEFO (спершу та, що раніше
+ * добігає кінця), інвентаризація переставляє точку відліку.
+ *
+ * Раніше це рахував браузер, розбираючи склеєні рядки регуляркою. Тепер
+ * джерело те саме, що й для залишку, — журнал.
+ */
+function batchLedger_(log, sheetName, model, itemNo) {
+  const wantedSheet = String(sheetName).trim();
+  const wantedModel = String(model).trim();
+  const wantedNo = String(itemNo === null || itemNo === undefined ? '' : itemNo).trim();
+
+  const rank = function (lot) {
+    return lot.expDate ? new Date(lot.expDate).getTime() : 8640000000000000;
+  };
+  const takeFefo = function (lots, amount) {
+    let left = amount;
+    lots.slice().sort(function (a, b) { return rank(a) - rank(b); })
+      .forEach(function (lot) {
+        if (left <= 0.0001 || lot.qty <= 0) return;
+        const sub = Math.min(lot.qty, left);
+        lot.qty = round_(lot.qty - sub);
+        left = round_(left - sub);
+      });
+  };
+
+  let lots = [];
+  let started = false;
+
+  log.rows.forEach(function (entry) {
+    const values = entry.values;
+    if (String(values[2]).trim() !== wantedSheet) return;
+    if (String(values[4]).trim() !== wantedModel) return;
+    const entryNo = String(values[3] === null || values[3] === undefined ? '' : values[3]).trim();
+    if (wantedNo && entryNo && entryNo !== wantedNo) return;
+
+    const label = String(values[5]).trim();
+    if (label.indexOf(CANCEL_PREFIX) === 0) return;
+    if (label.indexOf(CANCELLED_SUFFIX) !== -1) return;
+
+    const quantity = toNumber(values[9]);
+    const parsed = parseBatchLabel_(values[8]);
+
+    if (label === OPERATIONS.registerInventory.label) {
+      // Інвентаризація — нова точка відліку. Якщо названо партію, залишок
+      // приписуємо їй; якщо ні, розкладати нема на що — тримаємо одну
+      // безіменну позицію, щоб цифри сходились.
+      started = true;
+      lots = quantity > 0 ? [{ batch: parsed.batch, expDate: parsed.expDate, qty: quantity }] : [];
+      return;
+    }
+    if (!started) return;
+
+    if (label === OPERATIONS.registerRestock.label) {
+      lots.push({ batch: parsed.batch, expDate: parsed.expDate, qty: quantity });
+    } else if (label === OPERATIONS.registerUsage.label) {
+      takeFefo(lots, quantity);
+    }
+  });
+
+  return lots.filter(function (lot) { return lot.qty > 0.0001; })
+             .sort(function (a, b) { return rank(a) - rank(b); });
+}
+
+/** Партія, яку варто витратити першою. Заглушки не пропонуємо. */
+function fefoSuggestion_(lots) {
+  const named = lots.filter(function (lot) { return isRealBatch_(lot.batch); });
+  return named.length ? { batch: named[0].batch, expDate: named[0].expDate }
+                      : { batch: '', expDate: '' };
+}
+
+/** Скільки на позиції лежить без вказаної партії — термін там не контролюється. */
+function unnamedQty_(lots) {
+  return round_(lots.filter(function (lot) { return !isRealBatch_(lot.batch); })
+                    .reduce(function (sum, lot) { return sum + lot.qty; }, 0));
+}
+
+/** Партії, що вже прострочені або добігають кінця протягом EXPIRY_WARN_DAYS. */
+function expiringLots_(lots, days) {
+  const edge = new Date();
+  edge.setDate(edge.getDate() + (days || EXPIRY_WARN_DAYS));
+  const edgeKey = Utilities.formatDate(edge, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  const today = today_();
+
+  return lots.filter(function (lot) {
+               return isRealBatch_(lot.batch) && lot.expDate && lot.expDate <= edgeKey;
+             })
+             .map(function (lot) {
+               return {
+                 batch: lot.batch, expDate: lot.expDate, qty: lot.qty,
+                 expired: lot.expDate < today,
+                 daysLeft: Math.round(
+                   (new Date(lot.expDate).getTime() - new Date(today).getTime()) / 86400000)
+               };
+             });
+}
+
+// ==========================================
 // 2.3 ЯК УПІЗНАЄТЬСЯ ПОЗИЦІЯ
 // ==========================================
 /**
@@ -1087,6 +1330,19 @@ function resolvePosition_(sheet, payload) {
     position: sheet.getName() + ' · ' + wantedModel
   });
   return { row: matches[0].row, itemNo: matches[0].itemNo, moved: true };
+}
+
+function operationByLabel_(label) {
+  const key = Object.keys(OPERATIONS).filter(function (name) {
+    return OPERATIONS[name].label === String(label).trim();
+  })[0];
+  return key ? OPERATIONS[key] : null;
+}
+
+function formatTimestamp_(value) {
+  const date = new Date(normalizeTimestamp_(value));
+  return isNaN(date.getTime()) ? String(value)
+    : Utilities.formatDate(date, Session.getScriptTimeZone(), 'dd.MM.yy HH:mm');
 }
 
 /** Дописує операцію в колонки F..K через кому з переносом рядка. */
@@ -1161,83 +1417,229 @@ function maybeNotifyThreshold_(item) {
   properties.setProperty('thresholdNotices', JSON.stringify(notices));
 }
 
-/** Повний план закупки. Викликається вручну — кнопкою або з меню. */
+/**
+ * Повний звіт. Шість блоків; порожні не друкуються.
+ * Викликається кнопкою в застосунку або щотижневим тригером.
+ */
 function sendPurchasePlan(isManual) {
   const targetEmails = getNotificationEmails();
   if (!targetEmails) return false;
 
+  const report = buildReport_();
+  if (!report.hasContent) {
+    if (!isManual) return false;
+    MailApp.sendEmail({
+      to: targetEmails,
+      subject: '✅ Миючі засоби: усе в нормі',
+      body: 'Замовляти нічого не треба, прострочених партій немає, ' +
+            'від\'ємних залишків немає. Звіт від ' + today_() + '.'
+    });
+    return true;
+  }
+
+  MailApp.sendEmail({
+    to: targetEmails,
+    subject: report.subject,
+    htmlBody: report.html
+  });
+  return true;
+}
+
+function buildReport_() {
+  const log = readLog_();
   const usage30 = collectUsage30_();
-  const rows = [];
+  const movement = collectMovement_(log, MOVEMENT_DAYS);
+
+  const deficit = [], expiring = [], unnamed = [], negative = [], excess = [], notCounted = [];
 
   forEachCatalogSheet(function (sheet) {
     readCatalog(sheet).forEach(function (row) {
       const model = String(row[1] || '').trim();
       if (!model) return;
 
+      const sheetName = sheet.getName();
+      const itemNo = String(row[0] === null || row[0] === undefined ? '' : row[0]).trim();
       const counted = String(row[4]).trim() !== '';
-      if (SKIP_UNCOUNTED_POSITIONS && !counted) return;
-
       const minStock = toNumber(row[3]);
-      const currentStock = toNumber(row[4]);
-      if (currentStock > minStock) return;
-
-      const key = sheet.getName() + '_' + model;
-      const used30 = usage30[key] || 0;
-      let recommend = Math.max(minStock - currentStock, used30);
-      if (recommend === 0) recommend = 1;
-
-      rows.push({
-        sheetName: sheet.getName(), model: model,
+      const stock = toNumber(row[4]);
+      const base = {
+        sheetName: sheetName, no: itemNo, model: model,
         equipment: String(row[2] || '').trim() || '—',
-        minStock: minStock, currentStock: currentStock, used30: used30,
-        recommend: recommend,
         storage: String(row[14] || '').trim() || '—',
         supplier: String(row[12] || '').trim() || '—',
-        phone: String(row[13] || '').trim() || '—'
+        phone: String(row[13] || '').trim() || '—',
+        minStock: minStock, stock: stock
+      };
+
+      if (!counted) {
+        // Порожня комірка — «не інвентаризовано», а не нуль. Такі позиції
+        // не потрапляють у план закупки: рахувати нема від чого.
+        notCounted.push(base);
+        return;
+      }
+
+      if (stock < 0) negative.push(base);
+      else if (stock <= minStock) {
+        const used30 = usage30[sheetName + '_' + model] || 0;
+        deficit.push(Object.assign({}, base, {
+          used30: used30,
+          recommend: Math.max(round_(minStock - stock), used30) || 1
+        }));
+      } else if (minStock > 0 && stock >= minStock * EXCESS_FACTOR) {
+        excess.push(Object.assign({}, base, { factor: round_(stock / minStock) }));
+      }
+
+      const lots = batchLedger_(log, sheetName, model, itemNo);
+      expiringLots_(lots, EXPIRY_WARN_DAYS).forEach(function (lot) {
+        expiring.push(Object.assign({}, base, lot));
       });
+      const withoutBatch = unnamedQty_(lots);
+      if (withoutBatch > 0.001) unnamed.push(Object.assign({}, base, { qty: withoutBatch }));
     });
   });
 
-  if (!rows.length) {
-    if (!isManual) return false;
-    MailApp.sendEmail({
-      to: targetEmails,
-      subject: '✅ Миючі засоби: план закупки порожній',
-      body: 'Усі засоби в межах норми (вище мінімальних залишків). Закупівля не потрібна.'
+  expiring.sort(function (a, b) { return a.expDate < b.expDate ? -1 : 1; });
+
+  let html = "<div style='font-family:sans-serif; color:#1e293b;'>" +
+    '<h2>Миючі та дезінфікуючі засоби — звіт від ' + today_() + '</h2>';
+
+  html += section_('🚨 Потрібно замовити (залишок ≤ мінімуму)',
+    ['Категорія', 'Назва', 'Призначення', '📍 Місце', 'Мін., кг', 'Залишок, кг',
+     'Витрата за 30 днів', 'Замовити, кг', 'Постачальник', 'Телефон'],
+    deficit.map(function (item) {
+      return [item.sheetName, '<b>' + item.model + '</b>', item.equipment, item.storage,
+String(item.minStock), red_(item.stock.toFixed(2)), item.used30.toFixed(2),
+              accent_(item.recommend.toFixed(2)), item.supplier, item.phone];
+    }));
+
+  html += section_('⏳ Партії, що прострочені або добігають кінця (' + EXPIRY_WARN_DAYS + ' днів)',
+    ['Категорія', 'Назва', 'Партія', 'Придатна до', 'Лишилось днів', 'Кількість, кг', '📍 Місце'],
+    expiring.map(function (item) {
+      return [item.sheetName, '<b>' + item.model + '</b>', item.batch, item.expDate,
+              item.expired ? red_('ПРОСТРОЧЕНО') : String(item.daysLeft),
+              item.qty.toFixed(2), item.storage];
+    }));
+
+  html += section_('❓ Запас без вказаної партії — термін придатності не контролюється',
+    ['Категорія', 'Назва', 'Кількість, кг', '📍 Місце'],
+    unnamed.map(function (item) {
+      return [item.sheetName, item.model, item.qty.toFixed(2), item.storage];
+    }));
+
+  html += section_('➖ Від\'ємний залишок — потрібна інвентаризація',
+    ['Категорія', 'Назва', 'Залишок, кг', '📍 Місце'],
+    negative.map(function (item) {
+      return [item.sheetName, '<b>' + item.model + '</b>', red_(item.stock.toFixed(2)), item.storage];
+    }));
+
+  html += section_('📦 Надлишок (у ' + EXCESS_FACTOR + '+ разів вище мінімуму)',
+    ['Категорія', 'Назва', 'Мін., кг', 'Залишок, кг', 'Разів вище'],
+    excess.map(function (item) {
+      return [item.sheetName, item.model, String(item.minStock),
+              item.stock.toFixed(2), '×' + item.factor];
+    }));
+
+  html += section_('🔄 Рух за ' + MOVEMENT_DAYS + ' днів',
+    ['Категорія', 'Назва', 'Видано, кг', 'Поповнено, кг', 'Операцій'],
+    movement.map(function (item) {
+      return [item.sheetName, item.model, item.used.toFixed(2),
+              item.added.toFixed(2), String(item.count)];
+    }));
+
+  html += section_('📋 Не інвентаризовано — залишок порожній',
+    ['Категорія', 'Назва', '📍 Місце'],
+    notCounted.map(function (item) { return [item.sheetName, item.model, item.storage]; }));
+
+  html += "<p style='font-size:12px; color:#64748b;'>Звіт згенеровано системою «Облік миючих засобів», " +
+          'версія ' + CODE_VERSION + '.</p></div>';
+
+  const alarms = [];
+  if (deficit.length) alarms.push('замовити ' + deficit.length);
+  if (expiring.length) alarms.push('термін ' + expiring.length);
+  if (negative.length) alarms.push('мінус ' + negative.length);
+
+  return {
+    hasContent: !!(deficit.length || expiring.length || negative.length ||
+                   unnamed.length || excess.length || movement.length || notCounted.length),
+    subject: alarms.length
+      ? '🚨 Миючі засоби: ' + alarms.join(', ')
+      : '📊 Миючі засоби: тижневий звіт',
+    html: html,
+    counts: {
+      deficit: deficit.length, expiring: expiring.length, unnamed: unnamed.length,
+      negative: negative.length, excess: excess.length, notCounted: notCounted.length
+    }
+  };
+}
+
+/** Один блок звіту. Порожній блок не друкується взагалі. */
+function section_(title, headers, rows) {
+  if (!rows.length) return '';
+  let html = '<h3>' + title + ' — ' + rows.length + '</h3>' +
+    "<table border='1' cellpadding='6' style='border-collapse:collapse; width:100%;" +
+    " border-color:#cbd5e1; font-size:13px;'><tr style='background:#f1f5f9;'>" +
+    headers.map(function (h) { return '<th>' + h + '</th>'; }).join('') + '</tr>';
+  rows.forEach(function (cells) {
+    html += '<tr>' + cells.map(function (cell) { return '<td>' + cell + '</td>'; }).join('') + '</tr>';
+  });
+  return html + '</table>';
+}
+
+function red_(value) { return "<span style='color:#b91c1c; font-weight:bold;'>" + value + '</span>'; }
+function accent_(value) { return "<span style='color:#0891b2; font-weight:bold;'>" + value + '</span>'; }
+
+/** Рух за N днів — за датою операції, а не за часом запису. */
+function collectMovement_(log, days) {
+  const from = new Date();
+  from.setDate(from.getDate() - days);
+  const fromKey = Utilities.formatDate(from, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  const map = {};
+
+  log.rows.forEach(function (entry) {
+    const values = entry.values;
+    const label = String(values[5]).trim();
+    if (label.indexOf(CANCEL_PREFIX) === 0) return;
+    if (label.indexOf(CANCELLED_SUFFIX) !== -1) return;
+    const dayKey = localDateKey_(values[1]) || localDateKey_(values[0]);
+    if (!dayKey || dayKey < fromKey) return;
+
+    const key = String(values[2]).trim() + '|' + String(values[4]).trim();
+    const item = map[key] || (map[key] = {
+      sheetName: String(values[2]).trim(), model: String(values[4]).trim(),
+      used: 0, added: 0, count: 0
     });
-    return true;
+    const quantity = toNumber(values[9]);
+    if (label === OPERATIONS.registerUsage.label) { item.used = round_(item.used + quantity); item.count++; }
+    else if (label === OPERATIONS.registerRestock.label) { item.added = round_(item.added + quantity); item.count++; }
+  });
+
+  return Object.keys(map).map(function (key) { return map[key]; })
+    .sort(function (a, b) { return b.used - a.used; });
+}
+
+// ==========================================
+// 3a. ЩОТИЖНЕВИЙ ЗВІТ
+// ==========================================
+/** Один раз виконати з редактора: створює тригер на понеділок, 08:00. */
+function setupWeeklyReport() {
+  ScriptApp.getProjectTriggers().forEach(function (trigger) {
+    if (trigger.getHandlerFunction() === 'weeklyReport') ScriptApp.deleteTrigger(trigger);
+  });
+  ScriptApp.newTrigger('weeklyReport').timeBased()
+    .onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(8).create();
+  const message = 'Тижневий звіт увімкнено: понеділок, 08:00.';
+  console.log(message);
+  return message;
+}
+
+function weeklyReport() {
+  try {
+    sendPurchasePlan(false);
+  } catch (error) {
+    logEvent_('error', 'report.weeklyFailed', { details: (error && error.message) || String(error) });
   }
-
-  let html = "<h2 style='color:#1e293b; font-family:sans-serif;'>" +
-    'План закупки миючих та дез. засобів (залишок ≤ мінімуму)</h2>' +
-    "<table border='1' cellpadding='8' style='border-collapse:collapse; font-family:sans-serif;" +
-    " width:100%; border-color:#cbd5e1;'>" +
-    "<tr style='background-color:#f1f5f9; color:#0f172a;'>" +
-    '<th>Категорія</th><th>Назва засобу</th><th>Де використовується</th><th>📍 Місце</th>' +
-    '<th>Мін. запас, кг</th>' + "<th style='color:#b91c1c;'>Залишок, кг</th>" +
-    '<th>Витрата за 30 днів</th><th>Рекомендовано замовити</th>' +
-    '<th>Постачальник</th><th>Телефон</th></tr>';
-
-  rows.forEach(function (item) {
-    html += '<tr>' +
-      td(item.sheetName) + td('<strong>' + item.model + '</strong>') + td(item.equipment) +
-      td(item.storage) + td(item.minStock, 'center') +
-      td('<b>' + item.currentStock.toFixed(2) + '</b>', 'center', 'color:#b91c1c;') +
-      td(item.used30.toFixed(2) + ' кг', 'center') +
-      td('<b>' + item.recommend.toFixed(2) + ' кг</b>', 'center', 'color:#0891b2;') +
-      td(item.supplier) + td(item.phone) + '</tr>';
-  });
-
-  html += '</table>' +
-    "<br><p style='font-size:12px; color:#64748b; font-family:sans-serif;'>" +
-    'Звіт згенеровано системою «Облік миючих засобів», версія ' + CODE_VERSION + '.</p>';
-
-  MailApp.sendEmail({
-    to: targetEmails,
-    subject: '🚨 УВАГА! План закупки миючих засобів (потрібне поповнення)',
-    htmlBody: html
-  });
-  return true;
+  // Прибирання старих подій живе на цьому ж тригері — окремий не потрібен
+  try { pruneEvents_(); } catch (error) { /* не критично */ }
 }
 
 /** Витрата кожної позиції за 30 днів — за ДАТОЮ ОПЕРАЦІЇ, не за часом запису. */
