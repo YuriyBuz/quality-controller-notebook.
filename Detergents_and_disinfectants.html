@@ -138,6 +138,17 @@
             </div>
         </header>
 
+        <div id="dbErrorBanner" class="hidden mt-6 mb-2 p-4 rounded-xl border-2 border-red-400 bg-red-50 text-red-900 shadow-sm">
+            <div class="flex items-start gap-3">
+                <svg class="w-6 h-6 flex-shrink-0 text-red-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                <div class="flex-1">
+                    <p class="font-bold text-base">НЕМАЄ ЗВ'ЯЗКУ З БАЗОЮ ДАНИХ</p>
+                    <p class="text-sm mt-1" id="dbErrorDetail"></p>
+                    <p class="text-xs mt-2 text-red-700" id="dbErrorCache"></p>
+                </div>
+            </div>
+        </div>
+
         <div class="mb-4 card p-4 rounded-xl shadow-sm border border-gray-200 mt-6">
             <label for="employeeSelect" class="block text-sm font-bold mb-2 text-gray-700">Контролер:</label>
             <select id="employeeSelect" class="block w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 font-semibold text-lg text-gray-800">
@@ -279,6 +290,14 @@
                         <label class="block text-sm font-bold mb-1 text-gray-700">Дата операції:</label>
                         <input type="date" id="useDate" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 text-base shadow-sm">
                     </div>
+
+                    <div id="storageGroup">
+                        <label class="block text-sm font-bold mb-1 text-gray-700">📍 Місце зберігання:</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="useStorage" placeholder="Наприклад: Склад хімії, стелаж 2" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 text-base shadow-sm">
+                            <button type="button" id="saveStorageBtn" class="bg-orange-100 text-orange-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-orange-200 transition-colors shadow-sm whitespace-nowrap">Зберегти</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="mt-8 flex gap-3">
@@ -313,6 +332,164 @@
         
         const OFFLINE_KEY = 'sanitationOfflineQueueV2';
         const CACHE_KEY = 'sanitationInventoryCacheV2';
+        const SYNC_KEY = 'sanitationLastSyncV2';
+        const DEVICE_KEY = 'sanitationDeviceIdV1';
+        const EVENT_KEY = 'sanitationEventsV1';
+        const APP_VERSION = 'qc-detergents-app-2026-08-31';
+
+        // Читання каталогу довше за запис, звіт ще й формується та надсилається.
+        // Без обмеження часу застосунок вічно висить на «Завантаження…»:
+        // Wi-Fi у цеху вміє прийняти з'єднання і не відповісти нічого.
+        const POST_TIMEOUT_MS = 12000;
+        const READ_TIMEOUT_MS = 20000;
+        const REPORT_TIMEOUT_MS = 60000;
+        const EVENT_CAP = 60;
+        const EVENT_BATCH = 20;
+
+        const getDeviceId = () => {
+            let id = localStorage.getItem(DEVICE_KEY);
+            if (!id) {
+                id = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+                localStorage.setItem(DEVICE_KEY, id);
+            }
+            return id;
+        };
+
+        // Події буферяться на пристрої й вирушають пачкою — щоб діагностика
+        // не перетворилась на запит по кожному руху пальця.
+        const readEvents = () => {
+            try {
+                const stored = JSON.parse(localStorage.getItem(EVENT_KEY) || '[]');
+                return Array.isArray(stored) ? stored : [];
+            } catch (e) { return []; }
+        };
+
+        const logEvent = (kind, event, details, position) => {
+            try {
+                const list = readEvents();
+                list.push({
+                    kind: kind, event: event,
+                    details: String(details === undefined || details === null ? '' : details).slice(0, 500),
+                    position: position || '',
+                    actor: (document.getElementById('employeeSelect') || {}).value || '',
+                    timestamp: new Date().toISOString(),
+                    version: APP_VERSION
+                });
+                localStorage.setItem(EVENT_KEY, JSON.stringify(list.slice(-EVENT_CAP)));
+            } catch (e) { /* журнал подій ніколи не має ламати роботу */ }
+        };
+
+        // --- Єдина точка звернення до Google Apps Script ---
+        // ВАЖЛИВО: НЕ використовуємо mode:'no-cors'. У режимі no-cors браузер
+        // повертає "непрозору" відповідь навіть коли сервер віддав 404 / сторінку
+        // логіну / помилку — через це додаток 9 днів показував "Успішно списано",
+        // хоча в таблицю нічого не писалось. Content-Type text/plain робить запит
+        // "простим" (без preflight), а Apps Script усе одно читає e.postData.contents.
+        const callServer = async (url, options = {}, timeoutMs) => {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs || READ_TIMEOUT_MS);
+            let response;
+            try {
+                response = await fetch(url, Object.assign({ redirect: 'follow', signal: controller.signal }, options));
+            } catch (e) {
+                if (e && e.name === 'AbortError') {
+                    throw new Error('Сервер не відповів за ' + Math.round((timeoutMs || READ_TIMEOUT_MS) / 1000) +
+                                    ' с. Зв\'язок є, але відповіді немає.');
+                }
+                throw e;
+            } finally {
+                clearTimeout(timer);
+            }
+            if (!response.ok) throw new Error('HTTP ' + response.status + ' від Google Apps Script');
+            const text = await response.text();
+            if (/^\s*</.test(text)) {
+                throw new Error("Замість даних повернулась HTML-сторінка Google (найчастіше: застаріла адреса розгортання /exec, або доступ до веб-додатку не 'Усі / Anyone').");
+            }
+            let data;
+            try { data = JSON.parse(text); }
+            catch (e) { throw new Error('Некоректна відповідь сервера: ' + text.slice(0, 160)); }
+            if (data && data.success === false) {
+                const failure = new Error(data.error || 'Скрипт повернув помилку');
+                failure.code = data.code || 'ERROR';
+                failure.data = data;
+                throw failure;
+            }
+            return data;
+        };
+
+        // Ці відповіді сервера повторювати немає сенсу — потрібне рішення людини.
+        // Решта (таймаут, обрив, BUSY) стає в чергу і піде повторно.
+        const PERMANENT_CODES = ['FORBIDDEN', 'BAD_TARGET', 'NOT_COUNTED', 'AMBIGUOUS',
+                                 'BAD_QUANTITY', 'UNKNOWN_ACTION', 'NO_ACTOR', 'NO_RECIPIENTS',
+                                 'OVERDRAW'];
+
+        const postToServer = (payload, timeoutMs) => callServer(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+        }, timeoutMs || POST_TIMEOUT_MS);
+
+        // Відправка накопичених подій. Мовчазна: діагностика не має права
+        // заважати роботі й не показує користувачу нічого.
+        let eventsSending = false;
+        const flushEvents = async () => {
+            if (eventsSending || !navigator.onLine) return;
+            const list = readEvents();
+            if (!list.length) return;
+            eventsSending = true;
+            const batch = list.slice(0, EVENT_BATCH);
+            try {
+                const result = await postToServer({
+                    action: 'logEvents', entries: batch, deviceId: getDeviceId()
+                });
+                if (result && result.success && !result.throttled) {
+                    const rest = readEvents().filter(item =>
+                        !batch.some(sent => sent.timestamp === item.timestamp && sent.event === item.event));
+                    localStorage.setItem(EVENT_KEY, JSON.stringify(rest));
+                }
+            } catch (e) {
+                // Немає зв'язку — події почекають у буфері
+            } finally {
+                eventsSending = false;
+            }
+        };
+
+        // Колонка "Дата операції" зберігається в таблиці як справжня ДАТА, тому
+        // JSON віддає її в UTC ("2026-08-21" -> "2026-08-20T21:00:00.000Z").
+        // Приводимо до локального ДД.ММ.РРРР, інакше день зміщується на -1.
+        const toLocalDayKey = (v) => {
+            if (!v) return '';
+            const s = String(v);
+            if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+                const d = new Date(s);
+                if (!isNaN(d)) return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            }
+            const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+            const m2 = s.match(/^(\d{2})\.(\d{2})\.(\d{2,4})/);
+            if (m2) return `${m2[3].length === 2 ? '20' + m2[3] : m2[3]}-${m2[2]}-${m2[1]}`;
+            return s;
+        };
+        const formatDayForUi = (v) => {
+            const k = toLocalDayKey(v);
+            const m = k.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            return m ? `${m[3]}.${m[2]}.${m[1]}` : (v || '');
+        };
+        const todayKey = () => {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        };
+
+        const showDbError = (msg) => {
+            const banner = document.getElementById('dbErrorBanner');
+            document.getElementById('dbErrorDetail').textContent = msg;
+            const last = localStorage.getItem(SYNC_KEY);
+            document.getElementById('dbErrorCache').textContent = last
+                ? 'Показано збережену копію. Останній успішний зв\'язок: ' + new Date(last).toLocaleString('uk-UA') + '. Нові записи НЕ потрапляють у таблицю — вони стають у чергу.'
+                : 'Збереженої копії немає.';
+            banner.classList.remove('hidden');
+        };
+        const hideDbError = () => document.getElementById('dbErrorBanner').classList.add('hidden');
 
         const showCustomDialog = (message, isConfirm = false) => {
             return new Promise((resolve) => {
@@ -427,24 +604,25 @@
             document.getElementById('statusText').textContent = 'Синхронізація...';
 
             const newQueue = [];
+            let lastError = null;
             for (const item of queue) {
+                if (lastError) { newQueue.push(item); continue; }
                 try {
-                    await fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(item)
-                    });
+                    await postToServer(item);
                 } catch (e) {
+                    lastError = e;
                     newQueue.push(item);
                 }
             }
 
             localStorage.setItem(OFFLINE_KEY, JSON.stringify(newQueue));
             updateNetworkStatus();
-            
+
             if (newQueue.length === 0) {
+                hideDbError();
                 fetchData(true);
+            } else if (lastError) {
+                showDbError('Не вдалося відправити чергу: ' + lastError.message);
             }
         };
 
@@ -606,9 +784,8 @@
                     return;
                 }
 
-                const response = await fetch(GOOGLE_SCRIPT_URL + "?action=getInventory");
-                const data = await response.json();
-                
+                const data = await callServer(GOOGLE_SCRIPT_URL + "?action=getInventory", {}, READ_TIMEOUT_MS);
+
                 if (data && data.success) {
                     allData = data.categories.filter(cat => cat.name !== "Користувачі");
                     
@@ -619,12 +796,16 @@
                         controllers: data.controllers || [],
                         employees: data.employees || []
                     }));
+                    localStorage.setItem(SYNC_KEY, new Date().toISOString());
+                    hideDbError();
                     renderState();
                 } else {
                     throw new Error("Помилка формату даних");
                 }
             } catch (error) {
                 console.error("Fetch error:", error);
+                logEvent('error', 'catalog.loadFailed', error.message);
+                if (navigator.onLine) showDbError(error.message);
                 const cached = localStorage.getItem(CACHE_KEY);
                 const cachedUsers = localStorage.getItem(CACHE_KEY + '_users');
                 
@@ -666,17 +847,18 @@
                     throw new Error("Offline");
                 }
                 
-                const response = await fetch(GOOGLE_SCRIPT_URL + "?action=getHistory");
-                const data = await response.json();
-                
+                const data = await callServer(GOOGLE_SCRIPT_URL + "?action=getHistory", {}, READ_TIMEOUT_MS);
+
                 if (data && data.success) {
                     historyData = data.history;
+                    hideDbError();
                 } else {
                     throw new Error("Помилка завантаження історії");
                 }
             } catch (error) {
                 console.warn("Помилка або офлайн, показуємо порожній список", error);
                 historyData = [];
+                if (navigator.onLine) showDbError('Історія: ' + error.message);
             } finally {
                 loader.classList.add('hidden');
                 appState.view = 'history';
@@ -686,8 +868,10 @@
 
         const forceSendReport = async () => {
             const pwd = await showPasswordDialog();
-            if (pwd === null) return; 
-            if (pwd !== '5588') { customAlert("❌ Невірний пароль!"); return; }
+            if (pwd === null) return;
+            // Пароль більше не звіряється тут: цей файл лежить у відкритому
+            // репозиторії на GitHub Pages, тож будь-хто міг прочитати його
+            // в коді сторінки. Тепер перевірка на сервері.
 
             const confirm = await showCustomDialog("Сформувати та відправити актуальний план закупки засобів на email?", true);
             if (!confirm) return;
@@ -704,13 +888,14 @@
             try {
                 if (!navigator.onLine) throw new Error("Offline");
                 
-                const response = await fetch(GOOGLE_SCRIPT_URL + "?action=forceReport");
-                const data = await response.json();
+                const data = await callServer(
+                    GOOGLE_SCRIPT_URL + "?action=forceReport&password=" + encodeURIComponent(pwd),
+                    {}, REPORT_TIMEOUT_MS);
                 if (data && data.success) {
                     customAlert("✅ План закупки успішно відправлено!");
                 }
             } catch (error) {
-                customAlert("❌ Помилка відправки. Перевірте зв'язок з інтернетом.");
+                customAlert("❌ Помилка відправки:\n" + error.message);
             } finally {
                 loader.classList.add('hidden');
                 renderState();
@@ -843,6 +1028,7 @@
                     <div class="flex justify-between items-end mt-auto pt-2 border-t border-gray-200 border-opacity-50">
                         <div class="text-xs text-gray-500">
                             Мін. запас: <span class="font-semibold text-gray-700">${item.minStock}</span>
+                            ${item.storage ? `<br>📍 <span class="font-semibold text-gray-700">${item.storage}</span>` : ''}
                         </div>
                         <div class="text-sm text-right">
                             Залишок: <span class="font-bold text-lg ${isLowStock ? 'text-red-600' : 'text-gray-900'}">${item.currentStock} кг.</span>
@@ -863,10 +1049,10 @@
             if (appState.filterHistoryToday) {
                 titleEl.textContent = "Мої дії за сьогодні";
                 const controller = document.getElementById('employeeSelect').value;
-                const todayStr = new Date().toISOString().split('T')[0]; 
-                
+                const todayStr = todayKey();
+
                 filteredHistory = historyData.filter(record => {
-                    return record.controller === controller && record.date.includes(todayStr);
+                    return record.controller === controller && toLocalDayKey(record.date) === todayStr;
                 });
             } else {
                 titleEl.textContent = "Історія операцій";
@@ -898,7 +1084,7 @@
                 card.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
                         <div>
-                            <span class="text-xs font-bold text-gray-500">${record.date} ${record.time || ''}</span>
+                            <span class="text-xs font-bold text-gray-500">${formatDayForUi(record.date)} ${record.time || ''}</span>
                             <span class="text-xs ml-2 font-bold px-1.5 py-0.5 rounded ${actionTitle === 'Видача' ? 'bg-orange-100 text-orange-800' : (actionTitle === 'Поповнення' ? 'bg-blue-100 text-blue-800' : 'bg-indigo-100 text-indigo-800')}">${actionTitle}</span>
                             <h4 class="font-bold text-gray-900 mt-1">${record.model}</h4>
                         </div>
@@ -1016,7 +1202,7 @@
             document.getElementById('useQuantity').value = 1;
             document.getElementById('useUsedBy').value = "";
             document.getElementById('useLocation').value = "";
-            document.getElementById('useDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('useDate').value = todayKey();
             setTab(currentOperation); 
         });
 
@@ -1040,8 +1226,9 @@
             document.getElementById('useQuantity').value = 1;
             document.getElementById('useUsedBy').value = ""; 
             document.getElementById('useLocation').value = ""; 
-            document.getElementById('useDate').value = new Date().toISOString().split('T')[0];
-            
+            document.getElementById('useDate').value = todayKey();
+            document.getElementById('useStorage').value = item.storage || "";
+
             setTab('usage'); 
 
             modal.classList.remove('hidden');
@@ -1058,6 +1245,47 @@
                 currentSelectedItem = null;
             }, 300);
         };
+
+        document.getElementById('saveStorageBtn').addEventListener('click', async () => {
+            if (!currentSelectedItem) return;
+            const controller = document.getElementById('employeeSelect').value;
+            const storage = document.getElementById('useStorage').value.trim();
+            const btn = document.getElementById('saveStorageBtn');
+            const original = btn.textContent;
+            btn.textContent = '…';
+            btn.disabled = true;
+            try {
+                const result = await postToServer({
+                    action: 'setStorage',
+                    sheetName: currentSelectedItem.sheetName,
+                    row: currentSelectedItem.row,
+                    no: currentSelectedItem.no,
+                    model: currentSelectedItem.model,
+                    storage: storage,
+                    controller: controller,
+                    deviceId: getDeviceId(),
+                    appVersion: APP_VERSION
+                });
+                currentSelectedItem.storage = storage;
+                const categoryData = allData.find(c => c.name === currentSelectedItem.sheetName);
+                if (categoryData) {
+                    const itemInArray = categoryData.items.find(i => i.model === currentSelectedItem.model
+                                                                 && i.no === currentSelectedItem.no);
+                    if (itemInArray) itemInArray.storage = storage;
+                }
+                localStorage.setItem(CACHE_KEY, JSON.stringify(allData));
+                hideDbError();
+                renderState();
+                customAlert(result && result.unchanged ? "Місце не змінилось." : "📍 Місце зберігання збережено.");
+            } catch (e) {
+                logEvent('error', 'storage.failed', (e.code || 'ERROR') + ': ' + e.message,
+                         currentSelectedItem.sheetName + ' · ' + currentSelectedItem.model);
+                customAlert("❌ Не вдалося зберегти місце:\n" + e.message);
+            } finally {
+                btn.textContent = original;
+                btn.disabled = false;
+            }
+        });
 
         document.getElementById('closeUsageModalBtn').addEventListener('click', closeUsageModal);
         modal.addEventListener('click', (e) => { if (e.target === modal) closeUsageModal(); });
@@ -1081,9 +1309,13 @@
             }
 
             const currentStock = parseFloat(currentSelectedItem.currentStock);
+            let overdrawReason = "";
             if (currentOperation === 'usage' && quantity > currentStock) {
                 const confirmOver = await showCustomDialog(`Увага!\nВи списуєте ${quantity} кг., але в залишку лише ${currentStock} кг. Продовжити?`, true);
                 if (!confirmOver) return;
+                // Сервер приймає списання в мінус лише з поясненням — інакше
+                // повертає OVERDRAW. Підтвердження контролера і є поясненням.
+                overdrawReason = "підтверджено контролером у застосунку";
             }
 
             if (currentOperation === 'inventory') {
@@ -1098,15 +1330,21 @@
             const payload = {
                 action: actionName,
                 sheetName: currentSelectedItem.sheetName,
+                // row лишається підказкою, але позицію визначає пара «№ + назва»:
+                // рядки в таблицю вставляли, і номери позицій з'їхали
                 row: currentSelectedItem.row,
+                no: currentSelectedItem.no,
                 model: currentSelectedItem.model,
+                deviceId: getDeviceId(),
+                appVersion: APP_VERSION,
                 controller: controller, 
                 usedBy: currentOperation === 'usage' ? usedBy : "-", 
                 quantity: quantity,
                 location: currentOperation === 'usage' ? location : "-",
                 batch: batch,
                 expDate: expDate,
-                date: date, 
+                date: date,
+                overdrawReason: overdrawReason,
                 timestamp: new Date().toISOString()
             };
 
@@ -1120,37 +1358,71 @@
                     throw new Error("Offline");
                 }
 
-                await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                showSuccessAndClose();
+                let result;
+                try {
+                    result = await postToServer(payload);
+                } catch (first) {
+                    // Сервер порахував залишок із журналу і побачив, що його не
+                    // вистачає. Питаємо підтвердження і повторюємо з причиною —
+                    // щоб перевитрата лишила слід, а не пройшла мовчки.
+                    if (first.code !== 'OVERDRAW') throw first;
+                    const confirmOver = await showCustomDialog(first.message + "\nСписати попри це?", true);
+                    if (!confirmOver) { closeUsageModal(); return; }
+                    payload.overdrawReason = "підтверджено контролером у застосунку";
+                    result = await postToServer(payload);
+                }
+
+                localStorage.setItem(SYNC_KEY, new Date().toISOString());
+                hideDbError();
+                logEvent('tech', 'operation.saved', payload.action + ' ' + payload.quantity,
+                         payload.sheetName + ' · ' + payload.model);
+                showSuccessAndClose(false, result);
+                flushEvents();
             } catch (e) {
-                saveToOfflineQueue(payload);
-                showSuccessAndClose(true);
+                logEvent('error', 'operation.failed', (e.code || 'ERROR') + ': ' + e.message,
+                         payload.sheetName + ' · ' + payload.model);
+
+                if (navigator.onLine && PERMANENT_CODES.indexOf(e.code) !== -1) {
+                    // Повторювати немає сенсу: у чергу не ставимо, щоб запис
+                    // не висів там вічно й не списався потім несподівано
+                    closeUsageModal();
+                    await customAlert("❌ ЗАПИС НЕ ПРИЙНЯТО\n\n" + e.message);
+                } else if (navigator.onLine) {
+                    saveToOfflineQueue(payload);
+                    showDbError(e.message);
+                    closeUsageModal();
+                    await customAlert("❌ ЗАПИС НЕ ПОТРАПИВ У ТАБЛИЦЮ!\n\n" + e.message + "\n\nОперацію збережено в черзі на цьому пристрої — вона відправиться, щойно зв'язок відновлять.");
+                } else {
+                    saveToOfflineQueue(payload);
+                    showSuccessAndClose(true);
+                }
             } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
         });
 
-        const showSuccessAndClose = (isOffline = false) => {
+        const showSuccessAndClose = (isOffline = false, result = null) => {
             if (currentSelectedItem) {
                 const qty = parseFloat(document.getElementById('useQuantity').value);
                 const categoryData = allData.find(c => c.name === currentSelectedItem.sheetName);
                 if (categoryData) {
-                    const itemInArray = categoryData.items.find(i => i.row === currentSelectedItem.row);
+                    const itemInArray = categoryData.items.find(i => i.model === currentSelectedItem.model
+                                                                 && i.no === currentSelectedItem.no);
                     if (itemInArray) {
-                        let currentStockNum = parseFloat(itemInArray.currentStock);
-                        if (currentOperation === 'usage') {
-                            itemInArray.currentStock = (currentStockNum - qty).toFixed(2);
-                        } else if (currentOperation === 'restock') {
-                            itemInArray.currentStock = (currentStockNum + qty).toFixed(2);
-                        } else if (currentOperation === 'inventory') {
-                            itemInArray.currentStock = qty.toFixed(2);
+                        // Залишок рахує сервер із журналу — він і є правильним.
+                        // Локальна арифметика лишається тільки для офлайну.
+                        if (result && typeof result.newStock === 'number') {
+                            itemInArray.currentStock = result.newStock;
+                        } else {
+                            let currentStockNum = parseFloat(itemInArray.currentStock);
+                            if (currentOperation === 'usage') {
+                                itemInArray.currentStock = (currentStockNum - qty).toFixed(2);
+                            } else if (currentOperation === 'restock') {
+                                itemInArray.currentStock = (currentStockNum + qty).toFixed(2);
+                            } else if (currentOperation === 'inventory') {
+                                itemInArray.currentStock = qty.toFixed(2);
+                            }
                         }
                     }
                 }
@@ -1189,11 +1461,12 @@
                 localStorage.setItem('selectedMechanic_Sanitation', e.target.value);
             });
 
-            window.addEventListener('online', () => { updateNetworkStatus(); processOfflineQueue(); });
+            logEvent('tech', 'app.opened', 'версія ' + APP_VERSION);
+            window.addEventListener('online', () => { updateNetworkStatus(); processOfflineQueue(); flushEvents(); });
             window.addEventListener('offline', updateNetworkStatus);
             document.getElementById('networkStatusBtn').addEventListener('click', processOfflineQueue);
 
-            fetchData();
+            fetchData().then(flushEvents);
         });
     </script>
 </body>
