@@ -16,7 +16,7 @@
  * і в аркуші «Журнал_подій», а застосунок показує її текст на екрані.
  */
 
-const CODE_VERSION = 'qc-detergents-2026-08-31-auth';
+const CODE_VERSION = 'qc-detergents-2026-09-01-report';
 
 // ==========================================
 // 0. АВТЕНТИФІКАЦІЯ ТА ПРАВА
@@ -482,9 +482,22 @@ function doGet(e) {
           .getSheetByName(EMPLOYEES_SHEET_NAME) ? 'ok' : 'аркуш не знайдено';
       } catch (error) { directory = 'немає доступу'; }
 
+      // Напис версії можна забути підняти — так і сталось між версіями
+      // «auth» і «report». Тому ping показує ще й перелік можливостей,
+      // зчитаний із самого коду: він застаріти не може.
+      const features = [];
+      if (typeof loginWithPin_      === 'function') features.push('login');
+      if (typeof setStorage_        === 'function') features.push('storage');
+      if (typeof logClientEvents_   === 'function') features.push('events');
+      if (typeof batchLedger_       === 'function') features.push('batches');
+      if (typeof buildReport_       === 'function') features.push('report');
+      if (typeof cancelOperation_   === 'function') features.push('cancel');
+      if (typeof setupWeeklyReport  === 'function') features.push('weekly');
+
       return json({
         success: true,
         version: CODE_VERSION,
+        features: features.join(','),
         spreadsheet: ss ? ss.getName() : '(немає)',
         canWrite: writable,
         auth: typeof loginWithPin_ === 'function',
@@ -1550,8 +1563,11 @@ String(item.minStock), red_(item.stock.toFixed(2)), item.used30.toFixed(2),
     ['Категорія', 'Назва', '📍 Місце'],
     notCounted.map(function (item) { return [item.sheetName, item.model, item.storage]; }));
 
-  html += "<p style='font-size:12px; color:#64748b;'>Звіт згенеровано системою «Облік миючих засобів», " +
-          'версія ' + CODE_VERSION + '.</p></div>';
+  const source = SpreadsheetApp.getActiveSpreadsheet();
+  html += "<p style='font-size:12px; color:#64748b;'>Джерело: <b>" +
+          (source ? source.getName() : '—') + '</b> · версія ' + CODE_VERSION +
+          '.<br>Якщо назва таблиці не та, якої ви очікували — лист прийшов із копії, ' +
+          'і тригер у ній варто прибрати.</p></div>';
 
   const alarms = [];
   if (deficit.length) alarms.push('замовити ' + deficit.length);
