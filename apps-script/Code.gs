@@ -16,7 +16,331 @@
  * і в аркуші «Журнал_подій», а застосунок показує її текст на екрані.
  */
 
-const CODE_VERSION = 'qc-detergents-2026-08-31-reliability';
+const CODE_VERSION = 'qc-detergents-2026-08-31-auth';
+
+// ==========================================
+// 0. АВТЕНТИФІКАЦІЯ ТА ПРАВА
+// ==========================================
+/**
+ * Джерело: аркуш «_REF_Employees» таблиці gw-ref (окремий файл) — той самий
+ * довідник, що й в «Обліку ЗІП».
+ *   A emp_id | B ПІБ повне | C ПІБ короткий | E pos_id | H статус
+ *   O email  | Q PIN       | R ролі додатково | S ролі відібрані
+ * Ролі посади — «_REF_Positions», колонка D
+ * (POS-012 Контролер якості → qc.use, POS-013 Технолог → qc.admin qc.use).
+ *
+ * У клієнт НІКОЛИ не потрапляють: PIN, список співробітників, чужі ролі.
+ */
+const EMPLOYEES_SPREADSHEET_ID = '1UhdO9ALcSXk8fgWhUnMiluO4Aao6R4EP6iN4Ie__rY8';
+const EMPLOYEES_SHEET_NAME = '_REF_Employees';
+const POSITIONS_SHEET_NAME = '_REF_Positions';
+
+// Індекси колонок (0-based) в «_REF_Employees»
+const EMP = { id: 0, fullName: 1, shortName: 2, posId: 4, status: 7, email: 14,
+              pin: 16, extraRoles: 17, finalRoles: 18 };
+const EMP_WIDTH = 19;                 // A..S
+const POS = { id: 0, roles: 3 };      // A..D
+
+const SESSION_TTL_MINUTES = 12 * 60;  // одна зміна
+const MAX_PIN_ATTEMPTS = 5;
+const ATTEMPT_WINDOW_SECONDS = 300;
+
+/**
+ * Роль → дозволені дії. Єдине джерело правди: цю ж таблицю використовує
+ * і сервер (перед кожним записом), і клієнт (щоб ховати недоступні кнопки).
+ *
+ * У цьому застосунку всі три ролі поки однакові: контролери самі роблять
+ * і видачу, і поповнення, і інвентаризацію — так вирішено при постановці.
+ * Розійдуться вони, коли з'явиться скасування операцій: qc.admin зможе
+ * скасовувати чужі, qc.use — лише власні.
+ */
+const ROLE_PERMISSIONS = {
+  'qc.use':   ['registerUsage', 'registerRestock', 'registerInventory', 'setStorage', 'forceReport'],
+  'qc.admin': ['registerUsage', 'registerRestock', 'registerInventory', 'setStorage', 'forceReport'],
+  'admin':    ['registerUsage', 'registerRestock', 'registerInventory', 'setStorage', 'forceReport']
+};
+
+function loginWithPin_(pin, deviceId) {
+  const cache = CacheService.getScriptCache();
+  const attemptsKey = 'pin_attempts_' + (deviceId || 'unknown');
+  const attempts = Number(cache.get(attemptsKey) || 0);
+  if (attempts >= MAX_PIN_ATTEMPTS) {
+    logEvent_('access', 'login.throttled', { device: deviceId,
+      details: 'спроб поспіль: ' + attempts });
+    return loginFail_('THROTTLED', 'Забагато спроб. Спробуйте за 5 хвилин.');
+  }
+
+  // PIN читається як текст: у довіднику є значення з провідним нулем і
+  // нецифрові (наприклад «30VIKA08»). Числове поле зіпсувало б їх.
+  const value = String(pin === null || pin === undefined ? '' : pin).trim();
+  if (!value) return loginFail_('BAD_PIN', 'Введіть PIN');
+
+  const matches = readEmployees_().filter(function (employee) {
+    return employee.eligible && employee.pin === value;
+  });
+
+  if (matches.length === 0) {
+    cache.put(attemptsKey, String(attempts + 1), ATTEMPT_WINDOW_SECONDS);
+    Utilities.sleep(400);   // сповільнює перебір
+    // Сам PIN не пишемо ніде — лише його довжину і номер спроби
+    logEvent_('access', 'login.badPin', { device: deviceId,
+      details: 'довжина PIN: ' + value.length + ', спроба ' + (attempts + 1) });
+    return loginFail_('BAD_PIN', 'Невірний PIN');
+  }
+  if (matches.length > 1) {
+    logEvent_('access', 'login.pinNotUnique', { device: deviceId,
+      details: 'збіг у ' + matches.length + ' співробітників' });
+    // Не вгадуємо, хто саме — інакше операція запишеться не на ту людину
+    return loginFail_('PIN_NOT_UNIQUE',
+      'Цей PIN закріплений за кількома співробітниками. Зверніться до адміністратора, ' +
+      'щоб вам призначили власний PIN.');
+  }
+
+  cache.remove(attemptsKey);
+  const employee = matches[0];
+
+  // Збіг шукається лише серед тих, хто має роль у цьому застосунку, тож людина
+  // зі стартовим PIN усе одно ввійде — решта власників того самого PIN просто
+  // не мають доступу сюди. Але PIN тоді не є секретом: його знають усі, кому
+  // його видали за замовчуванням, і будь-хто з них може ввійти під цим ім'ям.
+  // Не блокуємо (сьогодні ім'я взагалі обирається зі списку без пароля),
+  // але лишаємо слід і кажемо про це вголос.
+  const shared = countSharedPin_(employee);
+  if (shared > 0) {
+    logEvent_('access', 'login.sharedPin', { actor: employee.name, device: deviceId,
+      details: 'той самий PIN ще в ' + shared + ' співробітників довідника' });
+  }
+
+  logEvent_('access', 'login.ok', { actor: employee.name, device: deviceId,
+    details: 'ролі: ' + employee.roles.join(', ') });
+  const expiresAt = Date.now() + SESSION_TTL_MINUTES * 60 * 1000;
+  return {
+    success: true,
+    name: employee.name,
+    shortName: employee.shortName,
+    roles: employee.roles,
+    permissions: employee.permissions,
+    token: issueToken_(employee, deviceId, expiresAt),
+    expiresAt: expiresAt,
+    warning: shared > 0
+      ? 'Ваш PIN збігається з PIN ще ' + shared + ' співробітників у довіднику. ' +
+        'Він не є особистим — попросіть призначити вам власний.'
+      : ''
+  };
+}
+
+/** Скільки ІНШИХ співробітників довідника мають той самий PIN (будь-яка роль і статус). */
+function countSharedPin_(employee) {
+  if (!employee.pin) return 0;
+  return readEmployees_().filter(function (other) {
+    return other.id !== employee.id && other.pin === employee.pin;
+  }).length;
+}
+
+// --- Токен сесії: підписаний, без зберігання стану на сервері ---
+function issueToken_(employee, deviceId, expiresAt) {
+  const body = Utilities.base64EncodeWebSafe(JSON.stringify({
+    id: employee.id, e: expiresAt, d: deviceId || ''
+  }));
+  return body + '.' + sign_(body);
+}
+
+function sign_(body) {
+  return Utilities.base64EncodeWebSafe(
+    Utilities.computeHmacSha256Signature(body, getAuthSecret_()));
+}
+
+function getAuthSecret_() {
+  const properties = PropertiesService.getScriptProperties();
+  let secret = properties.getProperty('AUTH_SECRET');
+  if (!secret) {
+    secret = Utilities.getUuid() + Utilities.getUuid();
+    properties.setProperty('AUTH_SECRET', secret);
+  }
+  return secret;
+}
+
+/**
+ * Перевіряє токен і ЗАНОВО читає права з довідника: звільнення або зміна
+ * ролі діють негайно, не чекаючи закінчення сесії.
+ */
+function verifySession_(token, deviceId) {
+  if (!token || String(token).indexOf('.') === -1) return null;
+
+  const parts = String(token).split('.');
+  if (sign_(parts[0]) !== parts[1]) return null;
+
+  let payload;
+  try {
+    payload = JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[0])).getDataAsString());
+  } catch (error) {
+    return null;
+  }
+  if (!payload.e || payload.e < Date.now()) return null;
+  // Токен виданий конкретному пристрою; відсутність ідентифікатора вважаємо
+  // розбіжністю, інакше прив'язку можна обійти, просто не надіславши параметр
+  if (payload.d && payload.d !== deviceId) return null;
+
+  const employee = findEmployee_(payload.id);
+  if (!employee || !employee.eligible) return null;
+
+  return {
+    id: employee.id, name: employee.name, shortName: employee.shortName,
+    roles: employee.roles, permissions: employee.permissions, expiresAt: payload.e
+  };
+}
+
+/** Перевірка прав перед КОЖНИМ записом — незалежно від того, що показує інтерфейс. */
+function requirePermission_(request, action) {
+  const session = requireSession_(request);
+  if (session.permissions.indexOf(action) === -1) {
+    logEvent_('access', 'access.denied', { actor: session.name, device: request.deviceId,
+      details: 'дія: ' + action + ', ролі: ' + (session.roles || []).join(', ') });
+    throw fail_('FORBIDDEN', 'Ваша роль не дозволяє цю дію: ' + action);
+  }
+  return session;
+}
+
+function requireSession_(request) {
+  const session = verifySession_(request.token, request.deviceId);
+  if (!session) throw fail_('AUTH', 'Сесію завершено. Увійдіть за PIN.');
+  return session;
+}
+
+function loginFail_(code, message) {
+  return { success: false, code: code, error: message };
+}
+
+// --- Читання довідника співробітників ---
+function readEmployees_() {
+  const ss = SpreadsheetApp.openById(EMPLOYEES_SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(EMPLOYEES_SHEET_NAME);
+  if (!sheet) throw fail_('NO_DIRECTORY', 'Аркуш «' + EMPLOYEES_SHEET_NAME + '» не знайдено');
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  const positionRoles = readPositionRoles_(ss);
+  // getDisplayValues, а не getValues: інакше PIN «0501» стане числом 501
+  return sheet.getRange(2, 1, lastRow - 1, EMP_WIDTH).getDisplayValues()
+    .filter(function (row) { return String(row[EMP.id]).trim() !== ''; })
+    .map(function (row) {
+      const roles = resolveRoles_(row, positionRoles);
+      const permissions = permissionsFor_(roles);
+      return {
+        id: String(row[EMP.id]).trim(),
+        name: String(row[EMP.fullName]).trim(),
+        shortName: String(row[EMP.shortName] || row[EMP.fullName]).trim(),
+        status: String(row[EMP.status]).trim().toLowerCase(),
+        email: String(row[EMP.email]).trim(),
+        pin: String(row[EMP.pin]).trim(),
+        roles: roles,
+        permissions: permissions,
+        eligible: String(row[EMP.status]).trim().toLowerCase() === 'active' && permissions.length > 0
+      };
+    });
+}
+
+function findEmployee_(id) {
+  const wanted = String(id).trim();
+  const found = readEmployees_().filter(function (employee) { return employee.id === wanted; });
+  return found.length ? found[0] : null;
+}
+
+function readPositionRoles_(ss) {
+  const sheet = ss.getSheetByName(POSITIONS_SHEET_NAME);
+  const map = {};
+  if (!sheet || sheet.getLastRow() < 2) return map;
+
+  sheet.getRange(2, 1, sheet.getLastRow() - 1, 4).getDisplayValues().forEach(function (row) {
+    const id = String(row[POS.id]).trim();
+    if (id) map[id] = splitRoles_(row[POS.roles]);
+  });
+  return map;
+}
+
+/** «ролі відібрані» (S) мають пріоритет; інакше — ролі посади плюс «ролі додатково» (R). */
+function resolveRoles_(row, positionRoles) {
+  const explicit = splitRoles_(row[EMP.finalRoles]);
+  if (explicit.length) return explicit;
+  return splitRoles_(positionRoles[String(row[EMP.posId]).trim()])
+    .concat(splitRoles_(row[EMP.extraRoles]));
+}
+
+/** У довіднику ролі розділені то пробілом, то комою — приймаємо обидва варіанти. */
+function splitRoles_(value) {
+  if (Array.isArray(value)) return value.slice();
+  return String(value || '').split(/[\s,;]+/).filter(function (role) { return role !== ''; });
+}
+
+function permissionsFor_(roles) {
+  const allowed = {};
+  roles.forEach(function (role) {
+    (ROLE_PERMISSIONS[role] || []).forEach(function (permission) { allowed[permission] = true; });
+  });
+  return Object.keys(allowed);
+}
+
+/**
+ * Хто зможе увійти і де PIN дублюються. Запускати з редактора ПЕРЕД запуском.
+ * Самі PIN не друкуються — лише факт збігу.
+ */
+function auditPins() {
+  const all = readEmployees_();
+  const byPin = {};
+  all.forEach(function (e) {
+    if (!e.pin) return;
+    (byPin[e.pin] = byPin[e.pin] || []).push(e);
+  });
+
+  const lines = [];
+  all.filter(function (e) { return e.permissions.length > 0; }).forEach(function (e) {
+    const sameEligible = (byPin[e.pin] || []).filter(function (x) { return x.eligible; });
+    const sameAnyone = (byPin[e.pin] || []).length;
+    let state;
+    if (!e.eligible) state = '·  не активний — не увійде';
+    else if (!e.pin) state = '❌ PIN не заповнено — не увійде';
+    else if (sameEligible.length > 1) {
+      state = '❌ PIN спільний ще з ' + (sameEligible.length - 1) +
+              ' у цьому застосунку — не увійде (неможливо визначити, хто саме)';
+    } else if (sameAnyone > 1) {
+      // Увійде, бо решта власників цього PIN не мають ролі тут. Але PIN
+      // не особистий: будь-хто з них може ввійти під цим ім'ям.
+      state = '⚠️  увійде, але PIN не особистий — той самий ще в ' + (sameAnyone - 1) +
+              ' співробітників довідника';
+    } else state = '✅ увійде';
+    lines.push('  ' + state + ' · ' + e.name + ' [' + e.roles.join(', ') + ']');
+  });
+
+  const report = 'Доступ до застосунку миючих засобів:\n' + lines.sort().join('\n') +
+    '\n\nПозначка ⚠️ означає, що операції можна записати на цю людину, знаючи ' +
+    'стартовий PIN. Призначте власний PIN у колонці Q аркуша «_REF_Employees».';
+  console.log(report);
+  return report;
+}
+
+/** Кому піде звіт: колонка O довідника в тих, чия роль дозволяє forceReport. */
+function reportRecipients_() {
+  try {
+    return readEmployees_().filter(function (e) {
+      return e.eligible && e.email && e.email.indexOf('@') !== -1 &&
+             e.permissions.indexOf('forceReport') !== -1;
+    });
+  } catch (error) {
+    logEvent_('error', 'directory.unreachable', { details: (error && error.message) || String(error) });
+    return [];
+  }
+}
+
+function auditRecipients() {
+  const list = reportRecipients_();
+  const report = list.length
+    ? 'Звіт отримають ' + list.length + ' осіб (колонка O «_REF_Employees»):\n' +
+      list.map(function (e) { return '  ' + e.name + ' — ' + e.email; }).join('\n')
+    : 'У довіднику немає жодної адреси з правом на звіт. Використається аркуш «Користувачі».';
+  console.log(report);
+  return report;
+}
 
 // ==========================================
 // КОНСТАНТИ
@@ -61,10 +385,6 @@ const OPERATIONS = {
 const CANCELLED_SUFFIX = ' (скасовано)';
 const CANCEL_PREFIX = 'Скасування ';
 
-// Пароль на відправку звіту жив у відкритому JS на GitHub Pages. Тепер він на
-// сервері: Налаштування проєкту → Властивості скрипта → REPORT_PASSWORD.
-const REPORT_PASSWORD_FALLBACK = '5588';
-
 // Використовується, доки в аркуші «Користувачі» немає жодної адреси.
 const FALLBACK_EMAILS = 'Buznitskiy7@gmail.com, dyndarnastia@gmail.com';
 
@@ -79,6 +399,8 @@ function onOpen() {
     .addItem('📍 Створити колонку «Місце зберігання»', 'setupStorageColumn')
     .addItem('🔍 Звірити залишки з журналом', 'auditStockDrift')
     .addItem('🩺 Події за тиждень', 'auditEventsWeek')
+    .addItem('🔑 Хто зможе увійти за PIN', 'auditPinsMenu')
+    .addItem('📬 Кому піде звіт', 'auditRecipientsMenu')
     .addToUi();
 }
 
@@ -109,12 +431,23 @@ function auditEventsWeek() {
   SpreadsheetApp.getUi().alert(auditEvents(7));
 }
 
+function auditPinsMenu() {
+  SpreadsheetApp.getUi().alert(auditPins());
+}
+
+function auditRecipientsMenu() {
+  SpreadsheetApp.getUi().alert(auditRecipients());
+}
+
 // ==========================================
 // 1. GET — читання
 // ==========================================
 function doGet(e) {
   try {
     const action = e && e.parameter ? e.parameter.action : '';
+    const request = e && e.parameter
+      ? { token: e.parameter.token, deviceId: e.parameter.device }
+      : { token: '', deviceId: '' };
 
     // Діагностика розгортання: відкрити <URL>?action=ping у браузері.
     // Якщо version не збігається з CODE_VERSION у редакторі — розгорнуто старий
@@ -129,16 +462,27 @@ function doGet(e) {
       } catch (error) {
         writable = 'ні — ' + (error && error.message ? error.message : String(error));
       }
+      // Довідник співробітників лежить в іншому файлі — на нього потрібен
+      // окремий дозвіл Google. Якщо його немає, вхід за PIN не працюватиме.
+      let directory = 'недоступний';
+      try {
+        directory = SpreadsheetApp.openById(EMPLOYEES_SPREADSHEET_ID)
+          .getSheetByName(EMPLOYEES_SHEET_NAME) ? 'ok' : 'аркуш не знайдено';
+      } catch (error) { directory = 'немає доступу'; }
+
       return json({
         success: true,
         version: CODE_VERSION,
         spreadsheet: ss ? ss.getName() : '(немає)',
         canWrite: writable,
+        auth: typeof loginWithPin_ === 'function',
+        employeesSheet: directory,
         timeZone: Session.getScriptTimeZone()
       });
     }
 
     if (action === 'getInventory') {
+      const session = requireSession_(request);   // застосунок закритий без входу за PIN
       const people = readPeople();
       const categories = [];
 
@@ -173,11 +517,15 @@ function doGet(e) {
         version: CODE_VERSION,
         categories: categories,
         controllers: people.controllers,
-        employees: people.employees
+        employees: people.employees,
+        // Права перечитуються щозавантаження: зміна ролі в довіднику діє одразу
+        session: { name: session.name, shortName: session.shortName,
+                   permissions: session.permissions, expiresAt: session.expiresAt }
       });
     }
 
     if (action === 'getHistory') {
+      requireSession_(request);
       const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(LOG_SHEET_NAME);
       if (!logSheet || logSheet.getLastRow() < 2) return json({ success: true, history: [] });
 
@@ -214,9 +562,8 @@ function doGet(e) {
     }
 
     if (action === 'forceReport') {
-      if (!checkReportPassword_(e.parameter ? e.parameter.password : '')) {
-        return json({ success: false, code: 'FORBIDDEN', error: 'Невірний пароль.' });
-      }
+      // Роль замінила пароль: право на звіт визначає довідник, а не рядок у HTML
+      requirePermission_(request, 'forceReport');
       const sent = sendPurchasePlan(true);
       if (!sent) {
         return json({ success: false, code: 'NO_RECIPIENTS',
@@ -248,6 +595,11 @@ function doPost(e) {
     }
     const payload = JSON.parse(e.postData.contents);
 
+    // Вхід за PIN — єдина дія, доступна без сесії
+    if (payload.action === 'login') {
+      return json(loginWithPin_(payload.pin, payload.deviceId));
+    }
+    // Діагностика: приймаємо навіть без сесії — саме тоді, коли ламається вхід
     if (payload.action === 'logEvents') return json(logClientEvents_(payload));
     if (payload.action === 'setStorage') return json(setStorage_(payload));
 
@@ -287,7 +639,7 @@ function registerOperation_(payload) {
     throw fail_('BAD_QUANTITY', 'Кількість має бути цілим числом.');
   }
 
-  const actor = resolveActor_(payload);
+  const actor = resolveActor_(payload, payload.action);
 
   // Уся операція — під одним замком. Без нього двоє контролерів, що списують
   // ту саму позицію в ту саму хвилину, читають однаковий залишок і другий
@@ -406,16 +758,13 @@ function registerOperation_(payload) {
 }
 
 /**
- * Хто зробив операцію. Поки застосунок не має входу за PIN, ім'я приходить
- * з випадаючого списку контролерів — це те саме, що було раніше.
- * На кроці «вхід за PIN» тут з'явиться перевірка сесії проти довідника
- * gw-ref (_REF_Employees, ролі qc.use / qc.admin), і клієнтові перестануть
- * вірити на слово. Уся підміна — в цій одній функції.
+ * Хто зробив операцію. Ім'я береться з підтвердженої сесії, а не з того, що
+ * надіслав клієнт: раніше будь-хто міг обрати будь-яке прізвище у списку,
+ * і операція записувалась на чужу людину.
  */
-function resolveActor_(payload) {
-  const name = String(payload.controller || payload.mechanic || '').trim();
-  if (!name) throw fail_('NO_ACTOR', 'Не вказано контролера.');
-  return name;
+function resolveActor_(payload, action) {
+  const session = requirePermission_(payload, action || payload.action);
+  return session.name;
 }
 
 /** «Партія: 26061121 (до 2026-12-30)» — рядок для журналу і для колонки I. */
@@ -433,7 +782,7 @@ function buildBatchLabel_(payload) {
 // 2.1 АДРЕСНЕ ЗБЕРІГАННЯ (колонка O)
 // ==========================================
 function setStorage_(payload) {
-  const actor = resolveActor_(payload);
+  const actor = resolveActor_(payload, 'setStorage');
 
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(payload.sheetName);
   if (!sheet) throw fail_('BAD_TARGET', 'Аркуш не знайдено: ' + payload.sheetName);
@@ -913,12 +1262,6 @@ function collectUsage30_() {
   return usage;
 }
 
-function checkReportPassword_(supplied) {
-  const expected = PropertiesService.getScriptProperties().getProperty('REPORT_PASSWORD')
-                   || REPORT_PASSWORD_FALLBACK;
-  return String(supplied || '') === String(expected);
-}
-
 // ==========================================
 // 4. ЖУРНАЛ ПОДІЙ
 // ==========================================
@@ -1121,9 +1464,22 @@ function readPeople() {
   return people;
 }
 
+/**
+ * Кому йде звіт. Основне джерело — колонка O «email» довідника
+ * «_REF_Employees»: беруться активні співробітники, чия роль дозволяє звіт.
+ * Дав людині роль — вона почала отримувати листи.
+ * Аркуш «Користувачі» лишається запасним джерелом.
+ */
 function getNotificationEmails() {
-  const emails = readPeople().emails;
-  return emails.length ? emails.join(',') : FALLBACK_EMAILS;
+  const fromDirectory = reportRecipients_().map(function (person) { return person.email; });
+  const fromSheet = readPeople().emails;
+  const all = {};
+  fromDirectory.concat(fromSheet).forEach(function (email) {
+    const value = String(email).trim();
+    if (value && value.indexOf('@') !== -1) all[value.toLowerCase()] = value;
+  });
+  const list = Object.keys(all).map(function (key) { return all[key]; });
+  return list.length ? list.join(',') : FALLBACK_EMAILS;
 }
 
 function forEachCatalogSheet(callback) {

@@ -125,9 +125,14 @@
             </div>
             
             <div class="flex flex-col gap-1 items-end">
-                <button onclick="fetchData()" class="p-2 sm:p-3 bg-white rounded-lg shadow-sm border border-slate-200 text-slate-500 hover:text-cyan-600 transition-colors focus:outline-none" title="Оновити дані">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                </button>
+                <div class="flex gap-1">
+                    <button onclick="fetchData()" class="p-2 sm:p-3 bg-white rounded-lg shadow-sm border border-slate-200 text-slate-500 hover:text-cyan-600 transition-colors focus:outline-none" title="Оновити дані">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    </button>
+                    <button id="logoutBtn" class="p-2 sm:p-3 bg-white rounded-lg shadow-sm border border-slate-200 text-slate-500 hover:text-cyan-600 transition-colors focus:outline-none" title="Вийти">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    </button>
+                </div>
             </div>
             
             <div class="absolute -bottom-4 right-0">
@@ -310,6 +315,19 @@
         </div>
     </div>
 
+    <div id="loginOverlay" class="fixed inset-0 hidden items-center justify-center modal-overlay z-[2500] p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center transform transition-all border border-gray-100">
+            <h3 class="text-lg font-bold mb-1 text-gray-800">Облік миючих засобів</h3>
+            <p class="text-sm text-muted mb-4">Введіть свій PIN</p>
+            <input type="password" id="loginPin" autocomplete="off" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 text-center text-lg" placeholder="PIN">
+            <p id="loginError" class="text-sm font-bold text-red-600 mt-3 hidden"></p>
+            <div class="flex justify-center gap-3 mt-6">
+                <button id="loginBtn" class="px-6 py-2 bg-cyan-600 text-white rounded-lg font-semibold hover:bg-cyan-700 transition-colors shadow-md">Увійти</button>
+            </div>
+            <p class="text-xs text-muted mt-4">PIN видає адміністратор. Він у довіднику співробітників, колонка «PIN».</p>
+        </div>
+    </div>
+
     <div id="customDialogOverlay" class="fixed inset-0 hidden items-center justify-center modal-overlay z-[2000] p-4">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center transform transition-all border border-gray-100">
             <h3 id="customDialogMessage" class="text-lg font-bold mb-6 text-gray-800 whitespace-pre-wrap"></h3>
@@ -345,6 +363,32 @@
         const REPORT_TIMEOUT_MS = 60000;
         const EVENT_CAP = 60;
         const EVENT_BATCH = 20;
+
+        const SESSION_KEY = 'sanitationSessionV1';
+        // Планшет лишається в цеху без нагляду — сесія закривається сама
+        const IDLE_LIMIT_MS = 10 * 60 * 1000;
+        const ACTIVITY_KEY = 'sanitationLastActivityV1';
+        let session = null;
+
+        const loadSession = () => {
+            try {
+                const stored = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+                if (stored && stored.token && stored.expiresAt > Date.now()) return stored;
+            } catch (e) { /* зіпсований запис — вважаємо, що сесії немає */ }
+            return null;
+        };
+        const saveSession = (value) => {
+            session = value;
+            localStorage.setItem(SESSION_KEY, JSON.stringify(value));
+            localStorage.setItem(ACTIVITY_KEY, String(Date.now()));
+        };
+        const clearSession = () => {
+            session = null;
+            localStorage.removeItem(SESSION_KEY);
+        };
+
+        const authQuery = () => '&token=' + encodeURIComponent(session ? session.token : '') +
+                                '&device=' + encodeURIComponent(getDeviceId());
 
         const getDeviceId = () => {
             let id = localStorage.getItem(DEVICE_KEY);
@@ -420,13 +464,15 @@
         // Ці відповіді сервера повторювати немає сенсу — потрібне рішення людини.
         // Решта (таймаут, обрив, BUSY) стає в чергу і піде повторно.
         const PERMANENT_CODES = ['FORBIDDEN', 'BAD_TARGET', 'NOT_COUNTED', 'AMBIGUOUS',
-                                 'BAD_QUANTITY', 'UNKNOWN_ACTION', 'NO_ACTOR', 'NO_RECIPIENTS',
-                                 'OVERDRAW'];
+                                 'BAD_QUANTITY', 'UNKNOWN_ACTION', 'NO_RECIPIENTS', 'OVERDRAW'];
 
         const postToServer = (payload, timeoutMs) => callServer(GOOGLE_SCRIPT_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(Object.assign({}, payload, {
+                token: session ? session.token : '',
+                deviceId: getDeviceId()
+            }))
         }, timeoutMs || POST_TIMEOUT_MS);
 
         // Відправка накопичених подій. Мовчазна: діагностика не має права
@@ -531,45 +577,92 @@
             });
         };
 
-        const showPasswordDialog = () => {
-            return new Promise((resolve) => {
-                const overlay = document.getElementById('customDialogOverlay');
-                const msgEl = document.getElementById('customDialogMessage');
-                const btnsEl = document.getElementById('customDialogButtons');
+        const customAlert = (msg) => showCustomDialog(msg, false);
 
-                msgEl.innerHTML = 'Введіть пароль:<br><input type="password" id="reportPassword" class="mt-4 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 text-center text-lg" placeholder="****">';
-                btnsEl.innerHTML = '';
-
-                const closeDialog = () => {
-                    overlay.classList.add('hidden');
-                    overlay.classList.remove('flex');
-                };
-
-                const btnCancel = document.createElement('button');
-                btnCancel.className = 'px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors';
-                btnCancel.textContent = 'Скасувати';
-                btnCancel.onclick = () => { closeDialog(); resolve(null); };
-
-                const btnOk = document.createElement('button');
-                btnOk.className = 'px-4 py-2 bg-cyan-600 text-white rounded-lg font-semibold hover:bg-cyan-700 transition-colors shadow-md';
-                btnOk.textContent = 'Підтвердити';
-                btnOk.onclick = () => {
-                    const pwd = document.getElementById('reportPassword').value;
-                    closeDialog();
-                    resolve(pwd);
-                };
-
-                btnsEl.appendChild(btnCancel);
-                btnsEl.appendChild(btnOk);
-
-                overlay.classList.remove('hidden');
-                overlay.classList.add('flex');
-                
-                setTimeout(() => document.getElementById('reportPassword').focus(), 100);
-            });
+        const showLogin = (message) => {
+            const overlay = document.getElementById('loginOverlay');
+            const error = document.getElementById('loginError');
+            error.textContent = message || '';
+            error.classList.toggle('hidden', !message);
+            document.getElementById('loginPin').value = '';
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            setTimeout(() => document.getElementById('loginPin').focus(), 100);
         };
 
-        const customAlert = (msg) => showCustomDialog(msg, false);
+        const hideLogin = () => {
+            const overlay = document.getElementById('loginOverlay');
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+        };
+
+        // Ім'я контролера більше не обирається зі списку — воно з підтвердженої
+        // сесії. Поле лишається на місці, але лише показує, хто увійшов.
+        const applySession = () => {
+            const select = document.getElementById('employeeSelect');
+            select.innerHTML = '';
+            const option = document.createElement('option');
+            option.value = session ? session.name : '';
+            option.textContent = session ? session.name : '— не увійшли —';
+            select.appendChild(option);
+            select.value = option.value;
+            select.disabled = true;
+        };
+
+        const doLogin = async () => {
+            const pin = document.getElementById('loginPin').value.trim();
+            if (!pin) { showLogin('Введіть PIN'); return; }
+            const btn = document.getElementById('loginBtn');
+            const original = btn.textContent;
+            btn.textContent = 'Перевіряю…';
+            btn.disabled = true;
+            try {
+                const result = await postToServer({ action: 'login', pin: pin, deviceId: getDeviceId() });
+                saveSession({
+                    token: result.token, name: result.name, shortName: result.shortName,
+                    permissions: result.permissions || [], expiresAt: result.expiresAt
+                });
+                applySession();
+                hideLogin();
+                if (result.warning) customAlert('⚠️ ' + result.warning);
+                await fetchData();
+                flushEvents();
+            } catch (e) {
+                logEvent('error', 'login.failed', (e.code || 'ERROR') + ': ' + e.message);
+                showLogin(e.message);
+            } finally {
+                btn.textContent = original;
+                btn.disabled = false;
+            }
+        };
+
+        const logout = (reason) => {
+            logEvent('tech', 'logout', reason || 'вручну');
+            clearSession();
+            applySession();
+            allData = [];
+            renderState();
+            showLogin(reason === 'idle' ? 'Сесію закрито через 10 хвилин без дій. Увійдіть знову.' : '');
+            flushEvents();
+        };
+
+        const touchActivity = () => {
+            if (session) localStorage.setItem(ACTIVITY_KEY, String(Date.now()));
+        };
+
+        const checkIdle = () => {
+            if (!session) return;
+            const last = Number(localStorage.getItem(ACTIVITY_KEY) || 0);
+            if (last && Date.now() - last > IDLE_LIMIT_MS) logout('idle');
+            else if (session.expiresAt <= Date.now()) logout('сесія протермінована');
+        };
+
+        // Сервер сказав, що сесії немає (протермінована, роль зняли, звільнення) —
+        // не тримаємо користувача в застосунку, який усе одно нічого не запише
+        const handleAuthFailure = (e) => {
+            if (e && e.code === 'AUTH') { clearSession(); applySession(); showLogin(e.message); return true; }
+            return false;
+        };
 
         const updateNetworkStatus = () => {
             const dot = document.getElementById('statusDot');
@@ -597,7 +690,7 @@
 
         const processOfflineQueue = async () => {
             const queue = JSON.parse(localStorage.getItem(OFFLINE_KEY) || '[]');
-            if (queue.length === 0 || !navigator.onLine) return;
+            if (queue.length === 0 || !navigator.onLine || !session) return;
 
             const statusDot = document.getElementById('statusDot');
             statusDot.className = 'status-dot syncing';
@@ -627,20 +720,8 @@
         };
 
         const populateUsers = (controllers, employees) => {
-            const empSelect = document.getElementById('employeeSelect');
-            const currentVal = empSelect.value || localStorage.getItem('selectedMechanic_Sanitation');
-            
-            empSelect.innerHTML = '<option value="">-- Оберіть зі списку --</option>';
-            controllers.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c;
-                opt.textContent = c;
-                empSelect.appendChild(opt);
-            });
-            if (currentVal && controllers.includes(currentVal)) {
-                empSelect.value = currentVal;
-            }
-
+            // Контролер тепер один — той, хто увійшов. Зі списку заповнюємо
+            // тільки підказку «ким використано».
             const datalist = document.getElementById('employeesDatalist');
             if (datalist) {
                 datalist.innerHTML = '';
@@ -784,7 +865,7 @@
                     return;
                 }
 
-                const data = await callServer(GOOGLE_SCRIPT_URL + "?action=getInventory", {}, READ_TIMEOUT_MS);
+                const data = await callServer(GOOGLE_SCRIPT_URL + "?action=getInventory" + authQuery(), {}, READ_TIMEOUT_MS);
 
                 if (data && data.success) {
                     allData = data.categories.filter(cat => cat.name !== "Користувачі");
@@ -796,6 +877,15 @@
                         controllers: data.controllers || [],
                         employees: data.employees || []
                     }));
+                    if (data.session && session) {
+                        // Роль могли змінити в довіднику — застосовуємо одразу
+                        saveSession(Object.assign({}, session, {
+                            name: data.session.name,
+                            shortName: data.session.shortName,
+                            permissions: data.session.permissions || []
+                        }));
+                        applySession();
+                    }
                     localStorage.setItem(SYNC_KEY, new Date().toISOString());
                     hideDbError();
                     renderState();
@@ -804,6 +894,7 @@
                 }
             } catch (error) {
                 console.error("Fetch error:", error);
+                if (handleAuthFailure(error)) { loader.classList.add('hidden'); return; }
                 logEvent('error', 'catalog.loadFailed', error.message);
                 if (navigator.onLine) showDbError(error.message);
                 const cached = localStorage.getItem(CACHE_KEY);
@@ -847,7 +938,7 @@
                     throw new Error("Offline");
                 }
                 
-                const data = await callServer(GOOGLE_SCRIPT_URL + "?action=getHistory", {}, READ_TIMEOUT_MS);
+                const data = await callServer(GOOGLE_SCRIPT_URL + "?action=getHistory" + authQuery(), {}, READ_TIMEOUT_MS);
 
                 if (data && data.success) {
                     historyData = data.history;
@@ -858,7 +949,8 @@
             } catch (error) {
                 console.warn("Помилка або офлайн, показуємо порожній список", error);
                 historyData = [];
-                if (navigator.onLine) showDbError('Історія: ' + error.message);
+                if (handleAuthFailure(error)) { historyData = []; }
+                else if (navigator.onLine) showDbError('Історія: ' + error.message);
             } finally {
                 loader.classList.add('hidden');
                 appState.view = 'history';
@@ -867,12 +959,8 @@
         };
 
         const forceSendReport = async () => {
-            const pwd = await showPasswordDialog();
-            if (pwd === null) return;
-            // Пароль більше не звіряється тут: цей файл лежить у відкритому
-            // репозиторії на GitHub Pages, тож будь-хто міг прочитати його
-            // в коді сторінки. Тепер перевірка на сервері.
-
+            // Пароля більше немає: він лежав у відкритому коді сторінки на
+            // GitHub Pages. Право на звіт визначає роль у довіднику.
             const confirm = await showCustomDialog("Сформувати та відправити актуальний план закупки засобів на email?", true);
             if (!confirm) return;
 
@@ -889,13 +977,13 @@
                 if (!navigator.onLine) throw new Error("Offline");
                 
                 const data = await callServer(
-                    GOOGLE_SCRIPT_URL + "?action=forceReport&password=" + encodeURIComponent(pwd),
+                    GOOGLE_SCRIPT_URL + "?action=forceReport" + authQuery(),
                     {}, REPORT_TIMEOUT_MS);
                 if (data && data.success) {
                     customAlert("✅ План закупки успішно відправлено!");
                 }
             } catch (error) {
-                customAlert("❌ Помилка відправки:\n" + error.message);
+                if (!handleAuthFailure(error)) customAlert("❌ Помилка відправки:\n" + error.message);
             } finally {
                 loader.classList.add('hidden');
                 renderState();
@@ -1280,7 +1368,7 @@
             } catch (e) {
                 logEvent('error', 'storage.failed', (e.code || 'ERROR') + ': ' + e.message,
                          currentSelectedItem.sheetName + ' · ' + currentSelectedItem.model);
-                customAlert("❌ Не вдалося зберегти місце:\n" + e.message);
+                if (!handleAuthFailure(e)) customAlert("❌ Не вдалося зберегти місце:\n" + e.message);
             } finally {
                 btn.textContent = original;
                 btn.disabled = false;
@@ -1382,7 +1470,12 @@
                 logEvent('error', 'operation.failed', (e.code || 'ERROR') + ': ' + e.message,
                          payload.sheetName + ' · ' + payload.model);
 
-                if (navigator.onLine && PERMANENT_CODES.indexOf(e.code) !== -1) {
+                if (e.code === 'AUTH') {
+                    // Сесія закінчилась — операцію не втрачаємо, вона піде після входу
+                    saveToOfflineQueue(payload);
+                    closeUsageModal();
+                    handleAuthFailure(e);
+                } else if (navigator.onLine && PERMANENT_CODES.indexOf(e.code) !== -1) {
                     // Повторювати немає сенсу: у чергу не ставимо, щоб запис
                     // не висів там вічно й не списався потім несподівано
                     closeUsageModal();
@@ -1454,19 +1547,30 @@
         // --- Ініціалізація ---
         document.addEventListener('DOMContentLoaded', () => {
             updateNetworkStatus();
-            
-            const savedMechanic = localStorage.getItem('selectedMechanic_Sanitation');
-            if(savedMechanic) document.getElementById('employeeSelect').value = savedMechanic;
-            document.getElementById('employeeSelect').addEventListener('change', (e) => {
-                localStorage.setItem('selectedMechanic_Sanitation', e.target.value);
-            });
+            session = loadSession();
+            applySession();
 
-            logEvent('tech', 'app.opened', 'версія ' + APP_VERSION);
+            document.getElementById('loginBtn').addEventListener('click', doLogin);
+            document.getElementById('loginPin').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') doLogin();
+            });
+            document.getElementById('logoutBtn').addEventListener('click', () => logout('вручну'));
+
+            ['click', 'keydown', 'touchstart'].forEach(type =>
+                document.addEventListener(type, touchActivity, { passive: true }));
+            setInterval(checkIdle, 30000);
+
             window.addEventListener('online', () => { updateNetworkStatus(); processOfflineQueue(); flushEvents(); });
             window.addEventListener('offline', updateNetworkStatus);
             document.getElementById('networkStatusBtn').addEventListener('click', processOfflineQueue);
 
-            fetchData().then(flushEvents);
+            logEvent('tech', 'app.opened', 'версія ' + APP_VERSION);
+            if (session) {
+                touchActivity();
+                fetchData().then(flushEvents);
+            } else {
+                showLogin();
+            }
         });
     </script>
 </body>
