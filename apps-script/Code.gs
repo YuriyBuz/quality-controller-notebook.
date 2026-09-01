@@ -16,7 +16,7 @@
  * і в аркуші «Журнал_подій», а застосунок показує її текст на екрані.
  */
 
-const CODE_VERSION = 'qc-detergents-2026-09-01-report';
+const CODE_VERSION = 'qc-detergents-2026-09-01-diag';
 
 // ==========================================
 // 0. АВТЕНТИФІКАЦІЯ ТА ПРАВА
@@ -282,6 +282,49 @@ function permissionsFor_(roles) {
     (ROLE_PERMISSIONS[role] || []).forEach(function (permission) { allowed[permission] = true; });
   });
   return Object.keys(allowed);
+}
+
+/**
+ * Чому довідник співробітників не читається.
+ *
+ * «You do not have permission to access the requested document» на
+ * readEmployees_ означає одне з трьох, і Google навмисне не каже, яке саме:
+ *   1) в ID довідника друкарська помилка (там є подвійне підкреслення);
+ *   2) скрипт авторизовано лише на активну таблицю (scope
+ *      spreadsheets.currentonly) — тоді будь-який openById падає;
+ *   3) скрипт виконується від імені акаунта, якому довідник не відкрито.
+ * Ця функція розрізняє всі три. Запускати з редактора, дивитись «Журнал».
+ */
+function diagDirectory() {
+  const id = EMPLOYEES_SPREADSHEET_ID;
+  Logger.log('ID у коді: [' + id + '], довжина ' + id.length + ' (має бути 44)');
+
+  let who = 'невідомо (немає дозволу userinfo.email)';
+  try { who = Session.getEffectiveUser().getEmail() || '(порожньо)'; } catch (error) {}
+  Logger.log('Виконується від імені: ' + who);
+
+  let active = '(немає)';
+  try {
+    const cur = SpreadsheetApp.getActiveSpreadsheet();
+    active = cur ? cur.getName() + ' [' + cur.getId() + ']' : '(немає)';
+  } catch (error) { active = 'помилка: ' + error.message; }
+  Logger.log('Активна таблиця: ' + active);
+
+  try {
+    const ss = SpreadsheetApp.openById(id);
+    Logger.log('Довідник відкрито: ' + ss.getName());
+    Logger.log('Аркуші: ' + ss.getSheets().map(function (sh) { return sh.getName(); }).join(', '));
+    const sheet = ss.getSheetByName(EMPLOYEES_SHEET_NAME);
+    Logger.log(sheet
+      ? 'Аркуш «' + EMPLOYEES_SHEET_NAME + '»: рядків ' + sheet.getLastRow()
+      : 'Аркуш «' + EMPLOYEES_SHEET_NAME + '» НЕ знайдено — перевірте назву');
+  } catch (error) {
+    Logger.log('НЕ ВІДКРИВАЄТЬСЯ: ' + error.message);
+    Logger.log('Далі: якщо акаунт вище — власник довідника, то річ у дозволах ' +
+               'скрипта. Налаштування проєкту → показати appsscript.json → ' +
+               'звірити oauthScopes з apps-script/appsscript.json у репозиторії, ' +
+               'потім запустити цю функцію ще раз і прийняти запит на доступ.');
+  }
 }
 
 /**
