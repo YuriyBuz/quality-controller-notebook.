@@ -16,7 +16,7 @@
  * і в аркуші «Журнал_подій», а застосунок показує її текст на екрані.
  */
 
-const CODE_VERSION = 'qc-detergents-2026-09-01-diag';
+const CODE_VERSION = 'qc-detergents-2026-09-01-quiet';
 
 // ==========================================
 // 0. АВТЕНТИФІКАЦІЯ ТА ПРАВА
@@ -652,7 +652,10 @@ function doGet(e) {
     return json({ success: false, code: 'UNKNOWN_ACTION', error: 'Невідома дія: ' + action });
 
   } catch (error) {
-    logEvent_('error', 'doGet.failed', {
+    // Протермінована сесія — не збій, а звичайний перебіг зміни.
+    // Якщо класти її в «Помилки», справжні збої тонуть у шумі.
+    const kind = (error && error.code) === 'AUTH' ? 'access' : 'error';
+    logEvent_(kind, 'doGet.failed', {
       details: (error && error.stack) || String(error),
       position: e && e.parameter ? String(e.parameter.action || '') : ''
     });
@@ -688,7 +691,10 @@ function doPost(e) {
     // (mode:'no-cors'), а Apps Script показував «Виконання завершено».
     // Тепер причина завжди лишається в Cloud Logging і в «Журналі_подій».
     const details = (error && error.stack) || String(error);
-    logEvent_('error', 'doPost.failed', {
+    // Протермінована сесія — не збій, а звичайний перебіг зміни.
+    // Якщо класти її в «Помилки», справжні збої тонуть у шумі.
+    const kind = (error && error.code) === 'AUTH' ? 'access' : 'error';
+    logEvent_(kind, 'doPost.failed', {
       details: details + ' | payload: ' +
         trimText_(e && e.postData ? e.postData.contents : '(немає)', 300)
     });
