@@ -636,6 +636,41 @@
 
         const customAlert = (msg) => showCustomDialog(msg, false);
 
+        // Фронтенд і бекенд розгортаються окремо, тож між ними буває вікно,
+        // коли сторінка вже нова, а скрипт ще старий. Без перевірки людина
+        // побачила б «Аркуш не знайдено: undefined» замість зрозумілої причини.
+        const REQUIRED_FEATURES = ['login', 'batches', 'report', 'cancel'];
+        let backendOk = null;   // null — ще не перевіряли
+
+        const checkBackend = async () => {
+            try {
+                const info = await callServer(GOOGLE_SCRIPT_URL + '?action=ping', {}, READ_TIMEOUT_MS);
+                const have = String(info.features || '').split(',');
+                const missing = REQUIRED_FEATURES.filter(name => have.indexOf(name) === -1);
+                if (missing.length) {
+                    backendOk = false;
+                    showDbError('Сервер працює на старій версії коду — немає: ' + missing.join(', ') +
+                        '. Потрібно оновити «Код.gs» і розгорнути нову версію. До того застосунок не працюватиме.');
+                    return false;
+                }
+                if (info.canWrite && info.canWrite !== 'так') {
+                    backendOk = false;
+                    showDbError('Сервер не має права писати в таблицю: ' + info.canWrite);
+                    return false;
+                }
+                backendOk = true;
+                return true;
+            } catch (e) {
+                backendOk = false;
+                // Стара версія коду взагалі не знає дії ping і віддає текст
+                showDbError(/Некоректна відповідь|Unknown action/.test(e.message)
+                    ? 'Сервер працює на старій версії коду: він не знає перевірки версії. ' +
+                      'Потрібно оновити «Код.gs» і розгорнути нову версію.'
+                    : 'Не вдалося перевірити версію сервера: ' + e.message);
+                return false;
+            }
+        };
+
         const showLogin = (message) => {
             const overlay = document.getElementById('loginOverlay');
             const error = document.getElementById('loginError');
@@ -696,6 +731,13 @@
                 // Невірний PIN сервер назвав прямо — локальний вхід тут ні до чого
                 if (e.code === 'BAD_PIN' || e.code === 'PIN_NOT_UNIQUE' || e.code === 'THROTTLED') {
                     showLogin(e.message);
+                    return;
+                }
+                // Вхід не міг спрацювати, бо на сервері стара версія — кажемо це
+                // прямо, а не показуємо помилку про якийсь аркуш
+                if (backendOk === false && navigator.onLine) {
+                    showLogin('Сервер ще не оновлено. Зверніться до адміністратора — ' +
+                              'потрібно розгорнути нову версію «Код.gs».');
                     return;
                 }
 
@@ -1962,8 +2004,10 @@
             if (session) {
                 touchActivity();
                 fetchData().then(flushEvents);
+                checkBackend();
             } else {
                 showLogin();
+                checkBackend();
             }
         });
     </script>
