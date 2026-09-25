@@ -362,7 +362,7 @@
         const SYNC_KEY = 'sanitationLastSyncV2';
         const DEVICE_KEY = 'sanitationDeviceIdV1';
         const EVENT_KEY = 'sanitationEventsV1';
-        const APP_VERSION = 'qc-detergents-app-2026-09-01';
+        const APP_VERSION = 'qc-detergents-app-2026-09-26';
 
         // Читання каталогу довше за запис, звіт ще й формується та надсилається.
         // Без обмеження часу застосунок вічно висить на «Завантаження…»:
@@ -633,6 +633,9 @@
                 overlay.classList.add('flex');
             });
         };
+
+        // «1.5000000002» і «15.00» в тексті для людини зайві
+        const trimNumber = (value) => String(Number(Number(value).toFixed(2)));
 
         const customAlert = (msg) => showCustomDialog(msg, false);
 
@@ -1843,6 +1846,25 @@
                 // Сервер приймає списання в мінус лише з поясненням — інакше
                 // повертає OVERDRAW. Підтвердження контролера і є поясненням.
                 overdrawReason = "підтверджено контролером у застосунку";
+            }
+
+            // Видача, у рази більша за звичайну саме для цієї позиції. У журналі
+            // вже лежать списання на 1000 кг там, де завжди беруть один: людина
+            // промахнулась по клавіші, застосунок мовчки прийняв, і виправляти
+            // довелось інвентаризацією. Поріг рахує сервер за медіаною видач.
+            //
+            // Якщо вище вже питали про перевитрату — не питаємо вдруге: це та
+            // сама помилка, і другий діалог поспіль просто навчить тиснути «так».
+            if (currentOperation === 'usage' && !overdrawReason && currentSelectedItem) {
+                const typical = Number(currentSelectedItem.typicalUsage) || 0;
+                const limit = Number(currentSelectedItem.unusualAbove) || 0;
+                if (limit > 0 && quantity >= limit) {
+                    const sure = await showCustomDialog(
+                        'Зазвичай видають близько ' + trimNumber(typical) + ' кг цього засобу, ' +
+                        'а зараз — ' + trimNumber(quantity) + ' кг.\n\nЗаписати саме ' +
+                        trimNumber(quantity) + '?', true);
+                    if (!sure) return;
+                }
             }
 
             if (currentOperation === 'inventory') {

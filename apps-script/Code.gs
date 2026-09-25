@@ -16,7 +16,7 @@
  * і в аркуші «Журнал_подій», а застосунок показує її текст на екрані.
  */
 
-const CODE_VERSION = 'qc-detergents-2026-09-25-empty';
+const CODE_VERSION = 'qc-detergents-2026-09-26-unusual';
 
 // ==========================================
 // 0. АВТЕНТИФІКАЦІЯ ТА ПРАВА
@@ -428,6 +428,12 @@ const OPERATIONS = {
   registerInventory: { label: 'Інвентаризація', prefix: '=', genitive: 'інвентаризації', direction: 0 }
 };
 
+// Видача, більша за звичайну в стільки разів, вимагає підтвердження.
+// Нижче UNUSUAL_MIN_KG не перепитуємо взагалі: там, де разова видача
+// 0,1 кг, десятикратна — це один кілограм, і перепит став би шумом.
+const UNUSUAL_FACTOR = 10;
+const UNUSUAL_MIN_KG = 5;
+
 // Партія, до кінця терміну якої лишилось стільки днів, потрапляє в звіт
 const EXPIRY_WARN_DAYS = 30;
 // Залишок, більший за мінімум у стільки разів, потрапляє в блок «Надлишок»
@@ -557,6 +563,8 @@ function doGet(e) {
       // Раніше це робив браузер, розбираючи склеєний блок F..K регуляркою.
       const log = readLog_();
 
+      const typicalUsage = usageMedians_(log);
+
       forEachCatalogSheet(function (sheet) {
         const values = readCatalog(sheet);
         const items = [];
@@ -585,6 +593,11 @@ function doGet(e) {
           last.fefo = fefoSuggestion_(lots);
           last.expiring = expiringLots_(lots, EXPIRY_WARN_DAYS);
           last.unnamedQty = unnamedQty_(lots);
+          // Застосунок порівняє з нею введену кількість і перепитає, якщо
+          // вона в рази більша. Працює і офлайн: число лежить у кеші бази.
+          const typical = typicalUsage[sheet.getName() + '_' + String(row[1])] || 0;
+          last.typicalUsage = typical;
+          last.unusualAbove = unusualAbove_(typical);
         });
         if (items.length) categories.push({ name: sheet.getName(), items: items });
       });
@@ -1733,6 +1746,51 @@ function weeklyReport() {
   }
   // Прибирання старих подій живе на цьому ж тригері — окремий не потрібен
   try { pruneEvents_(); } catch (error) { /* не критично */ }
+}
+
+/**
+ * Від якої кількості перепитувати. Поріг рахує сервер, а не застосунок:
+ * інакше те саме число жило б у двох файлах і колись розійшлось би.
+ * Нуль означає «історії ще немає, порівнювати нема з чим».
+ */
+function unusualAbove_(typical) {
+  return typical > 0 ? Math.max(round_(typical * UNUSUAL_FACTOR), UNUSUAL_MIN_KG) : 0;
+}
+
+/**
+ * Звичайний розмір разової видачі кожної позиції — медіана, а не середнє
+ * і не максимум.
+ *
+ * Це важливо: у журналі вже лежать помилкові видачі на 1000 кг там, де
+ * зазвичай беруть один. Середнє така помилка тягне вгору, максимум вона
+ * робить новою нормою — і обидва перетворили б захист на його відсутність.
+ * Медіана їх просто не помічає.
+ */
+function usageMedians_(log) {
+  const buckets = {};
+  (log.rows || []).forEach(function (entry) {
+    const values = entry.values;
+    const actionType = String(values[5] || '');
+    // Скасовані та самі рядки скасування — не приклад звичайної видачі
+    if (actionType.indexOf(CANCELLED_SUFFIX) !== -1) return;
+    if (actionType.indexOf(CANCEL_PREFIX) === 0) return;
+    if (actionType.trim() !== OPERATIONS.registerUsage.label) return;
+
+    const qty = Math.abs(toNumber(values[9]));
+    if (!(qty > 0)) return;
+    const key = String(values[2]).trim() + '_' + String(values[4]).trim();
+    (buckets[key] = buckets[key] || []).push(qty);
+  });
+
+  const medians = {};
+  Object.keys(buckets).forEach(function (key) {
+    const sorted = buckets[key].sort(function (a, b) { return a - b; });
+    const middle = Math.floor(sorted.length / 2);
+    medians[key] = sorted.length % 2
+      ? sorted[middle]
+      : round_((sorted[middle - 1] + sorted[middle]) / 2);
+  });
+  return medians;
 }
 
 /** Витрата кожної позиції за 30 днів — за ДАТОЮ ОПЕРАЦІЇ, не за часом запису. */
