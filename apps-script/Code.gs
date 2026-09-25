@@ -16,7 +16,7 @@
  * і в аркуші «Журнал_подій», а застосунок показує її текст на екрані.
  */
 
-const CODE_VERSION = 'qc-detergents-2026-09-25-order';
+const CODE_VERSION = 'qc-detergents-2026-09-25-empty';
 
 // ==========================================
 // 0. АВТЕНТИФІКАЦІЯ ТА ПРАВА
@@ -1476,11 +1476,19 @@ function maybeNotifyThreshold_(item) {
   const used30 = collectUsage30_()[item.sheetName + '_' + item.model] || 0;
   const recommend = recommendOrder_(item.minStock, item.stock, used30);
 
+  // Нуль — це вже не «на межі», це «немає». У переліку листів різниця між
+  // цими двома словами вирішує, чи відкриють лист сьогодні, чи в понеділок.
+  const emptied = item.stock <= 0;
+
   MailApp.sendEmail({
     to: emails,
-    subject: '⚠️ Засоби: ' + item.model + ' на межі (' + item.stock + ' з ' + item.minStock + ' кг)',
+    subject: emptied
+      ? '🛑 Засоби: ' + item.model + ' ЗАКІНЧИВСЯ (' + item.stock + ' з ' + item.minStock + ' кг)'
+      : '⚠️ Засоби: ' + item.model + ' на межі (' + item.stock + ' з ' + item.minStock + ' кг)',
     htmlBody: "<div style='font-family:sans-serif; color:#1e293b;'>" +
-      '<h3>' + item.model + ' — залишок на рівні мінімуму або нижче</h3>' +
+      '<h3>' + item.model + (emptied
+        ? ' — ЗАКІНЧИВСЯ, залишку немає'
+        : ' — залишок на рівні мінімуму або нижче') + '</h3>' +
       "<table border='1' cellpadding='6' style='border-collapse:collapse; border-color:#cbd5e1;'>" +
       '<tr><td>Категорія</td><td><b>' + item.sheetName + '</b></td></tr>' +
       '<tr><td>Призначення</td><td>' + item.equipment + '</td></tr>' +
