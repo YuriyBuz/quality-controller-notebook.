@@ -16,7 +16,7 @@
  * і в аркуші «Журнал_подій», а застосунок показує її текст на екрані.
  */
 
-const CODE_VERSION = 'qc-detergents-2026-09-26-cleanup';
+const CODE_VERSION = 'qc-detergents-2026-09-26-outliers';
 
 // ==========================================
 // 0. АВТЕНТИФІКАЦІЯ ТА ПРАВА
@@ -1169,102 +1169,134 @@ function readStock_(sheet, row) {
  * перерахунок із журналу змінить залишок. Нічого не змінює.
  */
 /**
- * Разова правка журналу: позначити скасованими видачі, які були явним
- * промахом по клавіші.
+ * Знайти видачі, які сьогоднішній перепит не пропустив би.
  *
- * У журналі лежать списання на 1000 кг там, де завжди беруть один. Залишки
- * давно виправлені інвентаризаціями, але самі рядки лишаються і псують усе,
- * що рахується з журналу: витрату за 30 днів, звичайний розмір видачі,
- * а отже й поріг перепиту.
+ * Шукає не за списком назв, а за самими даними: кожну видачу порівнює з
+ * unusualAbove_() для її позиції. Перша версія цієї чистки мала вписані
+ * вручну п'ять правил, і чотири з них не знайшли нічого — бо ті записи
+ * лежать у зведеній колонці каталогу, а не в журналі. Список, складений
+ * із журналу, такої помилки зробити не може.
  *
- * Компенсаційних рядків НЕ дописуємо — на відміну від звичайного скасування.
- * Залишок уже правильний, і зворотний запис зробив би з однієї помилки дві.
- *
- * Безпека: рядок позначається лише тоді, коли після нього для цієї позиції
- * є інвентаризація. Вона задає нову точку відліку (див. accumulateStock_),
- * тож усе, що до неї, на поточний залишок не впливає. Без такої
- * інвентаризації правка зрушила б залишок — такий рядок пропускаємо.
- *
- * Запускати з редактора: спершу markErroneousUsages() — покаже, що збирається
- * зробити, і нічого не змінить. Потім markErroneousUsages(true).
+ * Нічого не змінює. Читати «Журнал виконання», далі — markErroneousUsages().
  */
-const ERRONEOUS_USAGES = [
-  { sheet: 'Миючі засоби',        contains: 'Чистолайн Софт', quantity: 1000 },
-  { sheet: 'Дезинфікуючі засоби', contains: 'HAND SPRAY',     quantity: 1000 },
-  { sheet: 'Дезинфікуючі засоби', contains: 'Септолайн',      quantity: 350 },
-  { sheet: 'Дезинфікуючі засоби', contains: 'Hypochlorite',   quantity: 100 },
-  { sheet: 'Дезинфікуючі засоби', contains: 'Hypochlorite',   quantity: 1000 }
-];
-const ERRONEOUS_NOTE = ' (помилка вводу, виправлено інвентаризацією)';
-const ERRONEOUS_MAX_PER_RULE = 2;
-
-function markErroneousUsages(apply) {
+function findOutlierUsages() {
   const log = readLog_();
-  const lines = [];
-  const planned = [];
+  const medians = usageMedians_(log);
+  const found = [];
 
-  ERRONEOUS_USAGES.forEach(function (rule) {
-    const matches = log.rows.filter(function (entry) {
-      const label = String(entry.values[5]).trim();
-      if (label !== OPERATIONS.registerUsage.label) return false;   // вже скасовані відпадають тут
-      if (String(entry.values[2]).trim() !== rule.sheet) return false;
-      if (String(entry.values[4]).indexOf(rule.contains) === -1) return false;
-      return toNumber(entry.values[9]) === rule.quantity;
-    });
-
-    if (!matches.length) {
-      lines.push('— ' + rule.contains + ' ' + rule.quantity + ' кг: не знайдено (можливо, вже позначено)');
-      return;
-    }
-    // Правило, що зачепило забагато рядків, — це помилкове правило, а не
-    // п'ять помилок поспіль. Краще не чіпати нічого.
-    if (matches.length > ERRONEOUS_MAX_PER_RULE) {
-      lines.push('⚠️ ' + rule.contains + ' ' + rule.quantity + ' кг: збігів ' + matches.length +
-                 ', це забагато — пропущено, перевірте правило');
-      return;
-    }
-
-    matches.forEach(function (entry) {
-      const model = String(entry.values[4]).trim();
-      const laterInventory = log.rows.some(function (other) {
-        if (other.row <= entry.row) return false;
-        if (String(other.values[2]).trim() !== rule.sheet) return false;
-        if (String(other.values[4]).trim() !== model) return false;
-        const label = String(other.values[5]).trim();
-        return label === OPERATIONS.registerInventory.label;
-      });
-
-      const where = 'рядок ' + entry.row + ' · ' + localDateKey_(entry.values[1]) + ' · ' +
-                    model + ' · ' + rule.quantity + ' кг';
-      if (!laterInventory) {
-        lines.push('⛔ ' + where + ': після неї немає інвентаризації — позначення зрушило б ' +
-                   'залишок, пропущено');
-        return;
-      }
-      planned.push({ entry: entry, model: model, quantity: rule.quantity });
-      lines.push((apply === true ? '✔ ' : '· ') + where);
+  log.rows.forEach(function (entry) {
+    if (String(entry.values[5]).trim() !== OPERATIONS.registerUsage.label) return;
+    const sheetName = String(entry.values[2]).trim();
+    const model = String(entry.values[4]).trim();
+    const limit = unusualAbove_(medians[sheetName + '_' + model] || 0);
+    const quantity = toNumber(entry.values[9]);
+    if (!limit || quantity < limit) return;
+    found.push({
+      row: entry.row, date: localDateKey_(entry.values[1]) || localDateKey_(entry.values[0]),
+      sheetName: sheetName, model: model, quantity: quantity,
+      typical: medians[sheetName + '_' + model] || 0,
+      safe: hasLaterInventory_(log, entry.row, sheetName, model)
     });
   });
 
-  if (apply === true) {
-    planned.forEach(function (item) {
-      const entry = item.entry;
-      log.sheet.getRange(entry.row, 6).setValue(
-        OPERATIONS.registerUsage.label + CANCELLED_SUFFIX);
-      log.sheet.getRange(entry.row, 8).setValue(
-        String(entry.values[7] || '').trim() + ERRONEOUS_NOTE);
-      logEvent_('tech', 'operation.markedErroneous', {
-        position: entry.values[2] + ' · ' + item.model,
-        details: 'рядок ' + entry.row + ', ' + item.quantity + ' кг — помилка вводу'
-      });
-    });
+  found.sort(function (a, b) { return b.quantity / b.typical - a.quantity / a.typical; });
+
+  const lines = found.map(function (item) {
+    return (item.safe ? '· ' : '⛔ ') + 'рядок ' + item.row + ' · ' + item.date + ' · ' +
+      item.model + ' · ' + item.quantity + ' кг (зазвичай ' + item.typical + ')' +
+      (item.safe ? '' : ' — після неї немає інвентаризації, позначати не можна');
+  });
+  const report = 'Видач, більших за звичайну в ' + UNUSUAL_FACTOR + ' разів: ' + found.length +
+    (found.length ? '\n' + lines.join('\n') +
+      '\n\nЩоб позначити скасованими — markErroneousUsages([номери рядків])' : '');
+  console.log(report);
+  return report;
+}
+
+/**
+ * Чи є після цього рядка інвентаризація цієї ж позиції.
+ *
+ * Від цього залежить, чи можна рядок чіпати: інвентаризація задає нову точку
+ * відліку (див. accumulateStock_), тож усе до неї на поточний залишок не
+ * впливає. Без неї позначення зрушило б облік.
+ */
+function hasLaterInventory_(log, afterRow, sheetName, model) {
+  return log.rows.some(function (entry) {
+    if (entry.row <= afterRow) return false;
+    if (String(entry.values[2]).trim() !== sheetName) return false;
+    if (String(entry.values[4]).trim() !== model) return false;
+    return String(entry.values[5]).trim() === OPERATIONS.registerInventory.label;
+  });
+}
+
+/**
+ * Позначити перелічені рядки журналу скасованими — для видач, які були
+ * промахом по клавіші. Номери рядків бере з findOutlierUsages().
+ *
+ * Компенсаційних рядків НЕ дописуємо, на відміну від звичайного скасування:
+ * залишок уже виправлений інвентаризацією, і зворотний запис зробив би з
+ * однієї помилки дві.
+ *
+ * Рядок без інвентаризації після нього пропускається: його позначення
+ * зрушило б поточний залишок.
+ */
+const ERRONEOUS_NOTE = ' (помилка вводу, виправлено інвентаризацією)';
+const ERRONEOUS_MAX_ROWS = 20;
+
+function markErroneousUsages(rowNumbers) {
+  const wanted = (Array.isArray(rowNumbers) ? rowNumbers : [rowNumbers])
+    .map(Number).filter(function (n) { return n > 1; });
+
+  if (!wanted.length) {
+    const hint = 'Не вказано жодного рядка. Спершу findOutlierUsages(), ' +
+                 'потім markErroneousUsages([327, ...]).';
+    console.log(hint);
+    return hint;
+  }
+  if (wanted.length > ERRONEOUS_MAX_ROWS) {
+    const tooMany = 'Забагато рядків за раз (' + wanted.length + '). ' +
+                    'Більше за ' + ERRONEOUS_MAX_ROWS + ' — схоже на помилку, нічого не зроблено.';
+    console.log(tooMany);
+    return tooMany;
   }
 
-  const header = apply === true
-    ? 'Позначено скасованими: ' + planned.length
-    : 'Перевірка без змін. Буде позначено: ' + planned.length +
-      '\nЩоб застосувати — запустіть markErroneousUsages(true)';
-  const report = header + '\n' + lines.join('\n');
+  const log = readLog_();
+  const byRow = {};
+  log.rows.forEach(function (entry) { byRow[entry.row] = entry; });
+
+  const lines = [];
+  let marked = 0;
+
+  wanted.forEach(function (row) {
+    const entry = byRow[row];
+    if (!entry) { lines.push('— рядок ' + row + ': немає в журналі'); return; }
+
+    const label = String(entry.values[5]).trim();
+    const sheetName = String(entry.values[2]).trim();
+    const model = String(entry.values[4]).trim();
+    const quantity = toNumber(entry.values[9]);
+
+    if (label !== OPERATIONS.registerUsage.label) {
+      lines.push('— рядок ' + row + ': це «' + label + '», а не видача — пропущено');
+      return;
+    }
+    if (!hasLaterInventory_(log, row, sheetName, model)) {
+      lines.push('⛔ рядок ' + row + ' · ' + model + ' · ' + quantity +
+                 ' кг: після неї немає інвентаризації — позначення зрушило б залишок');
+      return;
+    }
+
+    log.sheet.getRange(row, 6).setValue(OPERATIONS.registerUsage.label + CANCELLED_SUFFIX);
+    log.sheet.getRange(row, 8).setValue(String(entry.values[7] || '').trim() + ERRONEOUS_NOTE);
+    logEvent_('tech', 'operation.markedErroneous', {
+      position: sheetName + ' · ' + model,
+      details: 'рядок ' + row + ', ' + quantity + ' кг — помилка вводу'
+    });
+    marked++;
+    lines.push('✔ рядок ' + row + ' · ' + model + ' · ' + quantity + ' кг');
+  });
+
+  const report = 'Позначено скасованими: ' + marked + '\n' + lines.join('\n');
   console.log(report);
   return report;
 }
