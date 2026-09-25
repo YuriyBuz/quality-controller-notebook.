@@ -16,7 +16,7 @@
  * і в аркуші «Журнал_подій», а застосунок показує її текст на екрані.
  */
 
-const CODE_VERSION = 'qc-detergents-2026-09-01-quiet';
+const CODE_VERSION = 'qc-detergents-2026-09-25-order';
 
 // ==========================================
 // 0. АВТЕНТИФІКАЦІЯ ТА ПРАВА
@@ -1440,6 +1440,18 @@ function tryNotifyThreshold_(item) {
   }
 }
 
+/**
+ * Скільки замовити: або добрати до мінімуму, або взяти місячну потребу —
+ * що більше. Ніколи не нуль: якщо позиція на межі, замовляти таки треба.
+ *
+ * Одна функція на лист і на звіт навмисно: доки формула була в двох місцях,
+ * миттєвий лист узагалі не називав кількості, і людина мусила відкривати
+ * застосунок, щоб дізнатись те, що лист міг сказати одразу.
+ */
+function recommendOrder_(minStock, stock, used30) {
+  return Math.max(round_(minStock - stock), used30) || 1;
+}
+
 /** Один лист на позицію на день — замість листа після кожного списання. */
 function maybeNotifyThreshold_(item) {
   if (!(item.stock <= item.minStock)) return;
@@ -1458,6 +1470,12 @@ function maybeNotifyThreshold_(item) {
   const emails = getNotificationEmails();
   if (!emails) return;
 
+  // Журнал читається тільки тут — після перевірки «вже писали сьогодні»
+  // і після того, як стало відомо, що адресати є. Тобто не частіше ніж
+  // раз на позицію на добу, а не після кожного списання.
+  const used30 = collectUsage30_()[item.sheetName + '_' + item.model] || 0;
+  const recommend = recommendOrder_(item.minStock, item.stock, used30);
+
   MailApp.sendEmail({
     to: emails,
     subject: '⚠️ Засоби: ' + item.model + ' на межі (' + item.stock + ' з ' + item.minStock + ' кг)',
@@ -1469,6 +1487,8 @@ function maybeNotifyThreshold_(item) {
       '<tr><td>📍 Місце зберігання</td><td>' + item.storage + '</td></tr>' +
       '<tr><td>Мінімум, кг</td><td>' + item.minStock + '</td></tr>' +
       "<tr><td>Залишок, кг</td><td style='color:#b91c1c;'><b>" + item.stock + '</b></td></tr>' +
+      '<tr><td>Витрата за 30 днів, кг</td><td>' + used30.toFixed(2) + '</td></tr>' +
+      "<tr><td>Замовити, кг</td><td style='color:#0891b2;'><b>" + recommend.toFixed(2) + '</b></td></tr>' +
       '<tr><td>Постачальник</td><td>' + item.supplier + ' · ' + item.phone + '</td></tr></table>' +
       "<p style='color:#64748b; font-size:12px;'>Повний план закупки — кнопкою «Відправити план» у застосунку.</p></div>"
   });
@@ -1545,7 +1565,7 @@ function buildReport_() {
         const used30 = usage30[sheetName + '_' + model] || 0;
         deficit.push(Object.assign({}, base, {
           used30: used30,
-          recommend: Math.max(round_(minStock - stock), used30) || 1
+          recommend: recommendOrder_(minStock, stock, used30)
         }));
       } else if (minStock > 0 && stock >= minStock * EXCESS_FACTOR) {
         excess.push(Object.assign({}, base, { factor: round_(stock / minStock) }));
