@@ -91,11 +91,12 @@
                 </a>
             </div>
 
-            <div class="mt-2">
-                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер *</label>
-                <select id="employeeSelect" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors" required>
-                    <option value="" disabled selected>Оберіть...</option>
-                </select>
+            <div class="mt-2 flex items-center justify-between gap-3 bg-sky-50 dark:bg-slate-800/50 border border-sky-100 dark:border-slate-700 rounded-lg px-4 py-3">
+                <div class="min-w-0">
+                    <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Контролер</div>
+                    <div id="sessionName" class="text-lg font-bold text-slate-800 dark:text-slate-100 truncate">— не увійшли —</div>
+                </div>
+                <button id="logoutBtn" type="button" class="shrink-0 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-sky-700 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg transition-colors" title="Вийти і передати планшет іншому">Вийти</button>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -198,6 +199,7 @@
                     </label>
                 </div>
                 <div id="gallery-container" class="grid grid-cols-3 gap-2 hidden"></div>
+                <p id="photo-counter" class="text-xs text-slate-500 dark:text-slate-400 mt-2"></p>
             </div>
 
             <button onclick="initiateSend()" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2 text-lg">
@@ -236,22 +238,39 @@
         </div>
     </div>
 
+    <script src="qc-core.js"></script>
     <script>
-        // АКТУАЛЬНЕ ПОСИЛАННЯ (Перевірено)
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxG2c79RC60lVRubR8jspev9qGDEH63w7ksGYiJZnvCdxStGaygstDrZiof4kM_a8-oig/exec";
-        
-        const employees = ["Соботович Л.М.", "Огаркова М.В.", "Попадюк А.М."];
-        
-        const empSel = document.getElementById('employeeSelect');
-        employees.forEach(e => empSel.add(new Option(e, e)));
-        
-        // Init Defaults
-        document.getElementById('hvo-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
+        // Адреса розгортання АКАУНТА 2 (фасування, етикетування, ХВО).
+        // Поки не вписано — сторінка скаже про це на екрані входу, а не
+        // мовчки стукатиме не туди.
+        const GOOGLE_SCRIPT_URL = "PASTE_ACCOUNT_2_EXEC_URL_HERE";
 
-        // Restore User
-        const saved = localStorage.getItem('qc_user');
-        if(saved) empSel.value = saved;
-        empSel.onchange = () => localStorage.setItem('qc_user', empSel.value);
+        QC.configure({
+            url: GOOGLE_SCRIPT_URL,
+            section: 'hvo_control',
+            appName: 'Лаб. Контроль ХВО',
+            auth: true,            // вхід за PIN; ім'я контролера бере сервер із сесії
+            catalog: false,        // на цій сторінці довідники не потрібні
+            showBadge: true        // значок черги має бути видно
+        });
+
+        if (GOOGLE_SCRIPT_URL.indexOf('PASTE_') === 0) {
+            QC.toast('Не вписано адресу сервера (GOOGLE_SCRIPT_URL). Зверніться до адміністратора.', true);
+        }
+
+        // --- Хто увійшов ---
+        // Поле «Контролер» більше не вибирається зі списку: будь-хто міг
+        // записати від чужого імені. Тепер воно лише показує сесію.
+        QC.auth.onChange(function (session) {
+            const name = document.getElementById('sessionName');
+            name.textContent = session
+                ? session.journalName + (session.offline ? ' · офлайн-режим' : '')
+                : '— не увійшли —';
+        });
+        document.getElementById('logoutBtn').addEventListener('click', function () { QC.auth.logout(); });
+
+        // Init Defaults
+        document.getElementById('hvo-time').value = QC.fmtTime(new Date());
 
         // Theme Toggle
         document.getElementById('themeToggle').addEventListener('click', () => {
@@ -271,58 +290,11 @@
             }
         }
 
-        function showToast(message, isError = false) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast bg-white dark:bg-slate-700 border-l-4 p-4 rounded-lg shadow-xl flex items-center max-w-sm transform transition-all duration-300 translate-x-full border border-slate-200 dark:border-slate-600`;
-            if (isError) {
-                toast.classList.add('border-red-500', 'text-red-700', 'dark:text-red-400');
-                toast.innerHTML = `<span class="mr-2 text-xl">🚫</span> <span class="font-medium text-sm">${message}</span>`;
-            } else {
-                toast.classList.add('border-emerald-500', 'text-emerald-700', 'dark:text-emerald-400');
-                toast.innerHTML = `<span class="mr-2 text-xl">✅</span> <span class="font-medium text-sm">${message}</span>`;
-            }
-            container.appendChild(toast);
-            requestAnimationFrame(() => { toast.classList.remove('translate-x-full'); });
-            setTimeout(() => { toast.classList.add('translate-x-full'); setTimeout(() => toast.remove(), 300); }, 3000);
-        }
+        const showToast = QC.toast;
 
-        // FILES LOGIC
-        let uploadedFiles = [];
-
-        function handleFiles(input) {
-            const files = input.files;
-            if (files && files.length > 0) {
-                const container = document.getElementById('gallery-container');
-                container.classList.remove('hidden');
-
-                Array.from(files).forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const base64 = e.target.result;
-                        uploadedFiles.push({ name: file.name, type: file.type, data: base64 });
-                        const div = document.createElement('div');
-                        div.className = 'photo-preview-item';
-                        div.innerHTML = `<img src="${base64}"><div class="photo-remove-btn" onclick="removeFile(this, '${base64}')">✕</div>`;
-                        container.appendChild(div);
-                    };
-                    reader.readAsDataURL(file);
-                });
-            }
-            input.value = '';
-        }
-
-        function removeFile(btnElement, dataContent) {
-            btnElement.parentElement.remove();
-            uploadedFiles = uploadedFiles.filter(f => f.data !== dataContent);
-            if(uploadedFiles.length === 0) document.getElementById('gallery-container').classList.add('hidden');
-        }
-
-        function clearGallery() {
-            uploadedFiles = [];
-            document.getElementById('gallery-container').innerHTML = '';
-            document.getElementById('gallery-container').classList.add('hidden');
-        }
+        // --- Фото: стискаються до 1600px/JPEG, у DOM лише id, не base64 ---
+        const photos = QC.gallery({ container: 'gallery-container', counter: 'photo-counter' });
+        function handleFiles(input) { photos.add(input); }
 
         // Reset Logic
         function resetForm() {
@@ -331,16 +303,16 @@
         }
 
         function performReset() {
-            document.querySelectorAll('input').forEach(el => el.value = '');
+            document.querySelectorAll('input').forEach(el => { if (el.id !== 'qcLoginPin') el.value = ''; });
             document.querySelectorAll('select').forEach(el => {
-                el.value = ""; // Reset everything to empty
+                el.value = "";
                 el.classList.remove('input-alert');
             });
-            clearGallery();
-            
+            photos.clear();
+
             // Restore ONLY time default
-            document.getElementById('hvo-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
-            
+            document.getElementById('hvo-time').value = QC.fmtTime(new Date());
+
             document.getElementById('confirmResetModal').classList.add('hidden');
             document.getElementById('confirmResetModal').classList.remove('flex');
             showToast("Форму очищено");
@@ -358,140 +330,130 @@
                     showToast("Автоматичне скидання зміни (23:00)");
                 }
             }
-        }, 10000); 
+        }, 10000);
 
         let pendingData = null;
 
+        function val(id) { return document.getElementById(id).value; }
+
         function initiateSend() {
-            const emp = empSel.value;
-            const status = document.getElementById('hvo-status').value;
-            const salt1 = document.getElementById('hvo-salt1').value;
-            const salt2 = document.getElementById('hvo-salt2').value;
-            const aeration = document.getElementById('hvo-aeration').value;
+            if (!QC.auth.require()) return;
+            const session = QC.auth.session();
+
+            const status = val('hvo-status');
+            const salt1 = val('hvo-salt1');
+            const salt2 = val('hvo-salt2');
+            const aeration = val('hvo-aeration');
 
             // Strict Validation
-            if(!emp) { showToast("Оберіть контролера!", true); return; }
             if(!status) { showToast("Оберіть стан системи!", true); return; }
             if(!salt1) { showToast("Оберіть рівень солі (Бак 1)!", true); return; }
             if(!salt2) { showToast("Оберіть рівень солі (Бак 2)!", true); return; }
             if(!aeration) { showToast("Вкажіть статус аерації!", true); return; }
-            
+
             // Alerts logic
             let alerts = "";
             if (status.includes('Не')) alerts += "\n🔴 ЗАГАЛЬНИЙ СТАН: НЕ ВІДПОВІДАЄ";
             if (salt1.includes('Не')) alerts += "\n🔴 Сіль Бак №1: НЕ В НОРМІ";
             if (salt2.includes('Не')) alerts += "\n🔴 Сіль Бак №2: НЕ В НОРМІ";
             if (aeration.includes('Не')) alerts += "\n🔴 Аерація: НЕ ПРАЦЮЄ";
-            
-            const ph = parseFloat(document.getElementById('hvo-ph').value);
+
+            const ph = parseFloat(val('hvo-ph'));
             if (ph && (ph < 6 || ph > 9)) alerts += `\n🔴 УВАГА: pH ${ph} (можливе відхилення)`;
 
             let headerIcon = alerts ? "⚠️" : "💧";
 
+            // Час вимірювання — той, що вказав контролер, а не момент натискання
+            const measuredAt = QC.fmtDate(new Date()) + ', ' + (val('hvo-time') || QC.fmtTime(new Date()));
+
             const report = `${headerIcon} ЗВІТ QC: Лаб. Контроль ХВО
-👤 Контролер: ${emp}
-🕒 Час: ${document.getElementById('hvo-time').value}
+👤 Контролер: ${session.journalName}
+🕒 Час: ${val('hvo-time')}
 🏭 Стан системи: ${status}
 💨 Аерація: ${aeration}
 
 🧂 Таблетована сіль:
-   • Бак №1: ${salt1} (Залишок: ${document.getElementById('hvo-residue1').value || '0'} м³)
-   • Бак №2: ${salt2} (Залишок: ${document.getElementById('hvo-residue2').value || '0'} м³)
+   • Бак №1: ${salt1} (Залишок: ${val('hvo-residue1') || '0'} м³)
+   • Бак №2: ${salt2} (Залишок: ${val('hvo-residue2') || '0'} м³)
 
 📈 Ротаметри:
-   • Пом'якшена: ${document.getElementById('hvo-rot-soft').value || '-'}
-   • Чиста: ${document.getElementById('hvo-rot-pure').value || '-'}
+   • Пом'якшена: ${val('hvo-rot-soft') || '-'}
+   • Чиста: ${val('hvo-rot-pure') || '-'}
 
 🧪 Хімічні показники:
-   • Жорсткість: ${document.getElementById('hvo-hardness').value || '-'}
-   • Залізо (Fe): ${document.getElementById('hvo-iron').value || '-'}
-   • Марганець (Mn): ${document.getElementById('hvo-manganese').value || '-'}
-   • pH: ${document.getElementById('hvo-ph').value || '-'}
+   • Жорсткість: ${val('hvo-hardness') || '-'}
+   • Залізо (Fe): ${val('hvo-iron') || '-'}
+   • Марганець (Mn): ${val('hvo-manganese') || '-'}
+   • pH: ${val('hvo-ph') || '-'}
 
-📷 Фото: ${uploadedFiles.length} шт.
+📷 Фото: ${photos.count} шт.
 ${alerts}
 `;
 
+            // Імена полів — такі, які читає сервер. Раніше сторінка слала
+            // systemStatus/rotPure/hardness/iron/manganese, сервер читав
+            // status/rotClean/hard/fe/mn, і сім показників ніколи не
+            // потрапляли у свої колонки. Залишки солі й аерація не
+            // надсилались узагалі.
             pendingData = {
                 type: "hvo_control",
-                time: new Date().toLocaleString('uk-UA'),
-                employee: emp,
-                section: "Лаб. Контроль ХВО",
+                time: measuredAt,
                 report: report,
-                // Fields
-                timeVal: document.getElementById('hvo-time').value,
-                systemStatus: status,
+                status: status,
                 salt1: salt1,
+                rem1: val('hvo-residue1'),
                 salt2: salt2,
-                rotSoft: document.getElementById('hvo-rot-soft').value,
-                rotPure: document.getElementById('hvo-rot-pure').value,
-                hardness: document.getElementById('hvo-hardness').value,
-                iron: document.getElementById('hvo-iron').value,
-                manganese: document.getElementById('hvo-manganese').value,
-                ph: document.getElementById('hvo-ph').value,
-                files: uploadedFiles,
-                photo: uploadedFiles.length > 0 ? uploadedFiles[0].data : ""
+                rem2: val('hvo-residue2'),
+                aeration: aeration,
+                rotSoft: val('hvo-rot-soft'),
+                rotClean: val('hvo-rot-pure'),
+                hard: val('hvo-hardness'),
+                fe: val('hvo-iron'),
+                mn: val('hvo-manganese'),
+                ph: val('hvo-ph'),
+                files: photos.files
             };
+
+            const size = QC.checkSize(pendingData);
+            if (!size.ok) {
+                showToast('Забагато даних (~' + size.mb + ' МБ). Видаліть частину фото.', true);
+                pendingData = null;
+                return;
+            }
 
             document.getElementById('reportPreview').innerText = report;
             document.getElementById('sendStatus').innerText = "";
             document.getElementById('sendActions').style.display = 'flex';
             document.getElementById('sendSpinner').classList.add('hidden');
-            
+
             document.getElementById('sendModal').classList.remove('hidden');
             document.getElementById('sendModal').classList.add('flex');
         }
 
-        async function executeSend() {
-            const actions = document.getElementById('sendActions');
-            const spinner = document.getElementById('sendSpinner');
-            const status = document.getElementById('sendStatus');
-
-            actions.style.display = 'none';
-            spinner.classList.remove('hidden');
-            status.innerText = "Відправка...";
-
-            try {
-                await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(pendingData)
-                });
-                
-                status.innerText = "✅ Дані відправлено (черга)!";
-                status.classList.add('text-emerald-600');
-                
-                setTimeout(() => {
+        // Форма очищається ЛИШЕ коли сервер підтвердив запис або запис
+        // надійно ліг у чергу на пристрої. Раніше вона очищалась завжди —
+        // і дані зникали разом із нею, навіть якщо сервер їх не прийняв.
+        function executeSend() {
+            if (!pendingData) return;
+            QC.submit(pendingData, {
+                status: 'sendStatus',
+                actions: 'sendActions',
+                spinner: 'sendSpinner',
+                button: 'doSendBtn',
+                onDone: function (result) {
+                    pendingData = null;
                     closeSendModal();
-                    performReset(); 
-                }, 2000);
-            } catch(e) {
-                status.innerText = "❌ Помилка з'єднання";
-                status.classList.add('text-red-500');
-                actions.style.display = 'flex';
-                spinner.classList.add('hidden');
-            }
+                    performReset();
+                }
+            });
         }
 
         function closeSendModal() {
             document.getElementById('sendModal').classList.add('hidden');
             document.getElementById('sendModal').classList.remove('flex');
         }
-        
+
         document.getElementById('doSendBtn').onclick = executeSend;
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
