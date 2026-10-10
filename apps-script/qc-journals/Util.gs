@@ -229,7 +229,7 @@ function clearEmailCache() {
   Logger.log('Кеш адрес очищено. Наступний лист прочитає аркуш «%s» заново.', EMAIL_SHEET);
 }
 
-function sendMail_(subject, body, attachments, section, extraRecipients) {
+function sendMail_(subject, body, attachments, section, extraRecipients, senderLabel) {
   let targets = recipients_();
   if (extraRecipients) targets += ',' + extraRecipients;
 
@@ -261,7 +261,7 @@ function sendMail_(subject, body, attachments, section, extraRecipients) {
     to: list.join(','),
     subject: subject,
     body: body || '(без тексту)',
-    name: 'QC ' + (section || 'Блокнот')
+    name: 'QC ' + (senderLabel || 'Блокнот')
   };
   if (attachments && attachments.length) params.attachments = attachments;
 

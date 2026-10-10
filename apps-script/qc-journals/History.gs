@@ -280,13 +280,18 @@ function firstRowFrom_(sheet, boundary) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return 0;
 
-  let low = 2;
-  let high = lastRow;
-  let found = lastRow + 1;
+  // Одна колонка одним викликом: кілька тисяч комірок — це дешево.
+  // Пошук по комірці за раз коштував би окремий запит до таблиці на
+  // кожен крок, тобто близько сотні на один запит історії.
+  const dates = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+
+  let low = 0;
+  let high = dates.length - 1;
+  let found = -1;
 
   while (low <= high) {
     const mid = Math.floor((low + high) / 2);
-    const date = toDate_(sheet.getRange(mid, 1).getValue());
+    const date = toDate_(dates[mid][0]);
     if (date && date.getTime() >= boundary) {
       found = mid;
       high = mid - 1;
@@ -294,7 +299,7 @@ function firstRowFrom_(sheet, boundary) {
       low = mid + 1;
     }
   }
-  return found > lastRow ? 0 : found;
+  return found === -1 ? 0 : found + 2;      // індекс масиву → номер рядка
 }
 
 function handleGetData_(filters) {

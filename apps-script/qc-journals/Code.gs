@@ -324,7 +324,7 @@ function writeJournal_(data) {
       actor: session.name, device: data.deviceId, section: key,
       details: 'фото: ' + blobs.length + (recordId ? ', recordId ' + recordId : '') });
 
-    sendMail_(config.subject(data), data.report, blobs, key, config.mailExtra);
+    sendMail_(config.subject(data), data.report, blobs, key, config.mailExtra, config.sheet);
 
     return { result: 'success', section: key, employee: who };
 
