@@ -150,8 +150,12 @@ function journals_() {
                 'Нанесення', 'Якість пака', 'Стікер', 'Розкладка', 'Палетування',
                 'Коментар', 'Фото'],
       row: function (d, who, photos) {
-        return [now_(), d.time, who, d.machine, d.tm, d.product, d.task, d.checkSanit,
-                d.labelDate, d.batch, d.width, d.temp, d.checkApply, d.checkPack,
+        // Стара сторінка слала sanitary/checkLabel, сервер читав checkSanit/checkApply —
+        // «Санітарія» і «Нанесення» лишались порожні. Приймаємо обидві назви.
+        return [now_(), d.time, who, d.machine, d.tm, d.product, d.task,
+                pick_(d, ['checkSanit', 'sanitary']),
+                d.labelDate, d.batch, d.width, d.temp,
+                pick_(d, ['checkApply', 'checkLabel']), d.checkPack,
                 d.checkSticker, d.checkLayout, d.checkPallet, d.comment, photos];
       },
       // Розрахунковий термін придатності й партію форма рахує, показує

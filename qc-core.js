@@ -28,7 +28,7 @@
         url:              '',
         section:          'unknown',
         appName:          'Блокнот QC',  // заголовок на екрані входу
-        appVersion:       '3.0.0',
+        appVersion:       '3.1.0',
         sendTimeoutMs:    60000,         // Apps Script вміє «зависати»
         photoMaxWidth:    1600,
         photoQuality:     0.72,
@@ -386,6 +386,11 @@
                 // пауза, і користувач не має її чекати, щоб увійти
                 saveOfflineUnlock(pin, result);
                 if (result.warning) toast('⚠️ ' + result.warning, true);
+                // Після входу: черга йде з новим токеном, довідники — з сесією.
+                // Тут, а не в кнопці входу, щоб спрацьовувало для будь-якого
+                // шляху входу (кнопка, програмний виклик зі сторінки).
+                flush(true);
+                if (cfg.catalog !== false) catalogInit();
                 return session;
             })
             .catch(function (err) {
@@ -424,8 +429,6 @@
 
         login(input.value).then(function () {
             hideLogin();
-            flush(true);
-            if (cfg.catalog !== false) catalogInit();
         }).catch(function (err) {
             showLogin(err.message || 'Не вдалося увійти');
         }).finally(function () {
@@ -864,6 +867,18 @@
             return (v && v.length) ? v : null;
         },
         has: function (name) { return !!catalog.get(name); },
+        // Групування довідника-обʼєктів за полем, ключі в порядку появи в таблиці:
+        // group('products', 'tm') → { keys: ['Bonsai', ...], byKey: { Bonsai: [...] } }
+        group: function (name, field) {
+            var list = catalog.get(name) || [], keys = [], byKey = {};
+            list.forEach(function (item) {
+                var k = item && item[field] != null ? String(item[field]).trim() : '';
+                if (!k) return;
+                if (!byKey[k]) { byKey[k] = []; keys.push(k); }
+                byKey[k].push(item);
+            });
+            return { keys: keys, byKey: byKey };
+        },
         refresh: function (manual) { return catFetch(manual !== false); },
         info: catInfo,
         // fn(data, info) викликається одразу після підписки і далі на кожне оновлення

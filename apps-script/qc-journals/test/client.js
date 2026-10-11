@@ -271,6 +271,84 @@ const ui = (w) => {
     eq('D5 повтор із тим самим recordId → sent (дедуп), рядків не додалось', [again, sheet.getLastRow()], ['sent', 2]);
   }
 
+  // =====================================================================
+  group('E. Наскрізно: фасування й етикетування → бекенд, довідники після входу');
+  {
+    const DATA_ID = '1VKKlqzrzRsZzDU1kbYciXnJ7J1Kr9fl1GF2RBBwlUUo', REF_ID = '1UhdO9ALcSXk8fgWhUnMiluO4Aao6R4EP6iN4Ie__rY8';
+    const emp = (id, full, short, pos, status, pin) => { const r = new Array(19).fill(''); r[0] = id; r[1] = full; r[2] = short; r[4] = pos; r[7] = status; r[16] = pin; return r; };
+    const books = {
+      [REF_ID]: new Book('gw-ref', {
+        '_REF_Positions': [['pos_id', 'назва', 'підрозділ', 'ролі типові'], ['POS-012', 'Контролер якості', 'Лабораторія', 'qc.use']],
+        '_REF_Employees': [new Array(19).fill('h'), emp('EMP-0024', 'Соботович Лілія Михайлівна', 'Соботович Л. М.', 'POS-012', 'active', '2468')],
+      }),
+      [DATA_ID]: new Book('QC Data 2.0', {
+        'email': [['email'], ['a@test.ua']],
+        'Обладнання': [['Назва обладнаня '], ['Лінія А'], ['Лінія B'], ['Ручне фасування']],
+        'Соуси': [['Наименование', 'Артикул'], ['1101 Соєвий Bonsai', 1101], ['1214 Солодкий Чилі Bonsai', 1214]],
+        'PRODUCT_DATABASE': [['Продукт (Код/Назва)', 'ТМ (Торгова Марка)', 'Артикул', 'Продукт (SKU)', 'Термін (міс)'],
+          ['1101 Соєвий Bonsai', 'Bonsai', 3102, 'Bonsai соус соєвий Класичний 235 мл', 18],
+          ['1101 Соєвий Bonsai', 'Bonsai', 3103, 'Bonsai соус соєвий Класичний 500 мл', 18],
+          ['1214 Солодкий Чилі Bonsai', 'Peri Peri', 3418, 'Peri Peri соус Солодкий-Чилі 320 г', 12],
+          ['', '', '', '', '']],
+        'Фасування': [['Дата запису', 'Час', 'Контролер', 'Лінія', 'Код продукту', 'ТМ', 'SKU', 'Партія', 'Вага', 'Герметичність', 'Маркування', 'Зовнішній вигляд', 'Кришка', 'Коментар', 'Фото']],
+        'Етикетування': [['Дата запису', 'Час', 'Контролер', 'Машина/Лінія', 'ТМ', 'Продукт', '№ Завдання', 'Санітарія', 'Дата етикетки', 'Партія', 'Ширина', 'Температура', 'Нанесення', 'Якість пака', 'Стікер', 'Розкладка', 'Палетування', 'Коментар', 'Фото', '', '', '', '', '', '']],
+      }),
+    };
+    const server = makeEnv({ books, props: [['AUTH_SECRET', 's']], sections: ['packing', 'labeling', 'hvo_control'], serveHistory: false });
+
+    // --- фасування: довідники приходять лише після входу ---
+    const w = makeBrowser({ responder: b => server.__post(b) });
+    w.QC.configure({ url: URL, section: 'packing', auth: true, catalog: true });
+    ok('E1 до входу довідників немає (сервер без сесії їх не віддає)', w.QC.catalog.get('products') === null);
+    await w.QC.auth.login('2468'); await tick(80);
+    ok('E1 після входу довідник products підтягнуто', !!w.QC.catalog.get('products'));
+    eq('E1 equipment з аркуша «Обладнання»', w.QC.catalog.get('equipment'), ['Лінія А', 'Лінія B', 'Ручне фасування']);
+    ok('E1 довідник ліг у кеш пристрою', !!w.__storage.get('qc_catalog_v2'));
+    const g = w.QC.catalog.group('products', 'tm');
+    eq('E2 group(): ТМ у порядку появи, без порожніх', g.keys, ['Bonsai', 'Peri Peri']);
+    eq('E2 group(): позиції за ТМ з артикулом і терміном', g.byKey['Bonsai'].map(p => p.code + '/' + p.months), ['3102/18', '3103/18']);
+    eq('E2 group() незнаного довідника — порожньо, не виняток', w.QC.catalog.group('nope', 'x').keys, []);
+
+    const packing = {
+      type: 'packing', time: '11.10.2026, 14:30', report: '🍶 ЗВІТ', line: 'Лінія А', productCode: '1101 Соєвий Bonsai',
+      tm: 'Bonsai', sku: '3102 | Bonsai соус соєвий Класичний 235 мл', batch: '245', weight: '236.5',
+      seal: '✅', print: '✅', appearance: '❌', cap: '✅', comment: 'тест', files: [],
+    };
+    const r1 = await w.QC.submit(packing, ui(w)); await tick();
+    eq('E3 фасування: submit → sent', r1, 'sent');
+    const ps = books[DATA_ID].getSheetByName('Фасування');
+    eq('E3 один рядок', ps.getLastRow(), 2);
+    eq('E3 Час…Коментар на своїх місцях, контролер із сесії', ps.rows[1].slice(1, 14),
+       ['11.10.2026, 14:30', 'Соботович Л.М.', 'Лінія А', '1101 Соєвий Bonsai', 'Bonsai', '3102 | Bonsai соус соєвий Класичний 235 мл', '245', '236.5', '✅', '✅', '❌', '✅', 'тест']);
+    ok('E3 emp_id у кінці', ps.rows[1][ps.rows[0].indexOf('emp_id')] === 'EMP-0024');
+
+    // --- етикетування: та сама сесія, бо обидва розділи на одному бекенді ---
+    const w2 = makeBrowser({ responder: b => server.__post(b) });
+    ['qc_session_v1', 'qc_device_v1', 'qc_activity_v1', 'qc_unlock_v1'].forEach(k => { const v = w.__storage.get(k); if (v) w2.__storage.set(k, v); });
+    w2.QC.configure({ url: URL, section: 'labeling', auth: true, catalog: false });
+    ok('E4 сесія з фасування діє на етикетуванні без повторного PIN', w2.QC.auth.session() !== null && !loginShown(w2));
+    const labeling = {
+      type: 'labeling', time: '11.10.2026, 15:00', report: '🏷️ ЗВІТ', machine: 'Лінія B', tm: 'Bonsai',
+      product: '3102 - Bonsai соус соєвий Класичний 235 мл', task: '512', checkSanit: '✅ ОК', labelDate: '2028-04-11',
+      calculatedExpiry: '11.04.2028', calculatedBatch: 'L 512', batch: '512', width: '350/350', temp: '180',
+      checkApply: '✅', checkPack: '✅', checkSticker: '❌', checkLayout: '✅', checkPallet: '✅', comment: '', files: [],
+    };
+    const r2 = await w2.QC.submit(Object.assign({}, labeling), ui(w2)); await tick();
+    eq('E4 етикетування: submit → sent', r2, 'sent');
+    const ls = books[DATA_ID].getSheetByName('Етикетування');
+    const lh = ls.rows[0], lr = ls.rows[1];
+    eq('E5 «Санітарія» і «Нанесення» тепер заповнені', [lr[lh.indexOf('Санітарія')], lr[lh.indexOf('Нанесення')]], ['✅ ОК', '✅']);
+    eq('E5 розрахункові термін і партія — окремими колонками', [lr[lh.indexOf('Розрахунковий термін')], lr[lh.indexOf('Розрахункова партія')]], ['11.04.2028', 'L 512']);
+    eq('E5 Машина, ТМ, Продукт, Стікер', [lr[3], lr[4], lr[5], lr[lh.indexOf('Стікер')]], ['Лінія B', 'Bonsai', '3102 - Bonsai соус соєвий Класичний 235 мл', '❌']);
+
+    // стара сторінка (ще не оновлена) шле sanitary/checkLabel — сервер приймає і їх
+    const legacy = Object.assign({}, labeling, { sanitary: '❌ НЕ ОК', checkLabel: '❌' });
+    delete legacy.checkSanit; delete legacy.checkApply;
+    const r3 = await w2.QC.submit(legacy, ui(w2)); await tick();
+    const lr2 = ls.rows[2];
+    eq('E6 старі назви полів sanitary/checkLabel теж лягають у свої колонки', [r3, lr2[lh.indexOf('Санітарія')], lr2[lh.indexOf('Нанесення')]], ['sent', '❌ НЕ ОК', '❌']);
+  }
+
   console.log(`\n${fail ? '✗' : '✓'} пройдено ${pass}, провалено ${fail}`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error('ЗБІЙ СТЕНДА:', e); process.exit(2); });

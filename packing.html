@@ -80,11 +80,12 @@
             </button>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
-                <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер *</label>
-                    <select id="employeeSelect" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors" required>
-                        <option value="" disabled selected>Оберіть...</option>
-                    </select>
+                <div class="flex items-center justify-between gap-3 bg-indigo-50 dark:bg-slate-800/50 border border-indigo-100 dark:border-slate-700 rounded-lg px-4 py-3">
+                    <div class="min-w-0">
+                        <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Контролер</div>
+                        <div id="sessionName" class="text-lg font-bold text-slate-800 dark:text-slate-100 truncate">— не увійшли —</div>
+                    </div>
+                    <button id="logoutBtn" type="button" class="shrink-0 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-700 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg transition-colors" title="Вийти і передати планшет іншому">Вийти</button>
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Час</label>
@@ -96,13 +97,12 @@
                  <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Лінія / Машина *</label>
                  <select id="pck-line" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors" required>
                     <option value="" disabled selected>Оберіть...</option>
-                    <option value="Line A">Лінія A</option>
-                    <option value="Line B">Лінія B</option>
-                    <option value="Line C">Лінія C</option>
-                    <option value="Line D">Лінія D</option>
-                    <option value="Line F">Лінія F</option>
-                    <option value="Manual">Ручне фасування</option>
                 </select>
+            </div>
+
+            <div class="flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 px-1">
+                <span id="catalogStatus">Довідники: —</span>
+                <button id="catalogRefresh" type="button" class="font-bold text-indigo-600 dark:text-indigo-400 hover:underline" title="Перечитати списки з таблиці QC Data 2.0">↻ Оновити списки</button>
             </div>
 
             <div class="bg-indigo-50 dark:bg-slate-800/80 p-5 rounded-lg border border-indigo-100 dark:border-slate-700 space-y-6">
@@ -201,9 +201,8 @@
                 </div>
                 
                 <!-- Gallery Grid -->
-                <div id="gallery-container" class="grid grid-cols-3 gap-2 hidden">
-                    <!-- Preview items will be added here -->
-                </div>
+                <div id="gallery-container" class="grid grid-cols-3 gap-2 hidden"></div>
+                <p id="photo-counter" class="text-xs text-slate-500 dark:text-slate-400 mt-2"></p>
             </div>
 
             <textarea id="pck-comment" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg focus:outline-none focus:border-indigo-500 transition-colors" rows="2" placeholder="Додатковий коментар (опціонально)..."></textarea>
@@ -241,236 +240,96 @@
         </div>
     </div>
 
+    <script src="qc-core.js"></script>
     <script>
-        // АКТУАЛЬНЕ ПОСИЛАННЯ (Quality Food Line)
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwn460TOjAqX3k0KyNMKM4321MryCu9EpNckr5HhHJdSMok6F8kSZTkHBZ8sfySDpWfhQ/exec";
-        
-        const employees = ["Соботович Л.М.", "Огаркова М.В.", "Інший"];
-        
-        // --- DATA FROM SAUCE BOILING (Варки соусу) ---
-        const productsFromBoiling = [
-             "1101 Соєвий Bonsai", "1102 Соєвий Bonsai Prem", "1103 Соєвий YKI", "1104 Соєвий Bonsai Prof",
-            "1105 Соєвий Чумак", "1106 Соєвий METRO Chef", "1107 ТАМАРИ Bonsai", "1108 Теріякі Bonsai",
-            "1109 УНАГІ Bonsai", "1110 ЯКІТОРІ Bonsai", "1111 Теріякі Bonsai Prem", "1112 Теріякі густий YKI",
-            "1113 Теріякі з медом Bonsai", "1114 Теріякі рідкий YKI", "1115 Теріякі Чумак", "1116 Для Суши Bonsai",
-            "1117 Бальзамик Bonsai Prem", "1118 Горіховий Bonsai Prem", "1119 Соєвий Bonsai Prof (Custom Edition)", "1120 Для Суши Bonsai Prem",
-            "1121 Соєвий (O)", "1122 Соєвий Ketjap", "1123 Устричний Bonsai", "1124 Соєвий Солодкий Теріякі",
-            "1125 Соус соєвий Теріякі SESAME & GINGER PERI PERI", "1126 Соус соєвий Теріякі SWEET CHILI PERI PERI",
-            "1127 Соус соєвий Унагі SWEET & SOUR PERI PERI", "1128 Соус соєвий SOY & WHEAT PERI PERI", "1129 Маринад соєвий №1",
-            "1130 Маринад соєвий №7", "1131 Соус Теріякі Домінос", "1132 Соус соєвий /(Суши Тайм)", "1133 Соєвий густий",
-            "1134 Соус соєвий_PL", "1201 Кисло-солодкий Peri Peri", "1202 Гостро-солодкий Peri Peri", "1203 Журавлинний Peri Peri",
-            "1204 Ожиновий Peri Peri", "1205 Hot Chili PL", "1206 Sweet Chili Peri Peri, Bonsai Prem", "1207 Гранатовий Наршараб Peri Peri",
-            "1208 Для ЛокшиниWOK Peri Peri", "1209 Жовто-гарячий Peri Peri", "1210 Солодкий Чилі YKI", "1211 Манго-Чилі Peri Peri",
-            "1212 Пряні трави Peri Peri", "1213 Солодкий Чилі Чумак", "1214 Солодкий Чилі Bonsai", "1216 Солодкий Чилі(SE) Bonsai Prem",
-            "1217 Sweet Chili PL (PD)", "1218 Sweet Chili PL", "1219 Ткемалі Peri Peri", "1220 Кімчі Premium", "1221 Сацебелі Peri Peri",
-            "1301 Аризона Барбекю Peri Peri", "1302 Болоньезе Peri Peri", "1303 З в’яленими томатами Peri Peri", "1304 Кетчуп Peri Peri",
-            "1305 Болоньєзе YKI", "1307 Для ПІЦИ Bonsai Prof", "1308 Кетчуп Лагідний YKI", "1310 Кетчуп Чілі YKI",
-            "1312 PL_Соус Томатний (PD)", "1314 PL_Соус №95 Томатний", "1315 PL_Томатна паста 1000 гр", "1401 Original Salateria",
-            "1402 Бальзаміко Fresh Salateria", "1403 З кунжутною олією Salateria", "1404 З кунжутом Salateria", "1405 Медово-гірчична Fresh Salateria",
-            "1501 Кунжутний PP, BProf, Salat", "1502 Сирний Bonsai Prof", "1503 Тартар Peri Peri", "1504 Цезар Peri Peri",
-            "1505 Сирний Bonsai Prof, Peri Peri", "1506 ПЕСТО ROSSO", "1507 ПЕСТО", "1508 ПЕСТО PL", "1509 Майонез original 73%",
-            "1510 PL_Вершковий (PD)", "1601 Наповнювач Вишневий PL", "1602 Наповнювач Лісова ягода PL", "1701 Концентрований компот яблучно-грушевий",
-            "1702 Концентрований компот яблучно-вишневий", "1703 Концентрований компот яблучно-малиновий", "1704 Концентрований компот абрикосово-персиковий",
-            "1801 В’ялені томати"
-        ];
+        // Адреса розгортання АКАУНТА 2 (фасування, етикетування, ХВО).
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwzO-Ja7gcrjrSPt07kqli3lXRoy6We99ioQ5sQkFcb0sgmIaa9-AZe5N1whnReX9o/exec";
 
-        // --- DATA FROM LABELING (Етикетування) ---
-        const productDatabaseLabeling = {
-            "Bonsai": [
-                {id: "3102", name: "Bonsai соус соєвий Класичний 235 мл"},
-                {id: "3103", name: "Bonsai соус соєвий Класичний 500 мл"},
-                {id: "3115", name: "Bonsai соус соєвий 750 мл"},
-                {id: "3104", name: "Bonsai соус соєвий Класичний 890 мл"},
-                {id: "3101", name: "Bonsai соус соєвий Класичний 1000 мл (20531)"},
-                {id: "3108", name: "Bonsai соус соєвий ТЕРІЯКІ з часником та имбирем (густий) 235 мл"},
-                {id: "3109", name: "Bonsai соус соєвий УНАГІ кисло-солодкий (Густий) 240 мл"},
-                {id: "3105", name: "Bonsai соус соєвий ДЛЯ СУШІ з водоростями КОМБУ 235 мл"},
-                {id: "3111", name: "Bonsai соус соєвий ЯКІТОРІ з устрицями та кунжутом (густий) 235 мл"},
-                {id: "3106", name: "Bonsai соус соєвий ТАМАРІ з натур. медом 235 мл"},
-                {id: "3112", name: "Bonsai соус солодкий Теріякі 235 мл"},
-                {id: "3113", name: "Bonsai соус Солодкий Чилі 260 гр"},
-                {id: "3110", name: "Bonsai соус соєвий УНАГІ кисло-солодкий 500 мл"},
-                {id: "3116", name: "Bonsai соус соєвий Теріякі 500 мл"},
-                {id: "3107", name: "Bonsai соус соєвий ТЕРІЯКІ з натуральним медом 500 мл"},
-                {id: "3114", name: "Bonsai соус Солодкий Чилі 550 гр"},
-                {id: "3120", name: "Bonsai соус соєвий Класичний (густий) дой-пак 200 гр"},
-                {id: "3117", name: "Bonsai соус соєвий ТЕРІЯКІ з часником та имбирем (густий) дой-пак 200 гр"},
-                {id: "3119", name: "Bonsai соус соєвий УНАГІ кисло-солодкий (густий) дой-пак 200 гр"},
-                {id: "3118", name: "Bonsai соус солодкий Теріякі (густий) дой-пак 200 гр"},
-                {id: "3121", name: "Bonsai соус Солодкий Чилі (густий) дой-пак 200гр"}
-            ],
-            "Bonsai Premium": [
-                {id: "3202", name: "Bonsai Premium соус cоєвий Ketjap Manis 570 г"},
-                {id: "3201", name: "Bonsai Premium соус cоєвий Бальзамічний 250 мл"},
-                {id: "3203", name: "Bonsai Premium соус cоєвий Класичний 1000 мл"},
-                {id: "3211", name: "Bonsai Premium соус cоєвий Класичний 20 л"},
-                {id: "3204", name: "Bonsai Premium соус cоєвий Класичний 250 мл"},
-                {id: "3205", name: "Bonsai Premium соус cоєвий Теріякі 250 мл"},
-                {id: "3206", name: "Bonsai Premium соус ГОРІХОВИЙ 500 гр"},
-                {id: "3207", name: "Bonsai Premium соус Гранатовий (НАРШАРАБ) 350гр"},
-                {id: "3209", name: "Bonsai Premium соус НАРШАРАБ 1300 гр"},
-                {id: "3208", name: "Bonsai Premium соус солодкий чилі 1100 гр"}
-            ],
-            "Bonsai Professional": [
-                {id: "3305", name: "Bonsai professional соус БОЛОНЬЄЗЕ (Італ. кухня) 1000 мл"},
-                {id: "3301", name: "Bonsai professional соус ГОСТРО-СОЛОДКИЙ (Китай. кухня) 1000 мл"},
-                {id: "3307", name: "Bonsai professional соус Для піци 1000 гр"},
-                {id: "3308", name: "Bonsai professional соус КИСЛО-СОЛОДКИЙ (Китай. кухня) 1000 мл"},
-                {id: "3309", name: "Bonsai professional соус Кімчі 1100 гр"},
-                {id: "3310", name: "Bonsai professional соус КУНЖУТНИЙ (густий) 1000 мл"},
-                {id: "3311", name: "Bonsai professional соус Сирний 1 кг/відро"},
-                {id: "3312", name: "Bonsai professional соус соєвий Класичний 1000 мл (концентрат 1:1)"},
-                {id: "3313", name: "Bonsai professional соус соєвий класичний 5000 мл ПЕТ (Концентрат 1:1)"},
-                {id: "3314", name: "Bonsai professional соус соєвий Класичний каністра 20 л New"},
-                {id: "3315", name: "Bonsai professional соус соєвий ТЕРІЯКІ (густий) 1000 мл"},
-                {id: "3316", name: "Bonsai professional соус соєвий ЯКІТОРІ (густий) 1000 мл"},
-                {id: "3317", name: "Bonsai professional соус солодкий ТЕРІЯКІ (густий) 1000 мл"},
-                {id: "3318", name: "Bonsai professional соус Солодкий Чилі 5700 гр ПЕТ"},
-                {id: "3319", name: "Bonsai professional соус УНАГІ (густий) 1000 мл"},
-                {id: "3320", name: "Bonsai professional Соус УСТРИЧНИЙ (густий) 1000 мл"},
-                {id: "3321", name: "Bonsai Professional соус Цезар 5200 гр"},
-                {id: "3322", name: "Bonsai professional соус ТАРТАР 5??? Гр"}
-            ],
-            "Peri Peri": [
-                {id: "3401", name: "Peri Peri соус Аризона BBQ (Американська кухня) 320 г"},
-                {id: "3402", name: "Peri Peri соус Болоньєзе (Італ.кухня) 310 г"},
-                {id: "3403", name: "Peri Peri соус Гостро-солодкий (Китай.кухня) 320 г"},
-                {id: "3404", name: "Peri Peri соус Гранатовий (НАРШАРАБ) 255 г"},
-                {id: "3405", name: "Peri Peri соус для Локшини WOK (Кантонська кухня) 320 г"},
-                {id: "3425", name: "Peri Peri соус Жовто-гарячий (Тайська кухня) 310 г"},
-                {id: "3426", name: "Peri Peri соус Журавлинний (Англійська кухня) 330 г"},
-                {id: "3406", name: "Peri Peri соус З в’яленими томатами (Італійська кухня) 310 г"},
-                {id: "3407", name: "Peri Peri соус Кетчуп (Американська кухня) 320 г"},
-                {id: "3408", name: "Peri Peri соус Кисло-солодкий (Китай.кухня) 320 г"},
-                {id: "3409", name: "Peri Peri соус Кунжутний (Японська кухня) 310 г"},
-                {id: "3410", name: "Peri Peri соус Манго-Чилі (Тайська кухня) 320 г"},
-                {id: "3411", name: "Peri Peri соус Ожиновий з перцем Халапеньйо (Мексиканська кухня) 330 г"},
-                {id: "3424", name: "Peri Peri соус Цезар (Американська кухня) 300 г"},
-                {id: "3422", name: "Peri Peri соус Ткемалі (Грузинська кухня) 320 г"},
-                {id: "3414", name: "Peri Peri соус Пряні трави (Італійська кухня) 310 г"},
-                {id: "3415", name: "Peri Peri соус Сацебелі (Грузинська кухня) 320 г"},
-                {id: "3418", name: "Peri Peri соус Солодкий-Чилі (Тайська кухня) 320 г"},
-                {id: "3419", name: "Peri Peri соус ТАРТАР (Французька кухня) 280 г"},
-                {id: "3420", name: "Peri Peri соус ТЕРІЯКІ sesame & ginger 180 мл"},
-                {id: "3421", name: "Peri Peri соус ТЕРІЯКІ sweet chili 180 мл"},
-                {id: "3417", name: "Peri Peri соус соєвий soy & wheat 180 мл"},
-                {id: "3423", name: "Peri Peri соус УНАГІ sweet & sour 180 мл"},
-                {id: "3412", name: "Peri Peri соус ПЕСТО 200 г"},
-                {id: "3413", name: "Peri Peri соус ПЕСТО ROSSO 200 г"}
-            ],
-            "6 ЛІТРІВ": [
-                {id: "1", name: "6 ЛІТРІВ концентрований компот абрикосово-персиковий 1000 мл"},
-                {id: "2", name: "6 ЛІТРІВ концентрований компот яблучно-вишневий 1000 мл"},
-                {id: "3", name: "6 ЛІТРІВ концентрований компот яблучно-грушевий 1000 мл"},
-                {id: "4", name: "6 ЛІТРІВ концентрований компот яблучно-малиновий 1000 мл"}
-            ],
-            "Salateria": [
-                {id: "31001", name: "Salateria Fresh Салатна заправка Медово-Гірчична 335 г"},
-                {id: "31002", name: "Salateria Fresh Салатна заправка Цезар 320 г"},
-                {id: "31003", name: "Salateria Fresh Салатна заправка Бальзаміко 335 г"},
-                {id: "3501", name: "Salateria Салатна заправка Original 360 г"},
-                {id: "3502", name: "Salateria Салатна заправка бальзамічна 360 г"},
-                {id: "3503", name: "Salateria Салатна заправка КУНЖУТНА 320 г"},
-                {id: "3504", name: "Salateria Салатна заправка соєва з кунжутною олією 360 г"},
-                {id: "3505", name: "Salateria Салатна заправка соєва з кунжутом 360 г"}
-            ],
-            "Special Edition": [
-                {id: "3141", name: "SOY SAUCE соус соєвий Класичний special edition 1000 мл"}
-            ],
-            "YKI": [
-                {id: "3601", name: "YKI соус cоєвий 1000 мл"},
-                {id: "3602", name: "YKI соус cоєвий 205 мл"},
-                {id: "3603", name: "YKI соус cоєвий 470 мл"},
-                {id: "3604", name: "YKI соус cоєвий 890 мл"},
-                {id: "3605", name: "YKI соус Болоньєзе (Італійська кухня) 220 гр"},
-                {id: "3606", name: "YKI соус Болоньєзе (Італійська кухня) 530 гр"},
-                {id: "3607", name: "YKI соус Гостро-солодкий (Китайська кухня) 525 гр"},
-                {id: "3608", name: "YKI соус Кисло-солодкий (Китайська кухня) 525 гр"},
-                {id: "3609", name: "YKI соус соєвий ТЕРІЯКІ (густий) 205 мл"},
-                {id: "3610", name: "YKI соус соєвий ТЕРІЯКІ 205 мл"},
-                {id: "3611", name: "YKI соус соєвий ТЕРІЯКІ з часником та імбиром (густий) 470 мл"},
-                {id: "3612", name: "YKI соус соєвий УНАГІ 205 мл"},
-                {id: "3614", name: "YKI соус Солодкий Чилі 225 гр"},
-                {id: "3613", name: "YKI соус Солодкий-Чилі (Тайська кухня) 540 гр"}
-            ],
-            "Любисток": [
-                {id: "3801", name: "Любисток соус соєвий 210 мл"},
-                {id: "3802", name: "Любисток соус соєвий 500 мл"},
-                {id: "3803", name: "Любисток соус соєвий 980 мл"},
-                {id: "3804", name: "Любисток соус УНАГІ 210 мл"},
-                {id: "3805", name: "Любисток соус ТЕРІЯКІ 210 мл"},
-                {id: "3806", name: "Любисток соус ТЕРІЯКІ 500 мл"},
-                {id: "3807", name: "Любисток соус Кисло-солодкий 500 гр"},
-                {id: "3808", name: "Любисток соус Гостро-солодкий 500 гр"}
-            ],
-            "PL": [
-                {id: "301", name: "PL_Соус Hot Chili, 700 мл"},
-                {id: "402", name: "PL_Соус Sweet Chili 1100гр"},
-                {id: "503", name: "PL_Соус Sweet Chili, 700 мл"},
-                {id: "604", name: "PL_Соус соєвий 1000 мл"},
-                {id: "705", name: "PL_Соус соєвий Ketjap 500 мл"},
-                {id: "806", name: "PL_соус теріякі 1кг/відро"},
-                {id: "907", name: "Наповнювач «Вишневий»"},
-                {id: "1008", name: "PL_Соус Томатний 1000 гр"},
-                {id: "1109", name: "PL_Соус Томатний №95_5400 гр"},
-                {id: "12010", name: "PL_Томатна паста 1000 гр"},
-                {id: "12011", name: "PL_Соус ПЕСТО 1кг (D)"}
-            ],
-            "Своє. Свіже": [
-                {id: "3121", name: "Своє. Свіже соус Барбекю 280 гр"},
-                {id: "3122", name: "Своє. Свіже соус Болоньєзе (Італ.кухня) 280 гр"},
-                {id: "3123", name: "Своє. Свіже соус Гостро-солодкий (Китай.кухня) 280 гр"},
-                {id: "3124", name: "Своє. Свіже соус Журавлинний (Англійська кухня) 280 гр"},
-                {id: "3125", name: "Своє. Свіже соус З в’яленими томатами (Італійська кухня) 280 гр"},
-                {id: "3126", name: "Своє. Свіже соус Кетчуп (Американська кухня) 280 гр"},
-                {id: "3127", name: "Своє. Свіже соус Кетчуп Чилі 280 гр"},
-                {id: "3128", name: "Своє. Свіже соус Кисло-солодкий (Китай.кухня) 280 гр"},
-                {id: "3129", name: "Своє. Свіже соус Солодкий-Чилі (Тайська кухня) 280 гр"},
-                {id: "31210", name: "Своє. Свіже соус Тартар 280 гр"}
-            ],
-            "Премія": [
-                {id: "3131", name: "Повна чаша соус соєвий пастеризований 960мл"},
-                {id: "3132", name: "Премія соус соєвий пастеризований \"Теріякі\" 220мл"},
-                {id: "3133", name: "Премія соус соєвий пастеризований \"Теріякі\" 490мл"},
-                {id: "3134", name: "Премія соус соєвий пастеризований 220мл"},
-                {id: "3135", name: "Премія соус соєвий пастеризований 490мл"},
-                {id: "3136", name: "Майонез original 73 % ТМ «Сільпо» 300г"}
-            ]
-        };
+        QC.configure({
+            url: GOOGLE_SCRIPT_URL,
+            section: 'packing',
+            appName: 'Фасування',
+            auth: true,            // вхід за PIN; ім'я контролера бере сервер із сесії
+            catalog: true,         // лінії, ТМ, SKU і коди продуктів — з таблиці QC Data 2.0
+            showBadge: true
+        });
 
-        // Populate Products from Boiling (field 1)
-        const dl = document.getElementById('products-code-list');
-        productsFromBoiling.forEach(p => { const opt = document.createElement('option'); opt.value = p; dl.appendChild(opt); });
+        // --- Хто увійшов ---
+        // Поле «Контролер» більше не вибирається зі списку: будь-хто міг
+        // записати від чужого імені. Тепер воно лише показує сесію.
+        QC.auth.onChange(function (session) {
+            document.getElementById('sessionName').textContent = session
+                ? session.journalName + (session.offline ? ' · офлайн-режим' : '')
+                : '— не увійшли —';
+        });
+        document.getElementById('logoutBtn').addEventListener('click', function () { QC.auth.logout(); });
 
-        // Populate TMs from Labeling (field 3)
-        const tmSel = document.getElementById('pck-tm');
-        Object.keys(productDatabaseLabeling).forEach(tm => tmSel.add(new Option(tm, tm)));
+        const showToast = QC.toast;
+        function val(id) { return document.getElementById(id).value; }
 
-        function updateTMProduct() {
-            const tm = tmSel.value;
-            const skuSel = document.getElementById('pck-sku');
-            skuSel.innerHTML = '<option value="" disabled selected>Оберіть SKU...</option>';
-            
-            if (productDatabaseLabeling[tm]) {
-                productDatabaseLabeling[tm].forEach(p => {
-                    skuSel.add(new Option(`${p.id} | ${p.name}`, `${p.id} | ${p.name}`));
-                });
-            } else {
-                 skuSel.innerHTML = '<option value="" disabled selected>Немає позицій</option>';
-            }
+        // --- Довідники з таблиці QC Data 2.0 ---
+        // Лінії — аркуш «Обладнання». ТМ, SKU, артикул і напівфабрикат —
+        // «PRODUCT_DATABASE». Підказки для «Продукт (Код/Назва)» — «Соуси».
+        // Раніше все це було зашите в сторінку і розходилось із таблицею.
+        const lineSel = document.getElementById('pck-line');
+        const tmSel   = document.getElementById('pck-tm');
+        const skuSel  = document.getElementById('pck-sku');
+        let productsByTm = {};
+
+        // SKU в журналі лишається у звичному вигляді «3102 | Bonsai соус ...»
+        function skuValue(p) { return p.code + ' | ' + p.sku; }
+
+        function fillSelect(sel, items, placeholder, keep) {
+            const current = keep ? sel.value : '';
+            sel.innerHTML = '';
+            const ph = new Option(placeholder, '');
+            ph.disabled = true; ph.selected = true;
+            sel.add(ph);
+            (items || []).forEach(function (it) { sel.add(new Option(it, it)); });
+            if (current && Array.prototype.some.call(sel.options, function (o) { return o.value === current; })) sel.value = current;
         }
 
-        // Populate Employee
-        const empSel = document.getElementById('employeeSelect');
-        employees.forEach(e => empSel.add(new Option(e, e)));
+        function updateTMProduct(keep) {
+            const list = productsByTm[tmSel.value] || [];
+            const placeholder = !tmSel.value ? 'Спочатку оберіть ТМ...' : (list.length ? 'Оберіть SKU...' : 'Немає позицій для цієї ТМ');
+            fillSelect(skuSel, list.map(skuValue), placeholder, keep);
+        }
+
+        function applyCatalog() {
+            fillSelect(lineSel, QC.catalog.get('equipment'), QC.catalog.has('equipment') ? 'Оберіть...' : 'Довідник не завантажено', true);
+            const groups = QC.catalog.group('products', 'tm');
+            productsByTm = groups.byKey;
+            fillSelect(tmSel, groups.keys, groups.keys.length ? 'Оберіть ТМ...' : 'Довідник не завантажено', true);
+            updateTMProduct(true);
+            const dl = document.getElementById('products-code-list');
+            dl.innerHTML = '';
+            (QC.catalog.get('sauces') || []).forEach(function (name) {
+                const opt = document.createElement('option'); opt.value = name; dl.appendChild(opt);
+            });
+        }
+
+        // Обравши SKU, підставляємо його напівфабрикат у «Продукт (Код/Назва)»,
+        // якщо поле ще порожнє. Руками змінити можна.
+        skuSel.addEventListener('change', function () {
+            const p = (productsByTm[tmSel.value] || []).find(function (x) { return skuValue(x) === skuSel.value; });
+            const code = document.getElementById('pck-product-code');
+            if (p && p.group && !code.value.trim()) code.value = p.group;
+        });
+
+        QC.catalog.onUpdate(function (data, info) {
+            applyCatalog();
+            let text;
+            if (info.loading) text = 'оновлення…';
+            else if (!data) text = info.error ? 'не завантажено (' + info.error + ')' : 'ще не завантажено — потрібен вхід при мережі';
+            else text = (info.source === 'server' ? 'з таблиці' : 'з кешу')
+                      + (info.fetchedAt ? ', ' + QC.fmtDateTime(new Date(info.fetchedAt)) : '')
+                      + (info.stale ? ' · застарілі' : '');
+            document.getElementById('catalogStatus').textContent = 'Довідники: ' + text;
+        });
+        document.getElementById('catalogRefresh').addEventListener('click', function () { QC.catalog.refresh(true); });
 
         // Init Defaults
-        document.getElementById('pck-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
-
-        // Restore User
-        const saved = localStorage.getItem('qc_user');
-        if(saved) empSel.value = saved;
-        empSel.onchange = () => localStorage.setItem('qc_user', empSel.value);
+        document.getElementById('pck-time').value = QC.fmtTime(new Date());
 
         // Theme Toggle
         document.getElementById('themeToggle').addEventListener('click', () => {
@@ -490,71 +349,9 @@
             }
         }
 
-        function showToast(message, isError = false) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast bg-white dark:bg-slate-700 border-l-4 p-4 rounded-lg shadow-xl flex items-center max-w-sm transform transition-all duration-300 translate-x-full border border-slate-200 dark:border-slate-600`;
-            if (isError) {
-                toast.classList.add('border-red-500', 'text-red-700', 'dark:text-red-400');
-                toast.innerHTML = `<span class="mr-2 text-xl">🚫</span> <span class="font-medium text-sm">${message}</span>`;
-            } else {
-                toast.classList.add('border-emerald-500', 'text-emerald-700', 'dark:text-emerald-400');
-                toast.innerHTML = `<span class="mr-2 text-xl">✅</span> <span class="font-medium text-sm">${message}</span>`;
-            }
-            container.appendChild(toast);
-            requestAnimationFrame(() => { toast.classList.remove('translate-x-full'); });
-            setTimeout(() => { toast.classList.add('translate-x-full'); setTimeout(() => toast.remove(), 300); }, 3000);
-        }
-
-        // FILES LOGIC
-        let uploadedFiles = [];
-
-        function handleFiles(input) {
-            const files = input.files;
-            if (files && files.length > 0) {
-                const container = document.getElementById('gallery-container');
-                container.classList.remove('hidden');
-
-                Array.from(files).forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const base64 = e.target.result;
-                        uploadedFiles.push({
-                            name: file.name,
-                            type: file.type,
-                            data: base64
-                        });
-                        
-                        const index = uploadedFiles.length - 1;
-                        const div = document.createElement('div');
-                        div.className = 'photo-preview-item';
-                        div.innerHTML = `
-                            <img src="${base64}">
-                            <div class="photo-remove-btn" onclick="removeFile(this, '${base64}')">✕</div>
-                        `;
-                        container.appendChild(div);
-                    };
-                    reader.readAsDataURL(file);
-                });
-            }
-            input.value = '';
-        }
-
-        function removeFile(btnElement, dataContent) {
-            const parent = btnElement.parentElement;
-            parent.remove();
-            uploadedFiles = uploadedFiles.filter(f => f.data !== dataContent);
-            if(uploadedFiles.length === 0) {
-                document.getElementById('gallery-container').classList.add('hidden');
-            }
-        }
-
-        function clearGallery() {
-            uploadedFiles = [];
-            const container = document.getElementById('gallery-container');
-            container.innerHTML = '';
-            container.classList.add('hidden');
-        }
+        // --- Фото: стискаються до 1600px/JPEG, у DOM лише id, не base64 ---
+        const photos = QC.gallery({ container: 'gallery-container', counter: 'photo-counter' });
+        function handleFiles(input) { photos.add(input); }
 
         // Reset Logic
         function resetForm() {
@@ -563,16 +360,17 @@
         }
 
         function performReset() {
-            document.querySelectorAll('input, textarea').forEach(el => el.value = '');
+            document.querySelectorAll('input, textarea').forEach(el => { if (el.id !== 'qcLoginPin') el.value = ''; });
             document.querySelectorAll('select').forEach(el => {
-                el.value = ""; // Reset to empty/default placeholder
+                el.value = "";
                 el.classList.remove('input-alert');
             });
-            
+            updateTMProduct();
+            photos.clear();
+
             // Restore ONLY time default
-            document.getElementById('pck-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
-            clearGallery();
-            
+            document.getElementById('pck-time').value = QC.fmtTime(new Date());
+
             document.getElementById('confirmResetModal').classList.add('hidden');
             document.getElementById('confirmResetModal').classList.remove('flex');
             showToast("Форму очищено");
@@ -581,22 +379,24 @@
         let pendingData = null;
 
         function initiateSend() {
-            const emp = empSel.value;
-            const line = document.getElementById('pck-line').value;
-            const prodCode = document.getElementById('pck-product-code').value;
-            const sku = document.getElementById('pck-sku').value;
-            const tm = document.getElementById('pck-tm').value;
-            const batch = document.getElementById('pck-batch').value;
-            const weight = document.getElementById('pck-weight').value;
-            
+            if (!QC.auth.require()) return;
+            const session = QC.auth.session();
+
+            const line = val('pck-line');
+            const prodCode = val('pck-product-code').trim();
+            const sku = val('pck-sku');
+            const tm = val('pck-tm');
+            const batch = val('pck-batch');
+            const weight = val('pck-weight');
+
             // Checks
-            const seal = document.getElementById('check-seal').value;
-            const print = document.getElementById('check-print').value;
-            const appearance = document.getElementById('check-appearance').value;
-            const cap = document.getElementById('check-cap').value;
+            const seal = val('check-seal');
+            const print = val('check-print');
+            const appearance = val('check-appearance');
+            const cap = val('check-cap');
 
             // ВАЛІДАЦІЯ: Перевірка обов'язкових полів і статусів
-            if(!emp || !line || !prodCode || !batch || !tm || !sku || !weight) { showToast("Заповніть всі основні поля!", true); return; }
+            if(!line || !prodCode || !batch || !tm || !sku || !weight) { showToast("Заповніть всі основні поля!", true); return; }
             if(!seal || !print || !appearance || !cap) { showToast("Вкажіть всі контрольні точки!", true); return; }
 
             // Alerts logic
@@ -608,10 +408,13 @@
 
             let headerIcon = alerts ? "⚠️" : "🍶";
 
+            // Час контролю — той, що вказав контролер, а не момент натискання
+            const measuredAt = QC.fmtDate(new Date()) + ', ' + (val('pck-time') || QC.fmtTime(new Date()));
+
             const report = `${headerIcon} ЗВІТ QC Master: Фасування
 ===========================
-👤 Контролер: ${emp}
-🕒 Час: ${document.getElementById('pck-time').value}
+👤 Контролер: ${session.journalName}
+🕒 Час: ${val('pck-time')}
 🏭 Лінія: ${line}
 📦 Продукт: ${prodCode}
 🏷️ ТМ: ${tm}
@@ -625,19 +428,17 @@
    • Зовнішній вигляд: ${appearance}
    • Кришка: ${cap}
 
-📷 Фото: ${uploadedFiles.length} шт.
+📷 Фото: ${photos.count} шт.
 ${alerts}
 
-💬 Коментар: ${document.getElementById('pck-comment').value}
+💬 Коментар: ${val('pck-comment')}
 ===========================`;
 
+            // Імена полів — такі, які читає сервер (Code.gs → journals_().packing)
             pendingData = {
                 type: "packing",
-                time: new Date().toLocaleString('uk-UA'),
-                employee: emp,
-                section: "Фасування",
+                time: measuredAt,
                 report: report,
-                // Fields
                 line: line,
                 productCode: prodCode,
                 tm: tm,
@@ -648,60 +449,48 @@ ${alerts}
                 print: print,
                 appearance: appearance,
                 cap: cap,
-                comment: document.getElementById('pck-comment').value,
-                files: uploadedFiles, 
-                // Щоб працювала передача фото в таблицю (legacy, бере перше фото)
-                photo: uploadedFiles.length > 0 ? uploadedFiles[0].data : ""
+                comment: val('pck-comment'),
+                files: photos.files
             };
+
+            const size = QC.checkSize(pendingData);
+            if (!size.ok) {
+                showToast('Забагато даних (~' + size.mb + ' МБ). Видаліть частину фото.', true);
+                pendingData = null;
+                return;
+            }
 
             document.getElementById('reportPreview').innerText = report;
             document.getElementById('sendStatus').innerText = "";
             document.getElementById('sendActions').style.display = 'flex';
             document.getElementById('sendSpinner').classList.add('hidden');
-            
+
             document.getElementById('sendModal').classList.remove('hidden');
             document.getElementById('sendModal').classList.add('flex');
         }
 
-        async function executeSend() {
-            const actions = document.getElementById('sendActions');
-            const spinner = document.getElementById('sendSpinner');
-            const status = document.getElementById('sendStatus');
-
-            actions.style.display = 'none';
-            spinner.classList.remove('hidden');
-            status.innerText = "Відправка...";
-
-            try {
-                // Відправка ТІЛЬКИ на сервер
-                await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(pendingData)
-                });
-                
-                status.innerText = "✅ Дані відправлено (черга)!";
-                status.classList.add('text-emerald-600');
-                
-                setTimeout(() => {
+        // Форма очищається ЛИШЕ коли сервер підтвердив запис або запис
+        // надійно ліг у чергу на пристрої.
+        function executeSend() {
+            if (!pendingData) return;
+            QC.submit(pendingData, {
+                status: 'sendStatus',
+                actions: 'sendActions',
+                spinner: 'sendSpinner',
+                button: 'doSendBtn',
+                onDone: function () {
+                    pendingData = null;
                     closeSendModal();
                     performReset();
-                }, 1500);
-
-            } catch(e) {
-                status.innerText = "❌ Помилка з'єднання";
-                status.classList.add('text-red-500');
-                actions.style.display = 'flex';
-                spinner.classList.add('hidden');
-            }
+                }
+            });
         }
 
         function closeSendModal() {
             document.getElementById('sendModal').classList.add('hidden');
             document.getElementById('sendModal').classList.remove('flex');
         }
-        
+
         document.getElementById('doSendBtn').onclick = executeSend;
     </script>
 </body>

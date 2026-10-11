@@ -351,7 +351,7 @@ group('F. Стійкість doPost');
   eq('F1 порожній запит → BAD_REQUEST', r.code, 'BAD_REQUEST');
   const bad = JSON.parse(env.doPost({ postData: { contents: '{не json' } }).getContent());
   eq('F2 битий JSON → error, а не падіння', bad.result, 'error');
-  ok('F3 doGet показує версію, розділи й історію', /QC Journals v3\.0\.0/.test(env.doGet().getContent()) && /історія: так/.test(env.doGet().getContent()));
+  ok('F3 doGet показує версію, розділи й історію', /^QC Journals v\d+\.\d+\.\d+ \| \d\d\.\d\d\.\d{4} /.test(env.doGet().getContent()) && /розділи: incoming, checklist/.test(env.doGet().getContent()) && /історія: так/.test(env.doGet().getContent()));
 }
 
 console.log(`\n${fail ? '✗' : '✓'} пройдено ${pass}, провалено ${fail}`);
