@@ -316,7 +316,7 @@
     <script>
         // Адреса розгортання АКАУНТА 3 (варки соусу, мийки).
         // Поки не вписано — сторінка скаже про це на екрані, а не стукатиме не туди.
-        const GOOGLE_SCRIPT_URL = "PASTE_ACCOUNT_3_EXEC_URL_HERE";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxPsKVjQDiWNjm01XD2q6obYS4hWmv4yzw5zK8Hiulpav5TmhDuH2VeCr2aZXAsKY9HEQ/exec";
 
         QC.configure({
             url: GOOGLE_SCRIPT_URL,
@@ -373,11 +373,13 @@
             (list || []).forEach(function (s) {
                 const key = specKey(s.code) || specKey(s.name);
                 if (!key) return;
+                // У таблиці позначка може бути «+», «Перевіряти» чи будь-яке інше слово;
+                // порожня клітинка або «-» означає «не потрібно»
                 db[key] = {
-                    dry:  { req: String(s.dryReq).trim() === '+',  min: numOrNull(s.dryMin), max: numOrNull(s.dryMax) },
-                    visc: { req: String(s.boReq).trim() === '+',   min: numOrNull(s.boMin),  max: numOrNull(s.boMax) },
-                    ph:   { req: String(s.phReq).trim() === '+',   min: numOrNull(s.phMin),  max: numOrNull(s.phMax) },
-                    stab: { req: String(s.stabReq).trim() === '+' }
+                    dry:  { req: QC.isMark(s.dryReq),  min: numOrNull(s.dryMin), max: numOrNull(s.dryMax) },
+                    visc: { req: QC.isMark(s.boReq),   min: numOrNull(s.boMin),  max: numOrNull(s.boMax) },
+                    ph:   { req: QC.isMark(s.phReq),   min: numOrNull(s.phMin),  max: numOrNull(s.phMax) },
+                    stab: { req: QC.isMark(s.stabReq) }
                 };
             });
             return db;

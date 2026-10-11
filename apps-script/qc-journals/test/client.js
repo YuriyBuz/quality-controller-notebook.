@@ -384,6 +384,9 @@ const ui = (w) => {
     eq('F2 норми: колонки за номером, позначки обрізані, числа як текст', specs[0],
        { name: '1101 Соєвий Bonsai', code: '1101', dryReq: '+', boReq: '', phReq: '+', stabReq: '', dryMin: '12.8', dryMax: '14.8', boMin: '-', boMax: '-', phMin: '4.5', phMax: '4.8' });
     eq('F2 норми: другий продукт — Bostwick і центрифугування', [specs[1].code, specs[1].boReq, specs[1].stabReq, specs[1].boMin, specs[1].boMax], ['1507', '+', '+', '2.5', '6']);
+    eq('F2 QC.isMark: «Перевіряти», «+», «так» — так; порожньо, «-», «ні», «0» — ні',
+       ['Перевіряти', ' +', 'так', 'yes', '', '-', '—', 'ні', '0', 'Не потрібно', null].map(w.QC.isMark),
+       [true, true, true, true, false, false, false, false, false, false, false]);
 
     // payload рівно такий, як формує sauce_boiling.html
     const sauce = {

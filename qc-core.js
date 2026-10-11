@@ -28,7 +28,7 @@
         url:              '',
         section:          'unknown',
         appName:          'Блокнот QC',  // заголовок на екрані входу
-        appVersion:       '3.1.0',
+        appVersion:       '3.1.1',
         sendTimeoutMs:    60000,         // Apps Script вміє «зависати»
         photoMaxWidth:    1600,
         photoQuality:     0.72,
@@ -66,6 +66,14 @@
     function fmtDate(d)     { return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear(); }
     function fmtTime(d)     { return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
     function fmtDateTime(d) { return fmtDate(d) + ' ' + fmtTime(d); }
+    // Позначка «так» у клітинці таблиці: «+», «Перевіряти», «так», «1»…
+    // Ні — порожньо, «-», «0», «ні», «не потрібно». Люди пишуть по-різному,
+    // і сторінка не має вгадувати, чим саме скористались цього разу.
+    var NO_MARKS = ['', '-', '—', '–', '0', 'ні', 'нет', 'no', 'false', 'не потрібно', 'не перевіряти'];
+    function isMark(value) {
+        var v = String(value === undefined || value === null ? '' : value).trim().toLowerCase();
+        return NO_MARKS.indexOf(v) === -1;
+    }
 
     function el(ref) {
         if (!ref) return null;
@@ -940,6 +948,7 @@
         fmtDate: fmtDate,
         fmtTime: fmtTime,
         fmtDateTime: fmtDateTime,
+        isMark: isMark,
         gallery: gallery,
         compressImage: compressImage,
         submit: submit,
