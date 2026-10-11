@@ -77,7 +77,8 @@ function dataBook() {
       [stamp(0, 18, 40), stamp(10, 9, 15).slice(0, 16).replace(' ', ', '), 'Попадюк А.М.', 'Очім', '160', 'Пляшка ПЕТ', 'packaging', '12617006', '2000', '', '', '✅', '✅', '✅', '✅', '✅', '', '']],
     'Рекламації': [H.rec,
       [stamp(6, 13, 57), 'Попадюк А.М.', 'Друкарня', 'Етикетка', '', iso(6), '439503-13', 'опис', '']],
-    'Соуси': [['Наименование', 'Артикул', 'Сухі', 'Bostwick', 'pH'], ['1101 Соєвий Bonsai', 1101, 'Перевіряти', '', 'Перевіряти'], ['1108 Теріякі Bonsai', 1108, '', '', '']],
+    'Соуси': [['Наименование', 'Артикул', 'Сухі *', 'Bostwick *', 'pH *', 'Центрифугування', 'Сухі від', 'Сухі до', 'Bostwick від', 'Bostwick до', 'pH від', 'pH до'],
+      ['1101 Соєвий Bonsai', 1101, ' +', '', ' +', '', 12.8, 14.8, '-', '-', 4.5, 4.8], ['1108 Теріякі Bonsai', 1108, ' +', ' +', ' +', '', 17.5, 19.5, 9.5, 11.7, '-', '-']],
     'PRODUCT_DATABASE': [['Продукт (Код/Назва)', 'ТМ (Торгова Марка)', 'Артикул', 'Продукт (SKU)', 'Термін (міс)'], ['1101 Соєвий Bonsai', 'Bonsai', 3102, 'Bonsai соус соєвий 235 мл', 18], ['', '', '', '', '']],
     'Обладнання': [['Назва обладнаня '], ['Лінія А'], ['Лінія B'], ['Ручне фасування']],
     'itemsDatabase': [['Артикул (Сировина)', 'Назва (Сировина)', 'Артикул (Пакування)', 'Назва (Пакування)', 'Артикул (Етикетка)', 'Назва (Етикетка)'],
@@ -340,6 +341,9 @@ group('E. Довідники');
   eq('E5 варники — активні POS-002, повні ПІБ, без звільнених', c.cooks, ['Загура Іван Борисович', 'Садиріна Ольга Анатоліївна']);
   ok('E6 аркуша «Обʼєкти мийки» немає → ключа немає', !('washObjects' in c));
   eq('E8 itemsDatabase: код + назва', c.raw, ['ADD-D-001 Антиоксидант', 'ADD-D-002 Консервант']);
+  eq('E9 норми соусів: колонки за номером, «+» обрізано, числа як текст',
+     c.sauceSpecs[1], { name: '1108 Теріякі Bonsai', code: '1108', dryReq: '+', boReq: '+', phReq: '+', stabReq: '', dryMin: '17.5', dryMax: '19.5', boMin: '9.5', boMax: '11.7', phMin: '-', phMax: '-' });
+  ok('E10 відповідальні за лінії — ключ є і це список', Array.isArray(c.lineStaff));
   eq('E8 порожні пари у «широкій» вкладці пропущено', c.packaging, ['2013 Банка скло']);
 }
 
@@ -352,6 +356,20 @@ group('F. Стійкість doPost');
   const bad = JSON.parse(env.doPost({ postData: { contents: '{не json' } }).getContent());
   eq('F2 битий JSON → error, а не падіння', bad.result, 'error');
   ok('F3 doGet показує версію, розділи й історію', /^QC Journals v\d+\.\d+\.\d+ \| \d\d\.\d\d\.\d{4} /.test(env.doGet().getContent()) && /розділи: incoming, checklist/.test(env.doGet().getContent()) && /історія: так/.test(env.doGet().getContent()));
+}
+
+// =====================================================================
+group('G. Старі назви типів');
+{
+  const env = envAll();
+  const token = login(env, '7777').token;
+  const sheet = env.SpreadsheetApp.openById(DATA_ID).getSheetByName('Варки соусу');
+  const before = sheet.getLastRow();
+  const r = env.__post({ type: 'sauce', token, deviceId: 'tab-1', recordId: 'rid-alias-1', product: '1101', cook: 'Загура', report: 'ок', files: [] });
+  eq('G1 type: «sauce» (стара сторінка) → журнал «Варки соусу»', [r.result, r.section, sheet.getLastRow() - before], ['success', 'sauce_boiling', 1]);
+  const h = env.__post({ type: 'hvo', token, deviceId: 'tab-1', recordId: 'rid-alias-2', status: 'Відповідає', report: 'ок', files: [] });
+  eq('G2 type: «hvo» → hvo_control', [h.result, h.section], ['success', 'hvo_control']);
+  eq('G3 невідомий тип → UNKNOWN_TYPE', env.__post({ type: 'nope', token, deviceId: 'tab-1', report: '' }).code, 'UNKNOWN_TYPE');
 }
 
 console.log(`\n${fail ? '✗' : '✓'} пройдено ${pass}, провалено ${fail}`);

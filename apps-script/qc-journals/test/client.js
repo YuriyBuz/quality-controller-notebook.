@@ -349,6 +349,76 @@ const ui = (w) => {
     eq('E6 старі назви полів sanitary/checkLabel теж лягають у свої колонки', [r3, lr2[lh.indexOf('Санітарія')], lr2[lh.indexOf('Нанесення')]], ['sent', '❌ НЕ ОК', '❌']);
   }
 
+  // =====================================================================
+  group('F. Наскрізно: варки соусу й мийки (Акаунт 3) → бекенд');
+  {
+    const DATA_ID = '1VKKlqzrzRsZzDU1kbYciXnJ7J1Kr9fl1GF2RBBwlUUo', REF_ID = '1UhdO9ALcSXk8fgWhUnMiluO4Aao6R4EP6iN4Ie__rY8';
+    const emp = (id, full, short, pos, status, pin) => { const r = new Array(19).fill(''); r[0] = id; r[1] = full; r[2] = short; r[4] = pos; r[7] = status; r[16] = pin; return r; };
+    const books = {
+      [REF_ID]: new Book('gw-ref', {
+        '_REF_Positions': [['pos_id', 'назва', 'підрозділ', 'ролі типові'], ['POS-012', 'Контролер якості', 'Лабораторія', 'qc.use'], ['POS-002', 'Варник соуса', 'Виробництво', ''], ['POS-010', 'Оператор-налагоджувальник', 'Виробництво', '']],
+        '_REF_Employees': [new Array(19).fill('h'),
+          emp('EMP-0021', 'Попадюк Анжела Миколаївна', 'Попадюк А. М.', 'POS-012', 'active', '7777'),
+          emp('EMP-0009', 'Загура Іван Борисович', 'Загура І. Б.', 'POS-002', 'active', '1111'),
+          emp('EMP-0014', 'Король Юрій Валерійович', 'Король Ю. В.', 'POS-010', 'active', '2222'),
+          emp('EMP-0050', 'Звільнений Варник', 'Звільнений В.', 'POS-002', 'fired', '3333')],
+      }),
+      [DATA_ID]: new Book('QC Data 2.0', {
+        'email': [['email'], ['a@test.ua']],
+        'Соуси': [['Наименование', 'Артикул', 'Сухі *', 'Bostwick *', 'pH *', 'Центрифугування', 'Сухі від', 'Сухі до', 'Bostwick від', 'Bostwick до', 'pH від', 'pH до'],
+          ['1101 Соєвий Bonsai', 1101, ' +', '', ' +', '', 12.8, 14.8, '-', '-', 4.5, 4.8],
+          ['1507 ПЕСТО', 1507, '', ' +', ' +', ' +', '-', '-', 2.5, 6, '-', '-']],
+        'Варки соусу': [['Дата запису', 'Час', 'Контролер', 'Варник', 'Продукт', '№ Завдання', 'Дата варки', 'Колір', 'Аромат', 'Смак', 'Консистенція', 'Сухі речовини', "В'язкість", 'pH', 'Стійкість', 'Коментар', 'Фото']],
+        'Мийки': [['Дата запису', 'Дата', 'Час', 'Контролер', 'Тип обладнання', 'Тип Мийки', "Об'єкт", 'Зовнішній', 'Внутрішній', 'Агрегати', 'Відповідальний', 'Підпис (Посилання)', 'Фото']],
+      }),
+    };
+    const server = makeEnv({ books, props: [['AUTH_SECRET', 's']], sections: ['sauce_boiling', 'cleaning'], serveHistory: false });
+
+    const w = makeBrowser({ responder: b => server.__post(b) });
+    w.QC.configure({ url: URL, section: 'sauce_boiling', auth: true, catalog: true });
+    await w.QC.auth.login('7777'); await tick(80);
+    eq('F1 варники — активні POS-002 з довідника, без звільнених', w.QC.catalog.get('cooks'), ['Загура Іван Борисович']);
+    eq('F1 відповідальні за лінії — POS-010/005/006', w.QC.catalog.get('lineStaff'), ['Король Юрій Валерійович']);
+    eq('F1 продукти для підказок', w.QC.catalog.get('sauces'), ['1101 Соєвий Bonsai', '1507 ПЕСТО']);
+    const specs = w.QC.catalog.get('sauceSpecs');
+    eq('F2 норми: колонки за номером, позначки обрізані, числа як текст', specs[0],
+       { name: '1101 Соєвий Bonsai', code: '1101', dryReq: '+', boReq: '', phReq: '+', stabReq: '', dryMin: '12.8', dryMax: '14.8', boMin: '-', boMax: '-', phMin: '4.5', phMax: '4.8' });
+    eq('F2 норми: другий продукт — Bostwick і центрифугування', [specs[1].code, specs[1].boReq, specs[1].stabReq, specs[1].boMin, specs[1].boMax], ['1507', '+', '+', '2.5', '6']);
+
+    // payload рівно такий, як формує sauce_boiling.html
+    const sauce = {
+      type: 'sauce_boiling', time: '12:25', report: '🍲 ЗВІТ', cook: 'Загура Іван Борисович', product: '1101 Соєвий Bonsai', task: '9190',
+      cookDate: '2026-10-11', color: '✅', aroma: '✅', taste: '❌', consist: '✅', dry: '13.2', visc: 'N/A', ph: '4.6', stability: 'N/A', comment: '', files: [],
+    };
+    const r1 = await w.QC.submit(sauce, ui(w)); await tick();
+    const ss = books[DATA_ID].getSheetByName('Варки соусу');
+    eq('F3 варка: submit → sent, один рядок', [r1, ss.getLastRow()], ['sent', 2]);
+    eq('F3 Час, Контролер із сесії, Варник, Продукт, Дата варки крапками, показники', ss.rows[1].slice(1, 16),
+       ['12:25', 'Попадюк А.М.', 'Загура Іван Борисович', '1101 Соєвий Bonsai', '9190', '11.10.2026', '✅', '✅', '❌', '✅', '13.2', 'N/A', '4.6', 'N/A', '']);
+
+    // стара сторінка слала type: "sauce" — сервер приймає і це
+    const legacy = Object.assign({}, sauce, { type: 'sauce' }); delete legacy.recordId;
+    const r2 = await w.QC.submit(legacy, ui(w)); await tick();
+    eq('F4 старий тип «sauce» → той самий журнал', [r2, ss.getLastRow()], ['sent', 3]);
+
+    // мийки: та сама сесія, підпис окремим PNG
+    const w2 = makeBrowser({ responder: b => server.__post(b) });
+    ['qc_session_v1', 'qc_device_v1', 'qc_activity_v1', 'qc_unlock_v1'].forEach(k => { const v = w.__storage.get(k); if (v) w2.__storage.set(k, v); });
+    w2.QC.configure({ url: URL, section: 'cleaning', auth: true, catalog: false });
+    const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+    const cleaning = {
+      type: 'cleaning', date: '2026-10-11', time: '16:16', equipType: '🍲 Котли', washType: 'Ополіск', equipObj: 'ВК- 5',
+      ext: '✅', int: '✅', agg: '❌', resp: 'Загура Іван Борисович', report: '📤 ЗВІТ', files: [], signature: png,
+    };
+    const r3 = await w2.QC.submit(cleaning, ui(w2)); await tick();
+    const cs = books[DATA_ID].getSheetByName('Мийки');
+    const ch = cs.rows[0], cr = cs.rows[1];
+    eq('F5 мийка: submit → sent, один рядок', [r3, cs.getLastRow()], ['sent', 2]);
+    eq('F5 Дата крапками, Час, Контролер із сесії, тип, тип мийки, обʼєкт, три огляди, відповідальний', cr.slice(1, 11),
+       ['11.10.2026', '16:16', 'Попадюк А.М.', '🍲 Котли', 'Ополіск', 'ВК- 5', '✅', '✅', '❌', 'Загура Іван Борисович']);
+    ok('F5 підпис збережено файлом, у колонці посилання', /^http/.test(String(cr[ch.indexOf('Підпис (Посилання)')])));
+  }
+
   console.log(`\n${fail ? '✗' : '✓'} пройдено ${pass}, провалено ${fail}`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error('ЗБІЙ СТЕНДА:', e); process.exit(2); });

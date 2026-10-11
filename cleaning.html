@@ -99,11 +99,12 @@
 
             <!-- Controller & Date -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
-                <div>
-                    <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер *</label>
-                    <select id="employeeSelect" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg transition-colors" required>
-                        <option value="" disabled selected>Оберіть...</option>
-                    </select>
+                <div class="flex items-center justify-between gap-3 bg-teal-50 dark:bg-slate-800/50 border border-teal-100 dark:border-slate-700 rounded-lg px-4 py-3">
+                    <div class="min-w-0">
+                        <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Контролер</div>
+                        <div id="sessionName" class="text-lg font-bold text-slate-800 dark:text-slate-100 truncate">— не увійшли —</div>
+                    </div>
+                    <button id="logoutBtn" type="button" class="shrink-0 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-teal-700 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg transition-colors" title="Вийти і передати планшет іншому">Вийти</button>
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Дата</label>
@@ -126,6 +127,11 @@
                         <option value="🔧 Інше">🔧 Інше</option>
                     </select>
                 </div>
+            </div>
+
+            <div class="flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 px-1">
+                <span id="catalogStatus">Довідники: —</span>
+                <button id="catalogRefresh" type="button" class="font-bold text-teal-600 dark:text-teal-400 hover:underline" title="Перечитати списки з таблиці й довідника">↻ Оновити списки</button>
             </div>
 
             <!-- Washing Type (New) -->
@@ -247,6 +253,7 @@
                     </label>
                 </div>
                 <div id="gallery-container" class="grid grid-cols-3 gap-2 hidden"></div>
+                <p id="photo-counter" class="text-xs text-slate-500 dark:text-slate-400 mt-2"></p>
             </div>
 
             <button onclick="initiateSend()" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2 text-lg"><span>📤 Відправити дані</span></button>
@@ -273,211 +280,201 @@
         </div>
     </div>
 
+    <script src="qc-core.js"></script>
     <script>
-        // АКТУАЛЬНЕ ПОСИЛАННЯ (Перевірено)
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxobml8KXZp38dZNOUJe0sq-o16s0tFC2ilbcZq77bFJwz0aaNnPVuzQsHCvlq7qpKLNg/exec";
-        
-        const employees = ["Соботович Л.М.", "Огаркова М.В.", "Попадюк А.М."];
-        
-        // --- ДАНІ СПИСКІВ ---
-        
-        // Відповідальні
-        const respByBoilers = [
-            "Садиріна Ольга Анатоліївна", "Солдатова Ірина Володимирівна", 
-            "Загура Іван", "Іван Миколайович", "Кораблін Дмитро"
-        ];
-        const respByLines = [
-            "Максімюк Анатолій Вікторович", "Король Юрій Валерійович", "Гора Андрій Олександрович",
-            "Максімюк Анатолій Анатолійович", "Єрко Віктор Андрійович", 
-            "Мозговий Олександр Сергійович", "Хлупянець Віталій Анатолійович", "Чалий Володимир Анатолійович"
-        ];
+        // Адреса розгортання АКАУНТА 3 (варки соусу, мийки).
+        const GOOGLE_SCRIPT_URL = "PASTE_ACCOUNT_3_EXEC_URL_HERE";
 
-        // Об'єкти
-        const objectsByBoilers = [
-            "ВК- 1", "ВК- 3", "ВК- 4", "ВК- 5", 
-            "ВВК- 11", "ВК- 12", "ВК- 9"
-        ];
-        const objectsByLines = [
-            "Розлив лінія А", "Розлив лінія В", "Розлив лінія С", "Розлив лінія D", 
-            "Розлив лінія E", "Розлив лінія F", "Розлив лінія G", "Розлив лінія H", 
-            "Розлив лінія P", "Розлив лінія І", "Розлив лінія S"
-        ];
-        const objectsByTanks = [
-            "Накопичувач 3000л", "Накопичувач 600л", 
-            "Накопичувач 1", "Накопичувач 2", "Накопичувач 3", "Накопичувач 4", 
-            "Накопичувач 5", "Накопичувач 6", "Накопичувач 7", "Накопичувач 8", 
-            "Накопичувач 1 H2O", "Накопичувач 2 H2O"
-        ];
+        QC.configure({
+            url: GOOGLE_SCRIPT_URL,
+            section: 'cleaning',
+            appName: 'Мийки',
+            auth: true,            // вхід за PIN; ім'я контролера бере сервер із сесії
+            catalog: true,         // відповідальні — з кадрового довідника; об'єкти — з аркуша, коли з'явиться
+            showBadge: true
+        });
+
+        if (GOOGLE_SCRIPT_URL.indexOf('PASTE_') === 0) {
+            QC.toast('Не вписано адресу сервера (GOOGLE_SCRIPT_URL). Зверніться до адміністратора.', true);
+        }
+
+        // --- Хто увійшов ---
+        QC.auth.onChange(function (session) {
+            document.getElementById('sessionName').textContent = session
+                ? session.journalName + (session.offline ? ' · офлайн-режим' : '')
+                : '— не увійшли —';
+        });
+        document.getElementById('logoutBtn').addEventListener('click', function () { QC.auth.logout(); });
+
+        const showToast = QC.toast;
+        function val(id) { return document.getElementById(id).value; }
+
+        // --- СПИСКИ ---
+        // Відповідальні беруться з кадрового довідника gw-ref:
+        //   котли  → варники (посада POS-002, ключ довідника cooks);
+        //   лінії  → оператори-налагоджувальники, механіки зміни, налагоджувальники
+        //            (POS-010, POS-005, POS-006, ключ lineStaff).
+        // Об'єкти — з аркуша «Обʼєкти мийки» (колонки «Тип обладнання», «Об'єкт»,
+        // «Тип мийки»), щойно його заведуть у QC Data 2.0. Доки аркуша немає,
+        // працює вбудований список нижче — єдине, що ще лишилось у коді.
+        const objectsFallback = {
+            boilers: ["ВК- 1", "ВК- 3", "ВК- 4", "ВК- 5", "ВВК- 11", "ВК- 12", "ВК- 9"],
+            lines:   ["Розлив лінія А", "Розлив лінія В", "Розлив лінія С", "Розлив лінія D",
+                      "Розлив лінія E", "Розлив лінія F", "Розлив лінія G", "Розлив лінія H",
+                      "Розлив лінія P", "Розлив лінія І", "Розлив лінія S"],
+            tanks:   ["Накопичувач 3000л", "Накопичувач 600л",
+                      "Накопичувач 1", "Накопичувач 2", "Накопичувач 3", "Накопичувач 4",
+                      "Накопичувач 5", "Накопичувач 6", "Накопичувач 7", "Накопичувач 8",
+                      "Накопичувач 1 H2O", "Накопичувач 2 H2O"]
+        };
+        const washTypeSel = document.getElementById('wash-type');
+        const washTypesFallback = Array.prototype.slice.call(washTypeSel.options).map(function (o) { return o.value; }).filter(Boolean);
+
+        function uniq(list) { const out = []; list.forEach(function (v) { if (v && out.indexOf(v) === -1) out.push(v); }); return out; }
+        // «🍲 Котли» і «Котли» — одне й те саме: порівнюємо лише літери
+        function norm(text) { return String(text || '').toLowerCase().replace(/[^a-zа-яіїєґ0-9]+/g, ''); }
+        function sameType(a, b) { const x = norm(a), y = norm(b); return !!x && !!y && (x === y || x.indexOf(y) !== -1 || y.indexOf(x) !== -1); }
+
+        function objectsFor(type) {
+            const fromSheet = QC.catalog.get('washObjects');
+            if (fromSheet) {
+                const list = uniq(fromSheet.filter(function (o) { return sameType(o.equipType, type); }).map(function (o) { return o.object; }));
+                if (list.length) return list;
+            }
+            if (type.includes('Котли')) return objectsFallback.boilers;
+            if (type.includes('Лінії')) return objectsFallback.lines;
+            if (type.includes('Ємності')) return objectsFallback.tanks;
+            return [];
+        }
+        function respFor(type) {
+            if (type.includes('Котли')) return QC.catalog.get('cooks') || [];
+            if (type.includes('Лінії')) return QC.catalog.get('lineStaff') || [];
+            return [];
+        }
+
+        function fillSelect(sel, items, placeholder, keep) {
+            const current = keep ? sel.value : '';
+            sel.innerHTML = '';
+            const ph = new Option(placeholder, '');
+            ph.disabled = true; ph.selected = true;
+            sel.add(ph);
+            (items || []).forEach(function (it) { sel.add(new Option(it, it)); });
+            if (current && Array.prototype.some.call(sel.options, function (o) { return o.value === current; })) sel.value = current;
+        }
+
+        function applyCatalog() {
+            // Типи мийки — з аркуша, якщо там є колонка «Тип мийки»; інакше вбудовані
+            const fromSheet = QC.catalog.get('washObjects');
+            const washTypes = fromSheet ? uniq(fromSheet.map(function (o) { return o.washType; })) : [];
+            fillSelect(washTypeSel, washTypes.length ? washTypes : washTypesFallback, 'Оберіть тип мийки...', true);
+            if (val('clean-type')) updateFormByType(true);
+        }
+
+        QC.catalog.onUpdate(function (data, info) {
+            applyCatalog();
+            let text;
+            if (info.loading) text = 'оновлення…';
+            else if (!data) text = info.error ? 'не завантажено (' + info.error + ')' : 'ще не завантажено — потрібен вхід при мережі';
+            else text = (info.source === 'server' ? 'з таблиці' : 'з кешу')
+                      + (info.fetchedAt ? ', ' + QC.fmtDateTime(new Date(info.fetchedAt)) : '')
+                      + (info.stale ? ' · застарілі' : '');
+            document.getElementById('catalogStatus').textContent = 'Довідники: ' + text;
+        });
+        document.getElementById('catalogRefresh').addEventListener('click', function () { QC.catalog.refresh(true); });
 
         // Ініціалізація
-        const empSel = document.getElementById('employeeSelect');
-        employees.forEach(e => empSel.add(new Option(e, e)));
-        
         document.getElementById('clean-date').valueAsDate = new Date();
-        document.getElementById('clean-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
-        
-        const saved = localStorage.getItem('qc_user'); if(saved) empSel.value = saved; empSel.onchange = () => localStorage.setItem('qc_user', empSel.value);
+        document.getElementById('clean-time').value = QC.fmtTime(new Date());
+
         document.getElementById('themeToggle').addEventListener('click', () => { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); });
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark');
 
         // Logic for Dynamic Lists & Labels
-        function updateFormByType() {
-            const type = document.getElementById('clean-type').value;
-            
-            // Elements for Responsibility
+        function updateFormByType(keep) {
+            const type = val('clean-type');
+
             const respSel = document.getElementById('clean-resp-select');
             const manualResp = document.getElementById('clean-resp-manual');
-            
-            // Elements for Objects
             const objSel = document.getElementById('clean-object-select');
             const manualObj = document.getElementById('clean-object-manual');
-
             const aggDesc = document.getElementById('agg-desc');
 
-            // Reset lists
-            respSel.innerHTML = '<option value="" disabled selected>Оберіть зі списку...</option>';
-            manualResp.classList.add('hidden');
-            
-            objSel.innerHTML = '<option value="" disabled selected>Оберіть об\'єкт...</option>';
-            manualObj.classList.add('hidden');
-            
-            let listResp = [];
-            let listObj = [];
             let desc = "";
+            if (type.includes('Котли')) desc = "(насоси, трубопроводи, естакади)";
+            else if (type.includes('Лінії')) desc = "(конвеєри, трубопроводи, укупори)";
+            else if (type.includes('Ємності')) desc = "(трубопроводи, естакади та інше)";
+            else desc = "(інші вузли)";
 
-            if (type.includes('Котли')) {
-                listResp = respByBoilers;
-                listObj = objectsByBoilers;
-                desc = "(насоси, трубопроводи, естакади)";
-            } else if (type.includes('Лінії')) {
-                listResp = respByLines;
-                listObj = objectsByLines;
-                desc = "(конвеєри, трубопроводи, укупори)";
-            } else if (type.includes('Ємності')) {
-                listResp = []; 
-                listObj = objectsByTanks;
-                desc = "(трубопроводи, естакади та інше)";
-            } else {
-                listResp = [];
-                listObj = [];
-                desc = "(інші вузли)";
+            fillSelect(respSel, respFor(type).concat(['other']), 'Оберіть зі списку...', keep);
+            fillSelect(objSel, objectsFor(type).concat(['other']), "Оберіть об'єкт...", keep);
+            // останній пункт — ручний ввід
+            respSel.options[respSel.options.length - 1].text = "Інший / Вручну";
+            objSel.options[objSel.options.length - 1].text = "Інший / Вручну";
+
+            if (!keep) {
+                manualResp.classList.add('hidden'); manualResp.value = "";
+                manualObj.classList.add('hidden');  manualObj.value = "";
             }
-
-            // Populate Responsible
-            listResp.forEach(name => respSel.add(new Option(name, name)));
-            respSel.add(new Option("Інший / Вручну", "other"));
-
-            // Populate Objects
-            listObj.forEach(name => objSel.add(new Option(name, name)));
-            objSel.add(new Option("Інший / Вручну", "other"));
-
-            // Update label description
             aggDesc.innerText = desc;
         }
 
         function handleRespChange() {
-            const val = document.getElementById('clean-resp-select').value;
+            const value = val('clean-resp-select');
             const manualInput = document.getElementById('clean-resp-manual');
-            if (val === 'other') {
+            if (value === 'other') {
                 manualInput.classList.remove('hidden');
                 manualInput.focus();
             } else {
                 manualInput.classList.add('hidden');
-                manualInput.value = ""; 
+                manualInput.value = "";
             }
         }
 
         function handleObjectChange() {
-            const val = document.getElementById('clean-object-select').value;
+            const value = val('clean-object-select');
             const manualInput = document.getElementById('clean-object-manual');
-            if (val === 'other') {
+            if (value === 'other') {
                 manualInput.classList.remove('hidden');
                 manualInput.focus();
             } else {
                 manualInput.classList.add('hidden');
-                manualInput.value = ""; 
+                manualInput.value = "";
             }
         }
 
         // Logic for Toggle Buttons (Results)
         function setResult(btn, type, value) {
-            // Find parent div (closest .flex container that holds buttons)
-            // Modified to find closest button group container
             const parent = btn.parentElement;
             const buttons = parent.querySelectorAll('.toggle-btn');
-            
-            // Remove active classes from all siblings
-            buttons.forEach(b => {
-                b.classList.remove('active-clean', 'active-dirty');
-            });
+            buttons.forEach(b => { b.classList.remove('active-clean', 'active-dirty'); });
 
-            // Set hidden input value
             document.getElementById('check-' + type).value = value;
 
-            // Add active class to clicked button
+            const container = parent.parentElement;
+            const icon = container.querySelector('[id^="icon-"]');
             if (value === '✅') {
                 btn.classList.add('active-clean');
-                // Update icon if it exists in the row (traverse up to container then find icon)
-                const container = parent.parentElement;
-                const icon = container.querySelector('[id^="icon-"]');
                 if(icon) icon.innerText = '✅';
             } else {
                 btn.classList.add('active-dirty');
-                const container = parent.parentElement;
-                const icon = container.querySelector('[id^="icon-"]');
                 if(icon) icon.innerText = '❌';
             }
         }
 
-        // --- FILES LOGIC ---
-        let uploadedFiles = [];
-
-        function handleFiles(input) {
-            const files = input.files;
-            if (files && files.length > 0) {
-                const container = document.getElementById('gallery-container');
-                container.classList.remove('hidden');
-
-                Array.from(files).forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const base64 = e.target.result;
-                        uploadedFiles.push({ name: file.name, type: file.type, data: base64 });
-                        const index = uploadedFiles.length - 1;
-                        const div = document.createElement('div');
-                        div.className = 'photo-preview-item';
-                        div.innerHTML = `<img src="${base64}"><div class="photo-remove-btn" onclick="removeFile(this, '${base64}')">✕</div>`;
-                        container.appendChild(div);
-                    };
-                    reader.readAsDataURL(file);
-                });
-            }
-            input.value = '';
-        }
-
-        function removeFile(btnElement, dataContent) {
-            btnElement.parentElement.remove();
-            uploadedFiles = uploadedFiles.filter(f => f.data !== dataContent);
-            if(uploadedFiles.length === 0) document.getElementById('gallery-container').classList.add('hidden');
-        }
-
-        function clearGallery() {
-            uploadedFiles = [];
-            const container = document.getElementById('gallery-container');
-            container.innerHTML = '';
-            container.classList.add('hidden');
-        }
+        // --- Фото: стискаються до 1600px/JPEG, у DOM лише id, не base64 ---
+        const photos = QC.gallery({ container: 'gallery-container', counter: 'photo-counter' });
+        function handleFiles(input) { photos.add(input); }
 
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
         function resetForm() { document.getElementById('confirmResetModal').classList.remove('hidden'); document.getElementById('confirmResetModal').classList.add('flex'); }
-        
+
         function performReset() {
              document.querySelectorAll('input[type="text"]').forEach(el => el.value = '');
              document.querySelectorAll('select').forEach(el => {
-                 el.value = ""; 
+                 el.value = "";
                  el.classList.remove('input-alert');
              });
-             
+
              // Reset hidden inputs for checks
              document.getElementById('check-ext').value = "";
              document.getElementById('check-int').value = "";
@@ -490,13 +487,13 @@
              document.getElementById('icon-agg').innerText = '❔';
 
              clearSignature();
-             clearGallery();
+             photos.clear();
              document.getElementById('agg-desc').innerText = "(Оберіть тип обладнання)";
              document.getElementById('clean-resp-manual').classList.add('hidden');
              document.getElementById('clean-object-manual').classList.add('hidden');
-             
+
              document.getElementById('clean-date').valueAsDate = new Date();
-             document.getElementById('clean-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
+             document.getElementById('clean-time').value = QC.fmtTime(new Date());
              closeModal('confirmResetModal');
         }
 
@@ -524,53 +521,50 @@
 
         function getPos(e) { const rect = canvas.getBoundingClientRect(); return { x: (e.clientX || e.touches[0].clientX) - rect.left, y: (e.clientY || e.touches[0].clientY) - rect.top }; }
         function startDraw(e) { isDrawing = true; const pos = getPos(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); e.preventDefault(); }
-        function draw(e) { 
-            if (!isDrawing) return; 
-            const pos = getPos(e); 
-            ctx.lineTo(pos.x, pos.y); 
-            ctx.stroke(); 
-            hasSignature = true; 
-            e.preventDefault(); 
+        function draw(e) {
+            if (!isDrawing) return;
+            const pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            hasSignature = true;
+            e.preventDefault();
         }
         function stopDraw() { isDrawing = false; }
-        function clearSignature() { 
-            ctx.clearRect(0, 0, canvas.width, canvas.height); 
+        function clearSignature() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             hasSignature = false;
         }
 
-        canvas.addEventListener('mousedown', startDraw); canvas.addEventListener('mousemove', draw); canvas.addEventListener('mouseup', stopDraw); canvas.addEventListener('mouseout', stopDraw);
+        canvas.addEventListener('mousedown', startDraw); canvas.addEventListener('mousemove', draw); canvas.addEventListener('mouseup', stopDraw); canvas.addEventListener('mouseleave', stopDraw);
         canvas.addEventListener('touchstart', startDraw); canvas.addEventListener('touchmove', draw); canvas.addEventListener('touchend', stopDraw);
 
         let pendingData = null;
-        
+
         function initiateSend() {
-            const emp = empSel.value; 
-            const type = document.getElementById('clean-type').value;
-            const washType = document.getElementById('wash-type').value;
-            
+            if (!QC.auth.require()) return;
+            const session = QC.auth.session();
+
+            const type = val('clean-type');
+            const washType = val('wash-type');
+
             // Object logic
-            let obj = document.getElementById('clean-object-select').value;
-            if (obj === 'other' || !obj) {
-                obj = document.getElementById('clean-object-manual').value;
-            }
+            let obj = val('clean-object-select');
+            if (obj === 'other' || !obj) obj = val('clean-object-manual').trim();
 
             // Responsible logic
-            let resp = document.getElementById('clean-resp-select').value;
-            if (resp === 'other' || !resp) {
-                resp = document.getElementById('clean-resp-manual').value;
-            }
+            let resp = val('clean-resp-select');
+            if (resp === 'other' || !resp) resp = val('clean-resp-manual').trim();
 
             // Validation
-            if(!emp) { alert("Оберіть контролера!"); return; }
             if(!type) { alert("Оберіть тип обладнання!"); return; }
             if(!washType) { alert("Оберіть тип мийки!"); return; }
             if(!obj) { alert("Вкажіть об'єкт!"); return; }
             if(!resp) { alert("Вкажіть відповідального!"); return; }
 
-            const ext = document.getElementById('check-ext').value;
-            const int = document.getElementById('check-int').value;
-            const agg = document.getElementById('check-agg').value;
-            
+            const ext = val('check-ext');
+            const int = val('check-int');
+            const agg = val('check-agg');
+
             if(!ext || !int || !agg) { alert("Заповніть результати огляду (Натисніть на кнопки Чисто/Брудно)!"); return; }
             if(!hasSignature) { alert("Будь ласка, підпишіть звіт!"); return; }
 
@@ -580,9 +574,9 @@
             let headerIcon = alerts ? "⚠️" : "📤";
 
             const report = `${headerIcon} ЗВІТ QC Master: Мийки
-👤 Контролер: ${emp}
-🕒 Час: ${document.getElementById('clean-time').value}
-📅 Дата: ${document.getElementById('clean-date').value}
+👤 Контролер: ${session.journalName}
+🕒 Час: ${val('clean-time')}
+📅 Дата: ${val('clean-date')}
 
 🏗️ Тип обладнання: ${type}
 🧽 Тип мийки: ${washType}
@@ -596,26 +590,33 @@
 👷 Відповідальний: ${resp}
 (Підпис додано до електронного звіту)
 
-📷 Фото: ${uploadedFiles.length} шт.
+📷 Фото: ${photos.count} шт.
 ${alerts}`;
 
+            // Підпис іде окремим PNG; сервер кладе його в теку CLEANING і пише посилання
             const signatureData = canvas.toDataURL('image/png');
 
+            // Імена полів — такі, які читає сервер (Code.gs → journals_().cleaning)
             pendingData = {
-                type: 'cleaning', 
-                date: document.getElementById('clean-date').value, 
-                time: document.getElementById('clean-time').value,
-                employee: emp, 
+                type: 'cleaning',
+                date: val('clean-date'),
+                time: val('clean-time'),
                 equipType: type,
-                washType: washType, // added field
+                washType: washType,
                 equipObj: obj,
-                ext: ext, int: int, agg: agg, 
+                ext: ext, int: int, agg: agg,
                 resp: resp,
                 report: report,
-                files: uploadedFiles, 
-                photo: uploadedFiles.length > 0 ? uploadedFiles[0].data : "", 
-                signature: signatureData 
+                files: photos.files,
+                signature: signatureData
             };
+
+            const size = QC.checkSize(pendingData);
+            if (!size.ok) {
+                showToast('Забагато даних (~' + size.mb + ' МБ). Видаліть частину фото.', true);
+                pendingData = null;
+                return;
+            }
 
             document.getElementById('reportPreview').innerText = report;
             document.getElementById('sendStatus').innerText = "";
@@ -625,23 +626,24 @@ ${alerts}`;
             document.getElementById('sendModal').classList.add('flex');
         }
 
-        async function executeSend() {
-            const actions = document.getElementById('sendActions'); const spinner = document.getElementById('sendSpinner'); const status = document.getElementById('sendStatus');
-            actions.style.display = 'none'; spinner.classList.remove('hidden'); status.innerText = "Відправка...";
-            try {
-                await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pendingData) });
-                status.innerText = "✅ Дані відправлено!"; status.classList.add('text-emerald-600');
-                
-                setTimeout(() => { 
-                    closeModal('sendModal'); 
-                    performReset(); 
-                }, 1500);
-            } catch(e) { status.innerText = "❌ Помилка з'єднання"; status.classList.add('text-red-500'); actions.style.display = 'flex'; spinner.classList.add('hidden'); }
+        // Форма очищається ЛИШЕ коли сервер підтвердив запис або запис
+        // надійно ліг у чергу на пристрої.
+        function executeSend() {
+            if (!pendingData) return;
+            QC.submit(pendingData, {
+                status: 'sendStatus',
+                actions: 'sendActions',
+                spinner: 'sendSpinner',
+                button: 'doSendBtn',
+                onDone: function () {
+                    pendingData = null;
+                    closeModal('sendModal');
+                    performReset();
+                }
+            });
         }
-        
+
         document.getElementById('doSendBtn').onclick = executeSend;
     </script>
 </body>
 </html>
-
-

@@ -135,10 +135,16 @@
             <button onclick="resetForm()" class="absolute top-4 right-4 text-xs font-bold text-orange-600 hover:text-orange-800 bg-orange-100 hover:bg-orange-200 px-3 py-1.5 rounded-lg transition-colors dark:bg-orange-900/30 dark:text-orange-300 border border-transparent hover:border-orange-300">
                 Очистити форму
             </button>
-
-            <div class="mt-4">
-                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер *</label>
-                <select id="employeeSelect" class="rounded-lg" required><option value="" disabled selected>Оберіть...</option></select>
+            <div class="flex items-center justify-between gap-3 bg-amber-50 dark:bg-slate-800/50 border border-amber-100 dark:border-slate-700 rounded-lg px-4 py-3">
+                <div class="min-w-0">
+                    <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Контролер</div>
+                    <div id="sessionName" class="text-lg font-bold text-slate-800 dark:text-slate-100 truncate">— не увійшли —</div>
+                </div>
+                <button id="logoutBtn" type="button" class="shrink-0 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-amber-700 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg transition-colors" title="Вийти і передати планшет іншому">Вийти</button>
+            </div>
+            <div class="flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 px-1">
+                <span id="catalogStatus">Довідники: —</span>
+                <button id="catalogRefresh" type="button" class="font-bold text-amber-600 dark:text-amber-400 hover:underline" title="Перечитати списки з таблиці">↻ Оновити списки</button>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -150,11 +156,6 @@
                     <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Варник *</label>
                     <select id="tst-cookName" class="rounded-lg" required>
                         <option value="" disabled selected>Оберіть...</option>
-                        <option value="Загура Іван Борисович">Загура Іван Борисович</option>
-                        <option value="Солдатова Ірина Володимирівна">Солдатова Ірина Володимирівна</option>
-                        <option value="Садиріна Ольга Анатоліївна">Садиріна Ольга Анатоліївна</option>
-                        <option value="Козурак Іван Миколайович">Козурак Іван Миколайович</option>
-                        <option value="Кораблін Дмитро Русланович">Кораблін Дмитро Русланович</option>
                     </select>
                 </div>
             </div>
@@ -276,6 +277,7 @@
                     </label>
                 </div>
                 <div id="gallery-container" class="grid grid-cols-3 gap-2 hidden"></div>
+                <p id="photo-counter" class="text-xs text-slate-500 dark:text-slate-400 mt-2"></p>
             </div>
 
             <button onclick="initiateSend()" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2 text-lg">
@@ -310,200 +312,119 @@
         </div>
     </div>
 
+    <script src="qc-core.js"></script>
     <script>
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxobml8KXZp38dZNOUJe0sq-o16s0tFC2ilbcZq77bFJwz0aaNnPVuzQsHCvlq7qpKLNg/exec";
-        
-        const employees = ["Соботович Л.М.", "Огаркова М.В.", "Попадюк А.М."];
-        const products = [
-             "1101 Соєвий Bonsai", "1102 Соєвий Bonsai Prem", "1103 Соєвий YKI", "1104 Соєвий Bonsai Prof",
-            "1105 Соєвий Чумак", "1106 Соєвий METRO Chef", "1107 ТАМАРИ Bonsai", "1108 Теріякі Bonsai",
-            "1109 УНАГІ Bonsai", "1110 ЯКІТОРІ Bonsai", "1111 Теріякі Bonsai Prem", "1112 Теріякі густий YKI",
-            "1113 Теріякі з медом Bonsai", "1114 Теріякі рідкий YKI", "1115 Теріякі Чумак", "1116 Для Суши Bonsai",
-            "1117 Бальзамик Bonsai Prem", "1118 Горіховий Bonsai Prem", "1119 Соєвий Bonsai Prof (Custom Edition)", "1120 Для Суши Bonsai Prem",
-            "1121 Соєвий (O)", "1122 Соєвий Ketjap", "1123 Устричний Bonsai", "1124 Соєвий Солодкий Теріякі",
-            "1125 Соус соєвий Теріякі SESAME & GINGER PERI PERI", "1126 Соус соєвий Теріякі SWEET CHILI PERI PERI",
-            "1127 Соус соєвий Унагі SWEET & SOUR PERI PERI", "1128 Соус соєвий SOY & WHEAT PERI PERI", "1131 Соус Теріякі Домінос", "1132 Соус соєвий /(Суши Тайм)", "1133 Соєвий густий",
-            "1134 Соус соєвий_PL", "1135 МАРИНАД СОЄВИЙ №1 з копченою цибулею", "1136 МАРИНАД ТЕРІЯКІ з медом та кунжутом", 
-            "1201 Кисло-солодкий Peri Peri", "1202 Гостро-солодкий Peri Peri", "1203 Журавлинний Peri Peri",
-            "1204 Ожиновий Peri Peri", "1205 Hot Chili PL", "1206 Sweet Chili Peri Peri, Bonsai Prem", "1207 Гранатовий Наршараб Peri Peri",
-            "1208 Для ЛокшиниWOK Peri Peri", "1209 Жовто-гарячий Peri Peri", "1210 Солодкий Чилі YKI", "1211 Манго-Чилі Peri Peri",
-            "1212 Пряні трави Peri Peri", "1213 Солодкий Чилі Чумак", "1214 Солодкий Чилі Bonsai", "1216 Солодкий Чилі(SE) Bonsai Prem",
-            "1217 Sweet Chili PL (PD)", "1218 Sweet Chili PL", "1219 Ткемалі Peri Peri", "1220 Кімчі Premium", "1221 Сацебелі Peri Peri", 
-            "1222 МАРИНАД ВИШНЕВИЙ з копченою паприкою", "1223 МАРИНАД ІТАЛІЙСЬКИЙ з томатами та базиліком", "1224 Вишневий з чіа Peri Peri", 
-            "1301 Аризона Барбекю Peri Peri", "1302 Болоньезе Peri Peri", "1303 З в’яленими томатами Peri Peri", "1304 Кетчуп Peri Peri",
-            "1305 Болоньєзе YKI", "1307 Для ПІЦИ Bonsai Prof", "1308 Кетчуп Лагідний YKI", "1310 Кетчуп Чілі YKI",
-            "1312 PL_Соус Томатний (PD)", "1314 PL_Соус №95 Томатний", "1315 PL_Томатна паста 1000 гр", "1401 Original Salateria",
-            "1402 Бальзаміко Fresh Salateria", "1403 З кунжутною олією Salateria", "1404 З кунжутом Salateria", "1405 Медово-гірчична Fresh Salateria",
-            "1501 Кунжутний PP, BProf, Salat", "1502 Сирний Bonsai Prof", "1503 Тартар Peri Peri", "1504 Цезар Peri Peri",
-            "1505 Сирний Bonsai Prof, Peri Peri", "1506 ПЕСТО ROSSO", "1507 ПЕСТО", "1508 ПЕСТО PL", "1509 Майонез original 73%",
-            "1510 PL_Вершковий (PD)", "1601 Наповнювач Вишневий PL", "1602 Наповнювач Лісова ягода PL", "1603 Мед штучний PL", "1604 Наповнювач Полуниця PL", "1605 Наповнювач Персик PL",
-            "1701 Концентрований компот яблучно-грушевий", "1702 Концентрований компот яблучно-вишневий", "1703 Концентрований компот яблучно-малиновий", "1704 Концентрований компот абрикосово-персиковий",
-            "1801 В’ялені томати"
-        ];
+        // Адреса розгортання АКАУНТА 3 (варки соусу, мийки).
+        // Поки не вписано — сторінка скаже про це на екрані, а не стукатиме не туди.
+        const GOOGLE_SCRIPT_URL = "PASTE_ACCOUNT_3_EXEC_URL_HERE";
 
-        // --- DATABASE INIT ---
-        const PRODUCT_SPECS_DB = {};
+        QC.configure({
+            url: GOOGLE_SCRIPT_URL,
+            section: 'sauce_boiling',
+            appName: 'Варки соусу',
+            auth: true,            // вхід за PIN; ім'я контролера бере сервер із сесії
+            catalog: true,         // варники, продукти й норми — з таблиць
+            showBadge: true
+        });
 
-        // Full CSV Data from user file
-        const csvData = `
-1101 Соєвий Bonsai,1101.0, +,, +,,12.8,14.8,-,-,4.5,4.8
-1102 Соєвий Bonsai Prem,1102.0, +,, +,,25.0,27.0,-,-,-,-
-1103 Соєвий YKI,1103.0, +,, +,,13.3,15.3,-,-,-,-
-1104 Соєвий Bonsai Prof,1104.0, +,, +,,37.0,39.0,-,-,-,-
-1105 Соєвий Чумак,1105.0, +,, +,,12.0,14.0,-,-,-,-
-1106 Соєвий METRO Chef,1106.0, +,, +,,27.0,29.0,-,-,-,-
-1107 ТАМАРИ Bonsai,1107.0, +,, +,,24.0,26.0,-,-,-,-
-1108 Теріякі Bonsai,1108.0, +, +, +,,17.5,19.5,9.5,11.7,-,-
-1109 УНАГІ Bonsai,1109.0, +, +, +,,26.0,28.0,8.2,10.0,-,-
-1110 ЯКІТОРІ Bonsai,1110.0, +, +, +,,18.0,20.0,9.5,11.5,-,-
-1111 Теріякі Bonsai Prem,1111.0, +, +, +,,23.0,25.0,8.0,9.7,-,-
-1112 Теріякі густий YKI,1112.0, +, +, +,,11.0,13.0,9.3,12.0,-,-
-1113 Теріякі з медом Bonsai,1113.0, +, +, +,,27.0,29.0,8.5,11.0,-,-
-1114 Теріякі рідкий YKI,1114.0, +,, +,,13.85,14.85,-,-,-,-
-1115 Теріякі Чумак,1115.0, +, +, +,,21.1,23.1,9.5,11.5,-,-
-1116 Для Суши Bonsai,1116.0, +, +, +,,15.7,17.7,-,-,-,-
-1117 Бальзамик Bonsai Prem,1117.0, +, +, +,,26.0,28.0,8.0,10.0,-,-
-1118 Горіховий Bonsai Prem,1118.0, +, +, +,,20.0,22.0,5.7,8.6,-,-
-1119 Соєвий Bonsai Prof (Custom Edition),1119.0, +,, +,,-,-,-,-,-,-
-1120 Для Суши Bonsai Prem,1120.0, +,, +,,-,-,-,-,-,-
-1121 Соєвий (O),1121.0, +,, +,,14.0,15.0,-,-,-,-
-1122 Соєвий Ketjap,1122.0, +, +, +,,38.0,39.0,-,-,-,-
-1123 Устричний Bonsai,1123.0, +, +, +,,23.8,25.8,8.5,10.5,-,-
-1124 Соєвий Солодкий Теріякі ,1124.0, +, +, +,,37.0,39.0,6.5,8.5,-,-
-1125 Соус соєвий Теріякі SESAME & GINGER PERI PERI,1125.0, +, +, +,,29.0,31.0,8.5,10.5,-,-
-1126 Соус соєвий Теріякі SWEET CHILI PERI PERI,1126.0, +, +, +,,37.4,39.4,9.5,11.0,-,-
-1127 Соус соєвий Унагі SWEET & SOUR PERI PERI,1127.0, +, +, +,,42.5,44.5,8.5,10.5,-,-
-1128 Соус соєвий SOY & WHEAT PERI PERI,1128.0, +,, +,,38.5,39.5,-,-,-,-
-1129 Маринад соєвий №1,1129.0, +, +, +,,30.58,31.58,-,-,-,-
-1130 Маринад соєвий №7,1130.0, +, +, +,,33.63,34.63,-,-,-,-
-1131 Соус Теріякі Домінос,1131.0, +, +, +,,22.0,24.0,6.7,8.0,-,-
-1132 Соус соєвий /(Суши Тайм),1132.0, +,, +,,22.31,23.31,-,-,-,-
-1133 Соєвий густий,1133.0, +, +, +,,18.7,20.7,-,-,-,-
-1134 Соус соєвий_PL,1134.0, +,, +,,28.0,30.0,-,-,3.0,3.1
-1135 МАРИНАД СОЄВИЙ №1 з копченою цибулею,1135.0, +, +, +,,27,29,9,11,3.6,3.8
-1136 МАРИНАД ТЕРІЯКІ з медом та кунжутом,1136.0, +, +, +,,28,30,9,11,3.8,3.9
-1201 Кисло-солодкий Peri Peri,1201.0, +, +, +,,18.2,20.2,5.0,8.5,-,-
-1202 Гостро-солодкий Peri Peri,1202.0, +, +, +,,21.0,23.0,2.5,7.5,-,-
-1203 Журавлинний Peri Peri,1203.0, +, +, +,,41.0,43.0,11.0,16.0,-,-
-1204 Ожиновий Peri Peri,1204.0, +, +, +,,45.5,47.5,11.0,13.0,-,-
-1205 Hot Chili PL,1205.0, +, +, +,,37.81,39.81,7.8,9.5,-,-
-1206 Sweet Chili Peri Peri, Bonsai Prem",1206.0, +, +, +,,37.5,39.5,5.0,7.0,-,-
-1207 Гранатовий Наршараб Peri Peri,1207.0, +, +, +,,72.0,74.0,18.0,25.0,-,-
-1208 Для ЛокшиниWOK Peri Peri,1208.0, +, +, +,,24.5,26.5,11.5,13.0,-,-
-1209 Жовто-гарячий Peri Peri,1209.0, +, +, +,,26.33,28.33,1.0,3.0,-,-
-1210 Солодкий Чилі YKI,1210.0, +, +, +,,29.5,31.5,4.0,7.0,-,-
-1211 Манго-Чилі Peri Peri,1211.0, +, +, +,,28.5,30.5,4.5,6.0,-,-
-1212 Пряні трави Peri Peri,1212.0, +, +, +,,26.5,27.5,-,-,-,-
-1213 Солодкий Чилі Чумак,1213.0, +, +, +,,32.0,34.0,4.5,7.0,-,-
-1214 Солодкий Чилі Bonsai,1214.0, +, +, +,,27.0,29.0,5.0,8.0,3.0,3.5
-1216 Солодкий Чилі(SE) Bonsai Prem,1216.0, +, +, +,,29.8,30.8,-,-,-,-
-1217 Sweet Chili PL (PD),1217.0, +, +, +,,31.0,33.0,7.7,10.0,3.0,3.3
-1218 Sweet Chili PL,1218.0, +, +, +,,36.8,38.8,7.0,9.7,-,-
-1219 Ткемалі Peri Peri,1219.0, +, +, +,,14.5,16.5,7.0,9.0,3.0,3.5
-1220 Кімчі Premium,1220.0, +, +, +,,21.0,23.0,2.0,4.5,-,-
-1221 Сацебелі Peri Peri,1221.0, +, +, +,,24.5,26.5,3.5,8.5,-,-
-1222 МАРИНАД ВИШНЕВИЙ з копченою паприкою,1222.0, +, +, +,,46.4,48.4,9,11,3.4,3.8
-1223 МАРИНАД ІТАЛІЙСЬКИЙ з томатами та базиліком,1223.0, +, +, +,,24.4,26.4,9,11,4.2,4.5
-1224 Вишневий з чіа Peri Peri,1224.0, +, +, +,,47.0,48.5,14,16,2.9,3.2
-1301 Аризона Барбекю Peri Peri,1301.0, +, +, +,,30.0,33.0,5.5,7.0,2.0,3.0
-1302 Болоньезе Peri Peri,1302.0, +, +, +,,22.5,24.5,4.0,6.5,-,-
-1303 З в’яленими томатами Peri Peri,1303.0, +, +, +,,24.0,26.0,3.5,5.0,3.0,3.5
-1304 Кетчуп Peri Peri,1304.0, +, +, +,,32.5,34.5,3.0,5.0,-,-
-1305 Болоньєзе YKI,1305.0, +, +, +,,25.0,27.0,4.5,6.5,-,-
-1307 Для ПІЦИ Bonsai Prof,1307.0, +, +, +,,11.2,13.2,7.0,8.0,4.2,4.38
-1308 Кетчуп Лагідний YKI,1308.0, +, +, +,,-,-,-,-,-,-
-1310 Кетчуп Чілі YKI,1310.0, +, +, +,,-,-,-,-,-,-
-1312 PL_Соус Томатний (PD),1312.0, +, +, +,,11.5,13.5,5.5,7.0,4.0,4.3
-1314 PL_Соус №95 Томатний,1314.0, +, +, +,,24.0,26.0,3.5,6.0,-,-
-1315 PL_Томатна паста 1000 гр,1315.0, +, +, +,,25.0,28.0,-,-,-,-
-1401 Original Salateria,1401.0, +, +, +,,14.5,16.5,8.0,10.5,-,-
-1402 Бальзаміко Fresh Salateria,1402.0, +, +, +,,27.0,29.0,7.0,11.5,-,-
-1403 З кунжутною олією Salateria,1403.0, +,, +,,30.2,31.2,-,-,-,-
-1404 З кунжутом Salateria,1404.0, +, +, +,,27.8,28.8,9.0,11.5,-,-
-1405 Медово-гірчична Fresh Salateria,1405.0, +, +, +,,31.0,33.0,5.0,9.0,3.0,3.1
-1501 Кунжутний PP, BProf, Salat",1501.0,, +, +, +,-,-,6.0,8.0,3.2,3.6
-1502 Сирний Bonsai Prof,1502.0,, +, +, +,-,-,-,-,-,-
-1503 Тартар Peri Peri,1503.0,, +, +, +,-,-,5.5,7.5,-,-
-1504 Цезар Peri Peri,1504.0,, +, +, +,-,-,6.0,8.0,3.5,3.6
-1505 Сирний Bonsai Prof, Peri Peri ",1505.0,, +, +, +,-,-,5.5,7.0,-,-
-1506 ПЕСТО ROSSO,1506.0,, +, +, +,-,-,2.5,6.0,-,-
-1507 ПЕСТО,1507.0,, +, +, +,-,-,2.5,6.0,-,-
-1508 ПЕСТО PL,1508.0, +, +, +,,-,-,5.5,7.5,-,-
-1509 Майонез original 73%,1509.0,, +, +, +,-,-,0.07,2.0,3.0,4.5
-1510 PL_Вершковий (PD),1510.0, +, +, +, +,-,-,15.0,17.0,4.3,4.5
-1601 Наповнювач Вишневий PL,1601.0, +, +, +,,26.0,30.0,2.5,5.0,-,-
-1602 Наповнювач Лісова ягода PL,1602.0, +, +, +,,26.0,30.0,2.5,5.0,-,-
-1603 Мед штучний PL,1603.0, +, +, +,,79.2,79.6,13.2,14,5.4,5.6
-1604 Наповнювач Полуниця PL,1604.0, +, +, +,,54.7,56.7,3.0,3.7,-,-
-1605 Наповнювач Персик PL,1605.0, +, +, +,,54.7,56.7,3.0,3.7,-,-
-1701 Концентрований компот яблучно-грушевий,1701.0, +,, +,,17.5,19.5,-,-,-,-
-1702 Концентрований компот яблучно-вишневий,1702.0, +,, +,,11.5,13.5,-,-,-,-
-1703 Концентрований компот яблучно-малиновий,1703.0, +,, +,,11.9,13.9,-,-,-,-
-1704 Концентрований компот абрикосово-персиковий,1704.0, +,, +,,11.75,13.75,-,-,-,-
-1801 В’ялені томати,1801.0, +,, +,,-,-,-,-,-,-
-`;
-
-        function parseCSV() {
-            const lines = csvData.trim().split('\n');
-            lines.forEach(line => {
-                const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-                if (!matches) return;
-                
-                const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.trim().replace(/^"|"$/g, ''));
-                if(cols.length < 2) return;
-
-                const name = cols[0];
-                const codeMatch = name.match(/^\d+/);
-                const key = codeMatch ? codeMatch[0] : name;
-
-                PRODUCT_SPECS_DB[key] = {
-                    dry: { 
-                        req: cols[2] === '+', 
-                        min: parseFloat(cols[6]) || null, 
-                        max: parseFloat(cols[7]) || null 
-                    },
-                    visc: { 
-                        req: cols[3] === '+', 
-                        min: parseFloat(cols[8]) || null, 
-                        max: parseFloat(cols[9]) || null 
-                    },
-                    ph: { 
-                        req: cols[4] === '+', 
-                        min: parseFloat(cols[10]) || null, 
-                        max: parseFloat(cols[11]) || null 
-                    },
-                    stab: { 
-                        req: cols[5] === '+' 
-                    }
-                };
-            });
+        if (GOOGLE_SCRIPT_URL.indexOf('PASTE_') === 0) {
+            QC.toast('Не вписано адресу сервера (GOOGLE_SCRIPT_URL). Зверніться до адміністратора.', true);
         }
 
-        // Init DB
-        parseCSV();
+        // --- Хто увійшов ---
+        QC.auth.onChange(function (session) {
+            document.getElementById('sessionName').textContent = session
+                ? session.journalName + (session.offline ? ' · офлайн-режим' : '')
+                : '— не увійшли —';
+        });
+        document.getElementById('logoutBtn').addEventListener('click', function () { QC.auth.logout(); });
 
+        const showToast = QC.toast;
+        function val(id) { return document.getElementById(id).value; }
+
+        // --- Довідники ---
+        // Варники — активні працівники з посадою «Варник соуса» (POS-002) у кадровому
+        // довіднику gw-ref. Перелік продуктів і норми (сухі, Bostwick, pH,
+        // центрифугування) — аркуш «Соуси» таблиці QC Data 2.0. Раніше норми
+        // лежали в сторінці як CSV і розходились із таблицею.
+        const cookSel = document.getElementById('tst-cookName');
+        let PRODUCT_SPECS_DB = {};
+
+        function fillSelect(sel, items, placeholder, keep) {
+            const current = keep ? sel.value : '';
+            sel.innerHTML = '';
+            const ph = new Option(placeholder, '');
+            ph.disabled = true; ph.selected = true;
+            sel.add(ph);
+            (items || []).forEach(function (it) { sel.add(new Option(it, it)); });
+            if (current && Array.prototype.some.call(sel.options, function (o) { return o.value === current; })) sel.value = current;
+        }
+        function numOrNull(v) {
+            const n = parseFloat(String(v === undefined || v === null ? '' : v).replace(',', '.'));
+            return isNaN(n) ? null : n;
+        }
+        function specKey(text) {
+            const m = String(text || '').trim().match(/^\d+/);
+            return m ? m[0] : String(text || '').trim();
+        }
+        // Аркуш «Соуси» → { '1101': { dry:{req,min,max}, visc:{…}, ph:{…}, stab:{req} } }
+        function buildSpecs(list) {
+            const db = {};
+            (list || []).forEach(function (s) {
+                const key = specKey(s.code) || specKey(s.name);
+                if (!key) return;
+                db[key] = {
+                    dry:  { req: String(s.dryReq).trim() === '+',  min: numOrNull(s.dryMin), max: numOrNull(s.dryMax) },
+                    visc: { req: String(s.boReq).trim() === '+',   min: numOrNull(s.boMin),  max: numOrNull(s.boMax) },
+                    ph:   { req: String(s.phReq).trim() === '+',   min: numOrNull(s.phMin),  max: numOrNull(s.phMax) },
+                    stab: { req: String(s.stabReq).trim() === '+' }
+                };
+            });
+            return db;
+        }
+
+        function applyCatalog() {
+            fillSelect(cookSel, QC.catalog.get('cooks'), QC.catalog.has('cooks') ? 'Оберіть...' : 'Довідник не завантажено', true);
+            const dl = document.getElementById('products-list');
+            dl.innerHTML = '';
+            (QC.catalog.get('sauces') || []).forEach(function (p) {
+                const opt = document.createElement('option'); opt.value = p; dl.appendChild(opt);
+            });
+            PRODUCT_SPECS_DB = buildSpecs(QC.catalog.get('sauceSpecs'));
+            if (val('tst-product')) updateProductSpecs();
+        }
+
+        QC.catalog.onUpdate(function (data, info) {
+            applyCatalog();
+            let text;
+            if (info.loading) text = 'оновлення…';
+            else if (!data) text = info.error ? 'не завантажено (' + info.error + ')' : 'ще не завантажено — потрібен вхід при мережі';
+            else text = (info.source === 'server' ? 'з таблиці' : 'з кешу')
+                      + (info.fetchedAt ? ', ' + QC.fmtDateTime(new Date(info.fetchedAt)) : '')
+                      + (info.stale ? ' · застарілі' : '');
+            document.getElementById('catalogStatus').textContent = 'Довідники: ' + text;
+        });
+        document.getElementById('catalogRefresh').addEventListener('click', function () { QC.catalog.refresh(true); });
+
+        // --- Норми для обраного продукту ---
         let currentSpecs = {
-            dry: { min: null, max: null, required: true },
-            visc: { min: null, max: null, required: true },
-            ph: { min: null, max: null, required: true },
-            stab: { required: true }
+            dry: { min: null, max: null, req: true },
+            visc: { min: null, max: null, req: true },
+            ph: { min: null, max: null, req: true },
+            stab: { req: true }
         };
 
         function updateProductSpecs() {
-            const val = document.getElementById('tst-product').value;
-            const codeMatch = val.match(/^\d+/);
-            const key = codeMatch ? codeMatch[0] : val;
-
-            const dbSpec = PRODUCT_SPECS_DB[key];
+            const dbSpec = PRODUCT_SPECS_DB[specKey(val('tst-product'))];
 
             if (dbSpec) {
                 currentSpecs = dbSpec;
             } else {
                 currentSpecs = {
-                    dry: { min: null, max: null, required: true },
-                    visc: { min: null, max: null, required: true },
-                    ph: { min: null, max: null, required: true },
-                    stab: { required: true }
+                    dry: { min: null, max: null, req: true },
+                    visc: { min: null, max: null, req: true },
+                    ph: { min: null, max: null, req: true },
+                    stab: { req: true }
                 };
             }
 
@@ -514,10 +435,10 @@
             updateInputState('tst-dry', 'range-info-dry', currentSpecs.dry, "°Bx");
             updateInputState('tst-visc', 'range-info-visc', currentSpecs.visc, "cm/30s");
             updateInputState('tst-ph', 'range-info-ph', currentSpecs.ph, "");
-            
+
             const stabSelect = document.getElementById('tst-stab');
             const stabInfo = document.getElementById('range-info-stab');
-            
+
             if (!currentSpecs.stab.req) {
                 stabSelect.disabled = true;
                 stabSelect.value = "";
@@ -536,7 +457,7 @@
         function updateInputState(id, infoId, spec, unit) {
             const input = document.getElementById(id);
             const info = document.getElementById(infoId);
-            
+
             if (!spec.req) {
                 input.disabled = true;
                 input.value = "";
@@ -551,7 +472,7 @@
                 input.placeholder = "";
                 input.parentElement.classList.remove('opacity-50');
                 input.required = true;
-                
+
                 const type = id.replace('tst-', '');
                 if (spec.min !== null && spec.max !== null) {
                     info.innerText = `Норма: ${spec.min} - ${spec.max} ${unit}`;
@@ -560,18 +481,18 @@
                 } else {
                     info.innerText = "Норма не задана";
                 }
-                info.className = "range-info range-normal"; 
-                
+                info.className = "range-info range-normal";
+
                 if (input.value) checkRange(input, type);
             }
         }
 
         function checkRange(input, type) {
-            const val = parseFloat(input.value);
+            const value = parseFloat(input.value);
             const spec = currentSpecs[type];
             const info = document.getElementById('range-info-' + type);
 
-            if (!spec.req || isNaN(val)) {
+            if (!spec.req || isNaN(value)) {
                 input.classList.remove('range-alert');
                 return;
             }
@@ -580,12 +501,12 @@
             let limitText = "";
 
             if (type === 'ph' && spec.max === null) {
-                if (val > 4.5) {
+                if (value > 4.5) {
                     isError = true;
                     limitText = "< 4.5 (Стандарт)";
                 }
             } else if (spec.min !== null && spec.max !== null) {
-                if (val < spec.min || val > spec.max) {
+                if (value < spec.min || value > spec.max) {
                     isError = true;
                     limitText = `${spec.min} - ${spec.max}`;
                 }
@@ -598,7 +519,7 @@
             } else {
                 input.classList.remove('range-alert');
                 const unit = type === 'dry' ? '°Bx' : (type === 'visc' ? 'cm/30s' : '');
-                
+
                 if (spec.min !== null && spec.max !== null) {
                     info.innerText = `Норма: ${spec.min} - ${spec.max} ${unit}`;
                 } else if (type === 'ph') {
@@ -611,17 +532,8 @@
         }
 
         // --- INIT ---
-        const empSel = document.getElementById('employeeSelect');
-        employees.forEach(e => empSel.add(new Option(e, e)));
-        const dl = document.getElementById('products-list');
-        products.forEach(p => { const opt = document.createElement('option'); opt.value = p; dl.appendChild(opt); });
-        
-        document.getElementById('tst-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
+        document.getElementById('tst-time').value = QC.fmtTime(new Date());
         document.getElementById('tst-cookDate').valueAsDate = new Date();
-
-        const saved = localStorage.getItem('qc_user');
-        if(saved) empSel.value = saved;
-        empSel.onchange = () => localStorage.setItem('qc_user', empSel.value);
 
         document.getElementById('themeToggle').addEventListener('click', () => {
             document.documentElement.classList.toggle('dark');
@@ -645,71 +557,27 @@
             else el.classList.remove('input-alert');
         }
 
-        function showToast(message, isError = false) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast bg-white dark:bg-slate-700 border-l-4 p-4 rounded-lg shadow-xl flex items-center max-w-sm transform transition-all duration-300 translate-x-full border border-slate-200 dark:border-slate-600`;
-            if (isError) {
-                toast.classList.add('border-red-500', 'text-red-700', 'dark:text-red-400');
-                toast.innerHTML = `<span class="mr-2 text-xl">🚫</span> <span class="font-medium text-sm">${message}</span>`;
-            } else {
-                toast.classList.add('border-emerald-500', 'text-emerald-700', 'dark:text-emerald-400');
-                toast.innerHTML = `<span class="mr-2 text-xl">✅</span> <span class="font-medium text-sm">${message}</span>`;
-            }
-            container.appendChild(toast);
-            requestAnimationFrame(() => { toast.classList.remove('translate-x-full'); });
-            setTimeout(() => { toast.classList.add('translate-x-full'); setTimeout(() => toast.remove(), 300); }, 3000);
-        }
-
-        // FILES LOGIC
-        let uploadedFiles = [];
-        function handleFiles(input) {
-            const files = input.files;
-            if (files && files.length > 0) {
-                const container = document.getElementById('gallery-container');
-                container.classList.remove('hidden');
-                Array.from(files).forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const base64 = e.target.result;
-                        uploadedFiles.push({ name: file.name, type: file.type, data: base64 });
-                        const div = document.createElement('div');
-                        div.className = 'photo-preview-item';
-                        div.innerHTML = `<img src="${base64}"><div class="photo-remove-btn" onclick="removeFile(this, '${base64}')">✕</div>`;
-                        container.appendChild(div);
-                    };
-                    reader.readAsDataURL(file);
-                });
-            }
-            input.value = '';
-        }
-        function removeFile(btnElement, dataContent) {
-            btnElement.parentElement.remove();
-            uploadedFiles = uploadedFiles.filter(f => f.data !== dataContent);
-            if(uploadedFiles.length === 0) document.getElementById('gallery-container').classList.add('hidden');
-        }
-        function clearGallery() {
-            uploadedFiles = [];
-            document.getElementById('gallery-container').innerHTML = '';
-            document.getElementById('gallery-container').classList.add('hidden');
-        }
+        // --- Фото: стискаються до 1600px/JPEG, у DOM лише id, не base64 ---
+        const photos = QC.gallery({ container: 'gallery-container', counter: 'photo-counter' });
+        function handleFiles(input) { photos.add(input); }
 
         function resetForm() { document.getElementById('confirmResetModal').classList.remove('hidden'); document.getElementById('confirmResetModal').classList.add('flex'); }
-        
+
         function performReset() {
             document.querySelectorAll('input, select, textarea').forEach(el => {
+                 if (el.id === 'qcLoginPin') return;
                  el.value = '';
                  el.classList.remove('input-alert', 'range-alert');
-                 el.disabled = false; 
+                 el.disabled = false;
                  if(el.parentElement.classList.contains('opacity-50')) el.parentElement.classList.remove('opacity-50');
             });
             document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active-clean', 'active-dirty'));
             document.querySelectorAll('.range-info').forEach(info => { info.innerText = ""; info.className = "range-info range-normal"; });
-            
-            document.getElementById('tst-time').value = new Date().toLocaleTimeString('uk-UA', {hour:'2-digit', minute:'2-digit'});
+
+            document.getElementById('tst-time').value = QC.fmtTime(new Date());
             document.getElementById('tst-cookDate').valueAsDate = new Date();
-            clearGallery();
-            
+            photos.clear();
+
             document.getElementById('confirmResetModal').classList.add('hidden');
             document.getElementById('confirmResetModal').classList.remove('flex');
             showToast("Форму очищено");
@@ -720,10 +588,10 @@
         function formatReportLine(label, value, type, suffix = '') {
             const spec = currentSpecs[type];
             if (!spec.req) return `• ${label}: Не потрібно`;
-            
+
             const valNum = parseFloat(value);
             let alert = "";
-            
+
             if (type === 'ph' && spec.max === null && valNum > 4.5) {
                 alert = " ⚠️ ( > 4.5 )";
             } else if (spec.min !== null && spec.max !== null) {
@@ -731,57 +599,59 @@
                     alert = ` ⚠️ (Норма: ${spec.min}-${spec.max})`;
                 }
             }
-            
+
             return `• ${label}: ${value}${suffix}${alert}`;
         }
 
         function initiateSend() {
-            const emp = empSel.value;
-            const cook = document.getElementById('tst-cookName').value;
-            const prod = document.getElementById('tst-product').value;
-            const task = document.getElementById('tst-task').value;
-            const dry = document.getElementById('tst-dry').value;
-            const visc = document.getElementById('tst-visc').value;
-            const ph = document.getElementById('tst-ph').value;
-            
-            if(!emp || !cook || !prod || !task) { showToast("Заповніть основні поля!", true); return; }
-            
+            if (!QC.auth.require()) return;
+            const session = QC.auth.session();
+
+            const cook = val('tst-cookName');
+            const prod = val('tst-product').trim();
+            const task = val('tst-task');
+            const dry = val('tst-dry');
+            const visc = val('tst-visc');
+            const ph = val('tst-ph');
+
+            if(!cook || !prod || !task) { showToast("Заповніть основні поля!", true); return; }
+
             // Check specs requirements
             if(currentSpecs.dry.req && !dry) { showToast("Введіть сухі речовини!", true); return; }
             if(currentSpecs.ph.req && !ph) { showToast("Введіть pH!", true); return; }
             if(currentSpecs.visc.req && !visc) { showToast("Введіть в'язкість!", true); return; }
 
-            const color = document.getElementById('tst-color').value;
-            const aroma = document.getElementById('tst-aroma').value;
-            const taste = document.getElementById('tst-taste').value;
-            const consist = document.getElementById('tst-consist').value;
-            const comment = document.getElementById('tst-comment').value;
+            const color = val('tst-color');
+            const aroma = val('tst-aroma');
+            const taste = val('tst-taste');
+            const consist = val('tst-consist');
+            const comment = val('tst-comment');
 
             if(!color || !aroma || !taste || !consist) { showToast("Заповніть органолептику!", true); return; }
-            
-            const stab = document.getElementById('tst-stab').value;
+
+            const stab = val('tst-stab');
             if(currentSpecs.stab.req && !stab) { showToast("Оберіть стабільність!", true); return; }
 
             // Range Alerts check
             let alerts = "";
             const rangeErrors = document.querySelectorAll('.range-alert');
             if(rangeErrors.length > 0) alerts += "\n🔴 УВАГА: Невідповідність фізико-хімічних показників!";
-            
+
             if (color === '❌') alerts += "\n🔴 УВАГА: Невідповідність кольору";
             if (aroma === '❌') alerts += "\n🔴 УВАГА: Невідповідність запаху";
             if (taste === '❌') alerts += "\n🔴 УВАГА: Невідповідність смаку";
             if (consist === '❌') alerts += "\n🔴 УВАГА: Невідповідність консистенції";
             if (currentSpecs.stab.req && stab === '-') alerts += "\n🔴 УВАГА: Не стійка емульсія";
-            
+
             let headerIcon = alerts ? "⚠️" : "🍲";
-            
+
             const report = `${headerIcon} ЗВІТ QC Master: Варки соусу
-👤 Контролер: ${emp}
-🕒 Час: ${document.getElementById('tst-time').value}
+👤 Контролер: ${session.journalName}
+🕒 Час: ${val('tst-time')}
 👨‍🍳 Варник: ${cook}
 📦 Продукт: ${prod}
 🔢 Завдання: ${task}
-📅 Дата варки: ${document.getElementById('tst-cookDate').value}
+📅 Дата варки: ${val('tst-cookDate')}
 
 👅 Органолептика:
 • Колір: ${color === '✅' ? 'Відповідає' : 'Брак'}
@@ -797,19 +667,19 @@ ${formatReportLine('pH', ph, 'ph')}
 
 💬 Коментар: ${comment}
 
-📷 Фото: ${uploadedFiles.length} шт.
-${alerts}`; 
+📷 Фото: ${photos.count} шт.
+${alerts}`;
 
+            // Імена полів — такі, які читає сервер (Code.gs → journals_().sauce_boiling).
+            // Тип запису — sauce_boiling (стара сторінка слала «sauce»; сервер приймає обидва).
             pendingData = {
-                type: "sauce",
-                time: document.getElementById('tst-time').value,
-                employee: emp,
-                section: "Варки соусу",
+                type: "sauce_boiling",
+                time: val('tst-time'),
                 report: report,
                 cook: cook,
                 product: prod,
                 task: task,
-                cookDate: document.getElementById('tst-cookDate').value,
+                cookDate: val('tst-cookDate'),
                 color: color,
                 aroma: aroma,
                 taste: taste,
@@ -819,63 +689,48 @@ ${alerts}`;
                 ph: ph || "N/A",
                 stability: stab || "N/A",
                 comment: comment,
-                files: uploadedFiles,
-                photo: uploadedFiles.length > 0 ? uploadedFiles[0].data : ""
+                files: photos.files
             };
+
+            const size = QC.checkSize(pendingData);
+            if (!size.ok) {
+                showToast('Забагато даних (~' + size.mb + ' МБ). Видаліть частину фото.', true);
+                pendingData = null;
+                return;
+            }
 
             document.getElementById('reportPreview').innerText = report;
             document.getElementById('sendStatus').innerText = "";
             document.getElementById('sendActions').style.display = 'flex';
             document.getElementById('sendSpinner').classList.add('hidden');
-            
+
             document.getElementById('sendModal').classList.remove('hidden');
             document.getElementById('sendModal').classList.add('flex');
         }
 
-        async function executeSend() {
-            const actions = document.getElementById('sendActions');
-            const spinner = document.getElementById('sendSpinner');
-            const status = document.getElementById('sendStatus');
-
-            actions.style.display = 'none';
-            spinner.classList.remove('hidden');
-            status.innerText = "Відправка...";
-
-            try {
-                await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(pendingData)
-                });
-                
-                status.innerText = "✅ Дані відправлено (черга)!";
-                status.classList.add('text-emerald-600');
-                
-                setTimeout(() => {
+        // Форма очищається ЛИШЕ коли сервер підтвердив запис або запис
+        // надійно ліг у чергу на пристрої.
+        function executeSend() {
+            if (!pendingData) return;
+            QC.submit(pendingData, {
+                status: 'sendStatus',
+                actions: 'sendActions',
+                spinner: 'sendSpinner',
+                button: 'doSendBtn',
+                onDone: function () {
+                    pendingData = null;
                     closeSendModal();
                     performReset();
-                }, 1500);
-
-            } catch(e) {
-                status.innerText = "❌ Помилка з'єднання";
-                status.classList.add('text-red-500');
-                actions.style.display = 'flex';
-                spinner.classList.add('hidden');
-            }
+                }
+            });
         }
 
         function closeSendModal() {
             document.getElementById('sendModal').classList.add('hidden');
             document.getElementById('sendModal').classList.remove('flex');
         }
-        
+
         document.getElementById('doSendBtn').onclick = executeSend;
     </script>
 </body>
 </html>
-
-
-
-
-

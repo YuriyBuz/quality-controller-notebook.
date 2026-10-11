@@ -247,15 +247,18 @@ function isoToDotted_(value) {
 // =========================================================================
 //  ЗАПИС
 // =========================================================================
+const TYPE_ALIASES = { hvo: 'hvo_control', sauce: 'sauce_boiling' };
+
 function writeJournal_(data) {
   const type = String(data.type || '').trim();
-  const config = journals_()[type === 'hvo' ? 'hvo_control' : type];
+  // Старі сторінки звуть розділи інакше: «hvo» і «sauce». Приймаємо обидва.
+  const key = TYPE_ALIASES[type] || type;
+  const config = journals_()[key];
 
   if (!config) {
     throw fail_('UNKNOWN_TYPE', 'Невідомий тип запису: ' + (type || '(порожній)'));
   }
 
-  const key = (type === 'hvo') ? 'hvo_control' : type;
   if (SECTIONS.indexOf(key) === -1) {
     // Сторінка звертається не туди. Краще сказати прямо, ніж мовчки
     // записати в чужий журнал або проковтнути.
