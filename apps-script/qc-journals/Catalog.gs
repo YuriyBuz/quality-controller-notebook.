@@ -38,6 +38,14 @@ const CATALOG_CONFIG = {
     positions: ['POS-002']            // Варник соуса
   },
 
+  // Контролери для фільтра історії — у тому вигляді, в якому ім'я пишеться
+  // в журнал («Соботович Л.М.»): активні контролери якості й технологи.
+  controllers: {
+    source: 'directory',
+    positions: ['POS-012', 'POS-013'],
+    format: 'journal'
+  },
+
   // Три довідники з однієї вкладки, парами колонок A/B, C/D, E/F
   raw: {
     sheet: 'itemsDatabase',
@@ -243,7 +251,12 @@ function readDirectoryList_(conf) {
       return String(row[EMP.status]).trim().toLowerCase() === 'active' &&
              wanted.indexOf(String(row[EMP.posId]).trim()) !== -1;
     })
-    .map(function (row) { return String(row[EMP.fullName]).trim(); })
+    .map(function (row) {
+      // format:'journal' — «Прізвище І.Б.», як у колонці «Контролер»; інакше повне ПІБ
+      return conf.format === 'journal'
+        ? journalName_(row[EMP.shortName], row[EMP.fullName])
+        : String(row[EMP.fullName]).trim();
+    })
     .filter(function (name) { return name !== ''; });
 }
 

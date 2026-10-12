@@ -422,6 +422,66 @@ const ui = (w) => {
     ok('F5 підпис збережено файлом, у колонці посилання', /^http/.test(String(cr[ch.indexOf('Підпис (Посилання)')])));
   }
 
+  // =====================================================================
+  group('G. Наскрізно: вхідний контроль, чек-лист та історія (Акаунт 1) → бекенд');
+  {
+    const DATA_ID = '1VKKlqzrzRsZzDU1kbYciXnJ7J1Kr9fl1GF2RBBwlUUo', REF_ID = '1UhdO9ALcSXk8fgWhUnMiluO4Aao6R4EP6iN4Ie__rY8';
+    const emp = (id, full, short, pos, status, pin) => { const r = new Array(19).fill(''); r[0] = id; r[1] = full; r[2] = short; r[4] = pos; r[7] = status; r[16] = pin; return r; };
+    const books = {
+      [REF_ID]: new Book('gw-ref', {
+        '_REF_Positions': [['pos_id', 'назва', 'підрозділ', 'ролі типові'], ['POS-012', 'Контролер якості', 'Лабораторія', 'qc.use']],
+        '_REF_Employees': [new Array(19).fill('h'),
+          emp('EMP-0021', 'Попадюк Анжела Миколаївна', 'Попадюк А. М.', 'POS-012', 'active', '7777'),
+          emp('EMP-0024', 'Соботович Лілія Михайлівна', 'Соботович Л. М.', 'POS-012', 'active', '2468')],
+      }),
+      [DATA_ID]: new Book('QC Data 2.0', {
+        'email': [['email'], ['a@test.ua']],
+        'itemsDatabase': [['Артикул (Сировина)', 'Назва (Сировина)', 'Артикул (Пакування)', 'Назва (Пакування)', 'Артикул (Етикетка)', 'Назва (Етикетка)'], ['ADD-D-001', 'Антиоксидант', 2013, 'Банка скло', 3052, 'Етикетка']],
+        'Вхідний контроль': [['Дата запису', 'Час', 'Контролер', 'Постачальник', '№ Документа', 'Товар', 'Категорія', 'Партія', 'Кількість', 'Вироблено', 'Придатний до', 'Транспорт', 'Пакування', 'Маркування', 'Документи', 'Органолептика', 'Коментар', 'Фото']],
+        'Чек-лист': [['Дата запису', 'Контролер', 'Етап', 'Виконано', 'Всього', 'Текст звіту', 'Фото']],
+      }),
+    };
+    const server = makeEnv({ books, props: [['AUTH_SECRET', 's']], sections: ['incoming', 'checklist'], serveHistory: true });
+
+    const w = makeBrowser({ responder: b => server.__post(b) });
+    w.QC.configure({ url: URL, section: 'incoming', auth: true, catalog: true });
+    await w.QC.auth.login('7777'); await tick(80);
+    eq('G1 довідник контролерів для історії — у форматі журналу', w.QC.catalog.get('controllers'), ['Попадюк А.М.', 'Соботович Л.М.']);
+    eq('G1 товари за категорією з itemsDatabase', w.QC.catalog.get('packaging'), ['2013 Банка скло']);
+
+    // payload рівно такий, як формує QC_Incoming_Control.html
+    const incoming = {
+      type: 'incoming', time: '11.10.2026 09:15', report: '📦 ЗВІТ', supplier: 'Очім', docNum: '160', category: 'packaging',
+      product: '2013 Банка скло', batch: '12617006', quantity: '2000', prodDate: '2026-09-01', expDate: '2027-09-01',
+      checkTransport: '✅', checkPackage: '✅', checkMarking: '❌', checkDocs: '✅', checkOrganoleptic: '✅', comment: 'етикетка зім\'ята', files: [],
+    };
+    const r1 = await w.QC.submit(incoming, ui(w)); await tick();
+    const is = books[DATA_ID].getSheetByName('Вхідний контроль');
+    eq('G2 вхідний: submit → sent, один рядок', [r1, is.getLastRow()], ['sent', 2]);
+    eq('G2 Час…Коментар на своїх місцях, контролер із сесії', is.rows[1].slice(1, 17),
+       ['11.10.2026 09:15', 'Попадюк А.М.', 'Очім', '160', '2013 Банка скло', 'packaging', '12617006', '2000', '2026-09-01', '2027-09-01', '✅', '✅', '❌', '✅', '✅', 'етикетка зім\'ята']);
+
+    // чек-лист: та сама сесія
+    const w2 = makeBrowser({ responder: b => server.__post(b) });
+    ['qc_session_v1', 'qc_device_v1', 'qc_activity_v1', 'qc_unlock_v1'].forEach(k => { const v = w.__storage.get(k); if (v) w2.__storage.set(k, v); });
+    w2.QC.configure({ url: URL, section: 'checklist', auth: true, catalog: false });
+    const checklist = { type: 'checklist', stage: 'Початок зміни', done: 3, total: 3, report: '📝 Чек-лист: Початок зміни\n✅ | пункт', files: [] };
+    const r2 = await w2.QC.submit(checklist, ui(w2)); await tick();
+    const cs = books[DATA_ID].getSheetByName('Чек-лист');
+    eq('G3 чек-лист: submit → sent, рядок: контролер, етап, виконано/всього, звіт', [r2, cs.rows[1].slice(1, 6)], ['sent', ['Попадюк А.М.', 'Початок зміни', 3, 3, '📝 Чек-лист: Початок зміни\n✅ | пункт']]);
+
+    // історія: лише з токеном, обидва щойно записані рядки видно
+    const s = w.QC.auth.session();
+    const iso = d => d.toISOString().slice(0, 10);
+    const today = new Date(), ago = new Date(Date.now() - 86400e3), ahead = new Date(Date.now() + 86400e3);
+    const noAuth = server.__post({ action: 'getData', dateStart: iso(ago), dateEnd: iso(ahead), employee: 'all', section: 'all' });
+    eq('G4 історія без сесії → AUTH', noAuth.code, 'AUTH');
+    const hist = server.__post({ action: 'getData', token: s.token, deviceId: w.QC.auth.deviceId(), dateStart: iso(ago), dateEnd: iso(ahead), employee: 'all', section: 'all' });
+    eq('G4 історія з токеном → success, items/total/truncated', [hist.result, typeof hist.total, hist.truncated], ['success', 'number', false]);
+    eq('G4 обидва нові записи видно, розділи правильні', hist.items.map(i => i.section).sort(), ['checklist', 'incoming']);
+    eq('G4 фільтр за контролером зі списку довідника', server.__post({ action: 'getData', token: s.token, deviceId: w.QC.auth.deviceId(), dateStart: iso(ago), dateEnd: iso(ahead), employee: 'Соботович Л.М.', section: 'all' }).items.length, 0);
+  }
+
   console.log(`\n${fail ? '✗' : '✓'} пройдено ${pass}, провалено ${fail}`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error('ЗБІЙ СТЕНДА:', e); process.exit(2); });

@@ -453,8 +453,11 @@ label.shot.add{cursor:pointer}
     <div class="eyebrow">Приймання</div>
 
     <div class="row">
-      <label class="lab" for="employeeSelect">Контролер <span class="req">*</span></label>
-      <select class="field" id="employeeSelect"></select>
+      <label class="lab">Контролер</label>
+      <div class="field" style="display:flex;align-items:center;justify-content:space-between;gap:.75rem">
+        <b id="sessionName" style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">— не увійшли —</b>
+        <button type="button" class="btn btn-ic" id="logoutBtn" title="Вийти і передати планшет іншому" style="font-size:.78rem;padding:.3rem .6rem;width:auto">Вийти</button>
+      </div>
     </div>
 
     <div class="row duo">
@@ -635,17 +638,36 @@ label.shot.add{cursor:pointer}
 </script>
 <script>
 
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxuLOjrKUjJ4j7Xcp-xQ9c9Lzl2WjElHxey9CTFnxi819NWe8EVjSLycC6tYEPauRmfwg/exec";
-        // Резервний список на випадок, коли таблиця недоступна і кешу ще немає.
-        // Основне джерело — вкладка довідника в QC Data 2.0 (див. нижче).
-        const EMPLOYEES_FALLBACK = ["Соботович Л.М.", "Огаркова М.В.", "Попадюк А.М."];
+        // Адреса розгортання АКАУНТА 1 (вхідний контроль, чек-лист, історія).
+        const GOOGLE_SCRIPT_URL = "PASTE_ACCOUNT_1_EXEC_URL_HERE";
 
         // ==========================================================
         //  КОНФІГУРАЦІЯ СТОРІНКИ
         //  Уся спільна механіка (черга, перевірена відправка, стиснення
         //  фото, тости) живе в qc-core.js — один файл на всі форми.
         // ==========================================================
-        QC.configure({ url: GOOGLE_SCRIPT_URL, section: 'incoming', token: '', showBadge: false });
+        QC.configure({
+            url: GOOGLE_SCRIPT_URL,
+            section: 'incoming',
+            appName: 'Вхідний контроль',
+            auth: true,            // вхід за PIN; ім'я контролера бере сервер із сесії
+            catalog: true,         // товари за категоріями — з itemsDatabase
+            showBadge: false       // черга показується у власній телеметрії шапки
+        });
+
+        if (GOOGLE_SCRIPT_URL.indexOf('PASTE_') === 0) {
+            QC.toast('Не вписано адресу сервера (GOOGLE_SCRIPT_URL). Зверніться до адміністратора.', true);
+        }
+
+        // --- Хто увійшов ---
+        // Списку «Контролер» більше немає: ім'я бере сервер із PIN-сесії.
+        QC.auth.onChange(function (session) {
+            const name = session ? session.journalName + (session.offline ? ' · офлайн' : '') : '— не увійшли —';
+            document.getElementById('sessionName').textContent = name;
+            const tel = document.getElementById('telEmp');
+            if (tel) tel.textContent = session ? session.journalName : 'не увійшли';
+        });
+        document.getElementById('logoutBtn').addEventListener('click', function () { QC.auth.logout(); });
 
         const showToast   = QC.toast;
         const fmtDateTime = QC.fmtDateTime;
@@ -1282,8 +1304,6 @@ label.shot.add{cursor:pointer}
             ]
         };
 
-        const empSel = document.getElementById('employeeSelect');
-
         // ==========================================================
         //  ДОВІДНИКИ: контролери та товари з таблиці QC Data 2.0
         //  cache-first — списки зʼявляються миттєво з кешу, оновлення
@@ -1292,15 +1312,6 @@ label.shot.add{cursor:pointer}
         //  Якщо сервер недоступний — працюємо на кеші, а якщо і кешу
         //  немає — на вбудованих списках нижче.
         // ==========================================================
-        function renderEmployees() {
-            const list = QC.catalog.get('employees') || EMPLOYEES_FALLBACK;
-            const keep = empSel.value || localStorage.getItem('qc_user') || '';
-            empSel.innerHTML = '';
-            empSel.add(new Option('Оберіть...', ''));
-            list.forEach(e => empSel.add(new Option(e, e)));
-            if (keep && list.indexOf(keep) !== -1) empSel.value = keep;
-        }
-
         function productSource(category) {
             return QC.catalog.get(category) || (itemsDatabase[category] || []);
         }
@@ -1328,7 +1339,6 @@ label.shot.add{cursor:pointer}
         }
 
         QC.catalog.onUpdate(function (data, info) {
-            renderEmployees();
             if (document.getElementById('inc-category').value) updateProductList(true);
             renderCatalogStatus(info);
         });
@@ -1386,23 +1396,17 @@ label.shot.add{cursor:pointer}
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
         
         function performReset() {
-             document.querySelectorAll('input, textarea').forEach(el => el.value = '');
+             document.querySelectorAll('input, textarea').forEach(el => { if (el.id !== 'qcLoginPin') el.value = ''; });
              document.querySelectorAll('select').forEach(el => { el.value = ""; el.classList.remove('input-alert'); });
              photos.clear();
              closeModal('confirmationModal');
              const n = new Date(); n.setMinutes(n.getMinutes() - n.getTimezoneOffset());
              document.getElementById('inc-datetime').value = n.toISOString().slice(0,16);
-             const savedUser = localStorage.getItem('qc_user');
-             if (savedUser) empSel.value = savedUser;   // контролер між записами не змінюється
              clearDraft();
              updatePhotoCounter();
              syncAllSegs();
              renderGate();
         }
-
-        const saved = localStorage.getItem('qc_user');
-        if(saved) empSel.value = saved;
-        empSel.onchange = () => localStorage.setItem('qc_user', empSel.value);
 
         document.getElementById('themeToggle').addEventListener('click', () => {
             const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
@@ -1420,7 +1424,8 @@ label.shot.add{cursor:pointer}
         } catch (e) { document.documentElement.dataset.theme = 'dark'; }
 
         function initiateSend() {
-            const emp = empSel.value;
+            if (!QC.auth.require()) return;
+            const emp = QC.auth.session().journalName;
             const supplier = document.getElementById('inc-supplier').value;
             const docNum = document.getElementById('inc-doc-num').value;
             const category = document.getElementById('inc-category').value;
@@ -1508,8 +1513,6 @@ ${alerts}
                 // Раніше сюди йшов момент НАТИСКАННЯ кнопки, а не час приймання,
                 // який ввів контролер. Тепер у таблиці — фактичний час.
                 time: dtLocal ? fmtDateTime(new Date(dtLocal)) : fmtDateTime(new Date()),
-                submittedAt: new Date().toISOString(),
-                employee: emp,
                 supplier: supplier, docNum: docNum,
                 category: category, product: product,
                 batch: document.getElementById('inc-batch').value,
@@ -1520,8 +1523,7 @@ ${alerts}
                 checkDocs: docs, checkOrganoleptic: organoleptic,
                 comment: document.getElementById('inc-comment').value,
                 report: report,
-                files: photos.files,
-                photo: photos.first
+                files: photos.files
             };
 
             const size = QC.checkSize(pendingData);
@@ -1733,7 +1735,8 @@ ${alerts}
 
         function telEmpUpdate() {
             const el = document.getElementById('telEmp');
-            if (el) el.textContent = empSel.value || 'не обрано';
+            const s = QC.auth.session();
+            if (el) el.textContent = s ? s.journalName : 'не увійшли';
         }
 
         async function telQueueUpdate() {
@@ -1750,7 +1753,6 @@ ${alerts}
                 : 'Черга порожня';
         }
 
-        empSel.addEventListener('change', telEmpUpdate);
         const qBox = document.getElementById('telQueueBox');
         if (qBox) qBox.onclick = () => QC.flush(false).then(telQueueUpdate);
         setInterval(telQueueUpdate, 5000);

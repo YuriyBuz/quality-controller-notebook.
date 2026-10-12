@@ -81,16 +81,13 @@
             </div>
         </header>
 
-        <!-- Employee Selection -->
-        <div class="mb-6 card p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-            <label class="block text-sm font-bold mb-2 text-muted">Контролер якості: <span class="text-red-500">*</span></label>
-            <select id="employeeSelect" class="block w-full p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm font-medium">
-                <option value="">Оберіть зі списку...</option>
-            </select>
-            <p id="employeeSelectionHint" class="text-red-500 text-xs mt-2 hidden font-bold flex items-center gap-1">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                Це поле обов'язкове!
-            </p>
+        <!-- Хто увійшов (PIN) -->
+        <div class="mb-6 flex items-center justify-between gap-3 bg-emerald-50 dark:bg-slate-800/50 border border-emerald-100 dark:border-slate-700 rounded-xl px-4 py-3">
+            <div class="min-w-0">
+                <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Контролер якості</div>
+                <div id="sessionName" class="text-lg font-bold text-slate-800 dark:text-slate-100 truncate">— не увійшли —</div>
+            </div>
+            <button id="logoutBtn" type="button" class="shrink-0 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-700 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg transition-colors" title="Вийти і передати планшет іншому">Вийти</button>
         </div>
 
         <!-- Navigation Tabs -->
@@ -215,9 +212,31 @@
         </div>
     </div>
 
+    <script src="qc-core.js"></script>
     <script>
-        // АКТУАЛЬНЕ ПОСИЛАННЯ (Перевірено для Чек-листа)
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxG2c79RC60lVRubR8jspev9qGDEH63w7ksGYiJZnvCdxStGaygstDrZiof4kM_a8-oig/exec";
+        // Адреса розгортання АКАУНТА 1 (вхідний контроль, чек-лист, історія).
+        const GOOGLE_SCRIPT_URL = "PASTE_ACCOUNT_1_EXEC_URL_HERE";
+
+        QC.configure({
+            url: GOOGLE_SCRIPT_URL,
+            section: 'checklist',
+            appName: 'Чек-лист контролера',
+            auth: true,            // вхід за PIN; ім'я контролера бере сервер із сесії
+            catalog: false,        // списків на цій сторінці немає
+            showBadge: true
+        });
+
+        if (GOOGLE_SCRIPT_URL.indexOf('PASTE_') === 0) {
+            QC.toast('Не вписано адресу сервера (GOOGLE_SCRIPT_URL). Зверніться до адміністратора.', true);
+        }
+
+        // --- Хто увійшов ---
+        QC.auth.onChange(function (session) {
+            document.getElementById('sessionName').textContent = session
+                ? session.journalName + (session.offline ? ' · офлайн-режим' : '')
+                : '— не увійшли —';
+        });
+        document.getElementById('logoutBtn').addEventListener('click', function () { QC.auth.logout(); });
 
         const checklistItems = {
             start: [
@@ -242,12 +261,9 @@
             ]
         };
 
-        const empSel = document.getElementById('employeeSelect');
-        const employees = ["Соботович Л.М.", "Огаркова М.В.", "Попадюк А.М."];
-        employees.forEach(e => empSel.add(new Option(e, e)));
-        
-        // FILES STORAGE
-        const uploadedFiles = { start: [], during: [], end: [] };
+        // Фото кожного розділу — окрема галерея qc-core (стиснення, лічильник)
+        const galleries = {};
+        let pendingSection = null;
 
         let pendingReportData = null;
         let confirmCallback = null;
@@ -259,24 +275,7 @@
 
         document.getElementById('confirmSendBtn').onclick = executeSend;
 
-        function showToast(message, isError = false) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast bg-white dark:bg-slate-700 border-l-4 p-4 rounded-lg shadow-xl flex items-center max-w-sm transform transition-all duration-300 translate-x-full border border-slate-200 dark:border-slate-600`;
-            if (isError) {
-                toast.classList.add('border-red-500', 'text-red-700', 'dark:text-red-400');
-                toast.innerHTML = `<span class="mr-2 text-xl">🚫</span> <span class="font-medium text-sm">${message}</span>`;
-            } else {
-                toast.classList.add('border-emerald-500', 'text-emerald-700', 'dark:text-emerald-400');
-                toast.innerHTML = `<span class="mr-2 text-xl">✅</span> <span class="font-medium text-sm">${message}</span>`;
-            }
-            container.appendChild(toast);
-            requestAnimationFrame(() => toast.classList.remove('translate-x-full'));
-            setTimeout(() => {
-                toast.classList.add('translate-x-full');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
+        const showToast = QC.toast;
 
         function customConfirm(text, onConfirm) {
             document.getElementById('genericConfirmText').innerText = text;
@@ -359,6 +358,7 @@
                         </label>
                     </div>
                     <div id="gallery-${section}" class="grid grid-cols-4 gap-3 hidden"></div>
+                    <p id="photo-counter-${section}" class="text-[10px] text-muted mt-2"></p>
                 </div>
             `;
 
@@ -370,60 +370,12 @@
             container.innerHTML = listHtml + photoHtml + sendBtnHtml;
             ul.innerHTML = ''; // Clear and append container
             ul.appendChild(container);
+            galleries[section] = QC.gallery({ container: 'gallery-' + section, counter: 'photo-counter-' + section });
         }
 
-        // --- FILE HANDLING LOGIC ---
-        function handleFiles(input, section) {
-            const files = input.files;
-            if (files && files.length > 0) {
-                const container = document.getElementById(`gallery-${section}`);
-                container.classList.remove('hidden');
-
-                Array.from(files).forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const base64 = e.target.result;
-                        // Push to storage
-                        uploadedFiles[section].push({
-                            name: file.name,
-                            type: file.type,
-                            data: base64
-                        });
-                        
-                        // Render Preview
-                        const div = document.createElement('div');
-                        div.className = 'photo-preview-item';
-                        div.innerHTML = `
-                            <img src="${base64}">
-                            <div class="photo-remove-btn" onclick="removeFile(this, '${section}', '${base64}')">✕</div>
-                        `;
-                        container.appendChild(div);
-                    };
-                    reader.readAsDataURL(file);
-                });
-            }
-            input.value = '';
-        }
-
-        function removeFile(btnElement, section, dataContent) {
-            const parent = btnElement.parentElement;
-            parent.remove();
-            uploadedFiles[section] = uploadedFiles[section].filter(f => f.data !== dataContent);
-            
-            const container = document.getElementById(`gallery-${section}`);
-            if(uploadedFiles[section].length === 0) {
-                container.classList.add('hidden');
-            }
-        }
-
-        function clearSectionGallery(section) {
-            uploadedFiles[section] = [];
-            const container = document.getElementById(`gallery-${section}`);
-            if(container) {
-                container.innerHTML = '';
-                container.classList.add('hidden');
-            }
-        }
+        // --- FILE HANDLING LOGIC (стиснення і прев'ю — у qc-core.js) ---
+        function handleFiles(input, section) { galleries[section].add(input); }
+        function clearSectionGallery(section) { if (galleries[section]) galleries[section].clear(); }
 
         // --- MAIN LOGIC ---
 
@@ -475,17 +427,7 @@
 
         function handleInput(e) { if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) saveState(); }
         
-        function validateEmployee() { 
-            const select = document.getElementById('employeeSelect'); 
-            if (!select.value) { 
-                showToast("Спочатку оберіть ім'я контролера!", true); 
-                document.getElementById('employeeSelectionHint').classList.remove('hidden'); 
-                select.focus(); 
-                return false; 
-            } 
-            document.getElementById('employeeSelectionHint').classList.add('hidden'); 
-            return true; 
-        }
+        function validateEmployee() { return QC.auth.require(); }
 
         function toggleItem(id) {
             const el = document.getElementById(id);
@@ -552,7 +494,9 @@
         }
 
         function prepareReport(section) {
-            if(!empSel.value) { showToast("Помилка: Оберіть контролера!", true); return; }
+            if (!QC.auth.require()) return;
+            const session = QC.auth.session();
+            pendingSection = section;
             
             const titles = { 'start': 'Початок зміни', 'during': 'Протягом зміни', 'end': 'Кінець зміни' };
             const title = titles[section];
@@ -562,7 +506,7 @@
                             now.getHours() + ':' + ('0' + now.getMinutes()).slice(-2) + ':' + ('0' + now.getSeconds()).slice(-2);
 
             let report = `📝 Чек-лист: ${title}\n`;
-            report += `👤 Контролер: ${empSel.value}\n`;
+            report += `👤 Контролер: ${session.journalName}\n`;
             report += `📅 Дата: ${dateStr}\n`;
 
             const listItems = document.querySelectorAll(`#list-${section} .checklist-item`);
@@ -580,22 +524,22 @@
             });
             
             // Get files for this section
-            const files = uploadedFiles[section];
+            const files = galleries[section] ? galleries[section].files : [];
             if(files.length > 0) {
                 report += `\n📷 Фото: ${files.length} шт.\n`;
             }
-            
-            pendingReportData = { 
-                type: 'checklist', 
-                employee: empSel.value, 
-                stage: title, 
+
+            // Імена полів — такі, які читає сервер (Code.gs → journals_().checklist)
+            pendingReportData = {
+                type: 'checklist',
+                stage: title,
                 done: doneItems,
                 total: totalItems,
-                report: report, // For email body
-                reportText: report, // Legacy support
-                files: files, // Array of files for email
-                photo: files.length > 0 ? files[0].data : "" // Single photo for spreadsheet
+                report: report,
+                files: files
             };
+            const size = QC.checkSize(pendingReportData);
+            if (!size.ok) { showToast('Забагато даних (~' + size.mb + ' МБ). Видаліть частину фото.', true); return; }
             
             document.getElementById('confirmationText').innerText = report;
             document.getElementById('confirmationModal').classList.remove('hidden');
@@ -605,46 +549,24 @@
             document.getElementById('sendMsg').innerText = "";
         }
 
-        async function executeSend() {
-            const btn = document.getElementById('confirmSendBtn');
-            const spinner = document.getElementById('modalSpinner');
-            const actions = document.getElementById('modalActions');
-            const msg = document.getElementById('sendMsg');
-
-            actions.style.display = 'none';
-            spinner.classList.remove('hidden');
-            msg.innerText = "Відправка даних...";
-
-            try {
-                await fetch(GOOGLE_SCRIPT_URL, { 
-                    method: 'POST', 
-                    mode: 'no-cors', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(pendingReportData) 
-                });
-                
-                msg.innerText = "✅ Надіслано успішно!";
-                msg.classList.remove('text-red-500');
-                msg.classList.add('text-emerald-600');
-                
-                setTimeout(() => { 
-                    closeModal('confirmationModal'); 
-                    // Optional: Reset section photos after successful send?
-                    // clearSectionGallery(currentSection...); // Requires tracking currentSection context if needed
-                }, 2000);
-            } catch(e) { 
-                console.error(e);
-                msg.innerText = "❌ Помилка при відправці";
-                msg.classList.add('text-red-500');
-                actions.style.display = 'flex';
-                spinner.classList.add('hidden');
-            }
+        // Відправка через qc-core: або сервер підтвердив, або запис у черзі на
+        // пристрої. Фото розділу очищаються лише після цього; позначки лишаються.
+        function executeSend() {
+            if (!pendingReportData) return;
+            QC.submit(pendingReportData, {
+                status: 'sendMsg', actions: 'modalActions', spinner: 'modalSpinner', button: 'confirmSendBtn',
+                onDone: function () {
+                    pendingReportData = null;
+                    closeModal('confirmationModal');
+                    clearSectionGallery(pendingSection);
+                }
+            });
         }
 
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
 
         function saveState() {
-            const state = { employee: document.getElementById('employeeSelect').value, items: {}, inputs: {} };
+            const state = { items: {}, inputs: {} };
             document.querySelectorAll('.checklist-item').forEach(el => {
                 state.items[el.id] = {
                     completed: el.classList.contains('completed'),
@@ -667,7 +589,6 @@
             const raw = localStorage.getItem('qcState_Simple_v1');
             if (!raw) return;
             const state = JSON.parse(raw);
-            if (state.employee) { document.getElementById('employeeSelect').value = state.employee; document.getElementById('employeeSelectionHint').classList.add('hidden'); }
             if (state.items) {
                 Object.keys(state.items).forEach(id => {
                     const el = document.getElementById(id);
