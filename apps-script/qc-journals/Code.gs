@@ -401,6 +401,34 @@ function selfTest() {
     Logger.log('⚠ Таблиця не відкривається: %s', error);
   }
 
+  // Три доступи, яких найчастіше бракує новому акаунту. Google на всі три
+  // відповідає одним і тим самим «You do not have permission…», тому
+  // називаємо кожен окремо.
+  try {
+    const sheet = ensureSheet_(dataSpreadsheet_(), EVENT_SHEET,
+      ['Час', 'Вид', 'Подія', 'Хто', 'Пристрій', 'Розділ', 'Деталі', 'Версія']);
+    const cell = sheet.getRange(1, 1);
+    cell.setValue(cell.getValue());
+    Logger.log('Запис у таблицю: ✓ (акаунт має право Редактор)');
+  } catch (error) {
+    Logger.log('Запис у таблицю: ✗ — QC Data 2.0 поділено з цим акаунтом лише на читання. Потрібно «Редактор». (%s)', error);
+  }
+  try {
+    const dir = SpreadsheetApp.openById(EMPLOYEES_SPREADSHEET_ID);
+    Logger.log('Довідник gw-ref: ✓ відкривається («%s»)', dir.getName());
+  } catch (error) {
+    Logger.log('Довідник gw-ref: ✗ — не поділено з цим акаунтом (досить «Читач»). Без нього не працюють PIN-вхід, варники, контролери. (%s)', error);
+  }
+  const all2 = journals_();
+  SECTIONS.forEach(function (key) {
+    const id = all2[key].folder;
+    try {
+      Logger.log('Тека фото %s: ✓ «%s»', key, DriveApp.getFolderById(id).getName());
+    } catch (error) {
+      Logger.log('Тека фото %s: ✗ — тека %s не поділена з цим акаунтом (потрібно «Редактор»)', key, id);
+    }
+  });
+
   const catalog = (typeof buildCatalog_ === 'function') ? buildCatalog_() : null;
   if (!catalog) {
     Logger.log('⚠ Catalog.gs не знайдено — довідники не працюватимуть');
