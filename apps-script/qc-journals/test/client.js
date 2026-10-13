@@ -449,9 +449,13 @@ const ui = (w) => {
     eq('G1 довідник контролерів для історії — у форматі журналу', w.QC.catalog.get('controllers'), ['Попадюк А.М.', 'Соботович Л.М.']);
     eq('G1 товари за категорією з itemsDatabase', w.QC.catalog.get('packaging'), ['2013 Банка скло']);
 
-    // payload рівно такий, як формує QC_Incoming_Control.html
+    // payload рівно такий, як формує QC_Incoming_Control.html. Час приймання —
+    // сьогоднішній: історія вхідного контролю фільтрує за часом ПРИЙМАННЯ,
+    // а не запису, тож дата, зашита в тест, за добу випадає з вікна.
+    const pad2 = n => String(n).padStart(2, '0'), d0 = new Date();
+    const acceptedAt = pad2(d0.getDate()) + '.' + pad2(d0.getMonth() + 1) + '.' + d0.getFullYear() + ' ' + pad2(d0.getHours()) + ':' + pad2(d0.getMinutes());
     const incoming = {
-      type: 'incoming', time: '11.10.2026 09:15', report: '📦 ЗВІТ', supplier: 'Очім', docNum: '160', category: 'packaging',
+      type: 'incoming', time: acceptedAt, report: '📦 ЗВІТ', supplier: 'Очім', docNum: '160', category: 'packaging',
       product: '2013 Банка скло', batch: '12617006', quantity: '2000', prodDate: '2026-09-01', expDate: '2027-09-01',
       checkTransport: '✅', checkPackage: '✅', checkMarking: '❌', checkDocs: '✅', checkOrganoleptic: '✅', comment: 'етикетка зім\'ята', files: [],
     };
@@ -459,7 +463,7 @@ const ui = (w) => {
     const is = books[DATA_ID].getSheetByName('Вхідний контроль');
     eq('G2 вхідний: submit → sent, один рядок', [r1, is.getLastRow()], ['sent', 2]);
     eq('G2 Час…Коментар на своїх місцях, контролер із сесії', is.rows[1].slice(1, 17),
-       ['11.10.2026 09:15', 'Попадюк А.М.', 'Очім', '160', '2013 Банка скло', 'packaging', '12617006', '2000', '2026-09-01', '2027-09-01', '✅', '✅', '❌', '✅', '✅', 'етикетка зім\'ята']);
+       [acceptedAt, 'Попадюк А.М.', 'Очім', '160', '2013 Банка скло', 'packaging', '12617006', '2000', '2026-09-01', '2027-09-01', '✅', '✅', '❌', '✅', '✅', 'етикетка зім\'ята']);
 
     // чек-лист: та сама сесія
     const w2 = makeBrowser({ responder: b => server.__post(b) });
