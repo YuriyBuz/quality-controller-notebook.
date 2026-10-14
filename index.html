@@ -81,6 +81,14 @@
             <img src="https://foodline-production.com/wp-content/uploads/2021/10/3752781497_3752781497.webp" alt="Foodline Logo" class="w-40 h-auto mx-auto mb-6 rounded-lg bg-white p-3 shadow-sm" onerror="this.src='https://placehold.co/120x60?text=FoodLine'">
             <h1 class="text-3xl sm:text-5xl font-bold text-slate-800 mb-2">Цифровий блокнот</h1>
             <p class="text-slate-500 text-xl">Контроль якості та безпечності продукції</p>
+
+            <!-- Хто увійшов. Вхід за PIN спільний для всіх сторінок блокнота:
+                 увійшли тут уранці — журнали відкриваються без повторного PIN. -->
+            <div class="mt-6 inline-flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-sm">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Контролер</span>
+                <span id="sessionName" class="text-base font-bold text-slate-800">— не увійшли —</span>
+                <button id="logoutBtn" type="button" class="text-xs font-bold text-slate-600 hover:text-emerald-700 bg-slate-50 hover:bg-emerald-50 border border-slate-200 px-3 py-1.5 rounded-lg transition-colors" title="Вийти наприкінці зміни або перед тим, як передати планшет">Вийти</button>
+            </div>
         </header>
 
         <main>
@@ -206,7 +214,30 @@
             </div>
         </main>
     </div>
+    <script src="qc-core.js"></script>
     <script>
+        // Вхід за PIN на меню. Сесія спільна для всіх сторінок блокнота
+        // (ключ qc_session_v1), тому журнали далі відкриваються без PIN.
+        // Адреса — будь-яке з трьох розгортань: AUTH_SECRET у них один,
+        // токен чинний скрізь. Тут — розгортання вхідного контролю й історії.
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzP5qD5E6jS6SRb5grIP0j_FO0h2m_75bGefs5gabhrkIkfINHdRVlYKmqHNEXGaOEl5Q/exec";
+
+        QC.configure({
+            url: GOOGLE_SCRIPT_URL,
+            section: 'menu',
+            appName: 'Блокнот QC',
+            auth: true,
+            catalog: false,
+            showBadge: true        // черга з будь-якої сторінки видна і звідси, і звідси ж відправляється
+        });
+
+        QC.auth.onChange(function (session) {
+            document.getElementById('sessionName').textContent = session
+                ? session.journalName + (session.offline ? ' · офлайн-режим' : '')
+                : '— не увійшли —';
+        });
+        document.getElementById('logoutBtn').addEventListener('click', function () { QC.auth.logout(); });
+
         document.addEventListener('DOMContentLoaded', () => {
             const dateElement = document.getElementById('current-date');
             const now = new Date();

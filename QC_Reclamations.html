@@ -51,11 +51,13 @@
         </header>
 
         <div class="card p-8 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 space-y-6 relative">
-            <div class="mt-2">
-                <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Контролер *</label>
-                <select id="employeeSelect" class="w-full bg-transparent border-2 border-slate-300 dark:border-slate-600 rounded-lg py-4 px-4 text-lg" required>
-                    <option value="" disabled selected>Оберіть...</option>
-                </select>
+            <!-- Контролер більше не вибирається зі списку: ім'я береться з PIN-сесії -->
+            <div class="mt-2 flex items-center justify-between gap-3 bg-red-50 dark:bg-slate-800/50 border border-red-100 dark:border-slate-700 rounded-lg px-4 py-3">
+                <div class="min-w-0">
+                    <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Контролер</div>
+                    <div id="sessionName" class="text-lg font-bold text-slate-800 dark:text-slate-100 truncate">— не увійшли —</div>
+                </div>
+                <button id="logoutBtn" type="button" class="shrink-0 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-red-700 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg transition-colors" title="Вийти і передати планшет іншому">Вийти</button>
             </div>
             <div class="space-y-4">
                 <div>
@@ -127,14 +129,34 @@
         </div>
     </div>
 
+    <script src="qc-core.js"></script>
     <script>
+        // Рекламації ще на старому бекенді (окремий проєкт, приймає запис як є).
+        // Сюди йде сам акт:
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzvbaBw0U6OUtiWVioDPgZ6sCOO2_fLgsNeGVAg6kQLX2yvVa6YjtSrCgdEvbr-6E_NDg/exec";
-        const employees = ["Соботович Л.М.", "Огаркова М.В.", "Попадюк А.М."];
-        const empSel = document.getElementById('employeeSelect');
-        employees.forEach(e => empSel.add(new Option(e, e)));
-        const saved = localStorage.getItem('qc_user');
-        if(saved) empSel.value = saved;
-        empSel.onchange = () => localStorage.setItem('qc_user', empSel.value);
+        // А вхід за PIN — спільний із рештою блокнота (сесія qc_session_v1),
+        // через розгортання вхідного контролю й історії:
+        const QC_LOGIN_URL = "https://script.google.com/macros/s/AKfycbzP5qD5E6jS6SRb5grIP0j_FO0h2m_75bGefs5gabhrkIkfINHdRVlYKmqHNEXGaOEl5Q/exec";
+
+        QC.configure({
+            url: QC_LOGIN_URL,
+            section: 'reclamation',
+            appName: 'Рекламації',
+            auth: true,
+            catalog: false,
+            showBadge: false
+        });
+
+        // Ім'я контролера — лише з сесії. Список зі звільненими і «хто
+        // завгодно від чужого імені» прибрано.
+        QC.auth.onChange(function (session) {
+            document.getElementById('sessionName').textContent = session
+                ? session.journalName + (session.offline ? ' · офлайн-режим' : '')
+                : '— не увійшли —';
+        });
+        document.getElementById('logoutBtn').addEventListener('click', function () { QC.auth.logout(); });
+        localStorage.removeItem('qc_user');   // залишок старої сторінки з вибором зі списку
+
         document.getElementById('themeToggle').addEventListener('click', () => document.documentElement.classList.toggle('dark'));
 
         function generateTemplate() {
@@ -199,9 +221,12 @@
 
         let pendingData = null;
         function initiateSend() {
+            if (!QC.auth.require()) return;
+            const session = QC.auth.session();
+            if (session.offline) { showToast("Рекламація відправляється лише онлайн. Увійдіть за PIN з мережею."); return; }
             const data = {
                 type: "reclamation",
-                employee: empSel.value,
+                employee: session.journalName,
                 supplier: document.getElementById('supplier').value,
                 product: document.getElementById('product').value,
                 batch: document.getElementById('batch').value,

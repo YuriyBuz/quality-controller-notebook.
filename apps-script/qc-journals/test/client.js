@@ -242,6 +242,41 @@ const ui = (w) => {
     ok('B13 після другого — кнопку увімкнено, onDone один раз', r2 === 'sent' && w.__el('doSendBtn').disabled === false && done === 1);
   }
 
+  {
+    // Черга на пристрої одна на всі сторінки, а розділи живуть на різних
+    // акаунтах. Запис має піти туди, куди його писала сторінка, навіть
+    // якщо мережа повернулась на меню чи на сторінці іншого розділу.
+    const A = 'https://example.test/account-3/exec', B = 'https://example.test/account-1/exec';
+    const w = makeBrowser({ responder: b => b.action === 'login' ? GOOD : { result: 'success' } });
+    w.QC.configure({ url: A, section: 'sauce_boiling', auth: true, catalog: false });
+    await w.QC.auth.login('7777');
+    w.__state.online = false;
+    const r = await w.QC.submit({ type: 'sauce_boiling', product: 'Кетчуп' }, ui(w)); await tick();
+    eq('B14 без мережі → queued', r, 'queued');
+    const item = [...w.indexedDB._stores.records.values()][0];
+    eq('B14 запис у черзі памʼятає адресу свого розгортання', item.url, A);
+    const w2 = makeBrowser({ responder: b => b.action === 'login' ? GOOD : { result: 'success' } });
+    w2.indexedDB = w.indexedDB;                       // той самий пристрій, інша сторінка (меню)
+    w2.QC.configure({ url: B, section: 'menu', auth: true, catalog: false });
+    await w2.QC.auth.login('7777'); await tick(60);
+    eq('B14 з меню запис пішов на СВОЄ розгортання, не на адресу меню', w2.__state.fetchUrls.filter(u => u === A).length, 1);
+    ok('B14 на адресу меню записів не слали', !w2.__state.fetches.some(b => b.type === 'sauce_boiling' && w2.__state.fetchUrls[w2.__state.fetches.indexOf(b)] === B));
+    eq('B14 чергу спорожнено', [...w.indexedDB._stores.records.values()].length, 0);
+  }
+  {
+    // Старий запис без адреси, а сторінка — не того акаунта: сервер каже
+    // WRONG_DEPLOYMENT. Раніше це вважалось назавжди відхиленим (застряг).
+    const w = makeBrowser({ responder: b => b.action === 'login' ? GOOD : { result: 'error', code: 'WRONG_DEPLOYMENT', error: 'Не той сервер' } });
+    w.QC.configure({ url: URL, auth: true, catalog: false });
+    await w.QC.auth.login('7777');
+    await w.QC.outbox.put({ recordId: 'old', payload: { type: 'sauce_boiling', recordId: 'old' }, attempts: 0, createdAt: 1 });
+    await w.QC.outbox.put({ recordId: 'old2', payload: { type: 'cleaning', recordId: 'old2' }, attempts: 0, createdAt: 2 });
+    await w.QC.flush(true); await tick();
+    const rows = Object.fromEntries([...w.indexedDB._stores.records.values()].map(r => [r.recordId, r]));
+    ok('B15 WRONG_DEPLOYMENT: запис лишається в черзі, спроба не рахується', rows.old && rows.old.attempts === 0);
+    ok('B15 ...і не зупиняє чергу: другий теж спробували', w.__state.fetches.filter(b => b.type).length === 2 && rows.old2.attempts === 0);
+  }
+
   // =====================================================================
   group('C. Простій і термін сесії');
   {

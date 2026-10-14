@@ -75,7 +75,7 @@ function makeBrowser(opts) {
   opts = opts || {};
   const registry = {};
   const storage = new Map();
-  const state = { fetches: [], online: true, responder: opts.responder || (() => ({ result: 'success' })), toasts: [], timers: [] };
+  const state = { fetches: [], fetchUrls: [], online: true, responder: opts.responder || (() => ({ result: 'success' })), toasts: [], timers: [] };
 
   const document = {
     body: makeElement('body', registry),
@@ -99,6 +99,7 @@ function makeBrowser(opts) {
     fetch: async (url, o) => {
       const body = JSON.parse(o.body);
       state.fetches.push(body);
+      state.fetchUrls.push(url);
       const res = state.responder(body);
       if (res instanceof Error) throw res;
       return { ok: true, text: async () => typeof res === 'string' ? res : JSON.stringify(res) };

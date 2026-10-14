@@ -28,7 +28,7 @@
         url:              '',
         section:          'unknown',
         appName:          'Блокнот QC',  // заголовок на екрані входу
-        appVersion:       '3.1.2',
+        appVersion:       '3.1.3',
         sendTimeoutMs:    60000,         // Apps Script вміє «зависати»
         photoMaxWidth:    1600,
         photoQuality:     0.72,
@@ -325,7 +325,7 @@
         loginEl = document.createElement('div');
         loginEl.id = 'qcLogin';
         loginEl.style.cssText = 'display:none;position:fixed;inset:0;z-index:4000;align-items:center;justify-content:center;' +
-            'padding:1rem;background:rgba(15,23,42,.55);backdrop-filter:blur(2px)';
+            'padding:1rem;background:rgba(15,23,42,.93);backdrop-filter:blur(8px)';
         loginEl.innerHTML =
             '<div style="background:#fff;color:#1e293b;border-radius:1rem;box-shadow:0 20px 50px rgba(0,0,0,.3);' +
                 'width:100%;max-width:22rem;padding:1.5rem;text-align:center;font-family:inherit">' +
@@ -364,13 +364,13 @@
         if (loginEl) loginEl.style.display = 'none';
     }
 
-    function postJson(body, timeoutMs) {
+    function postJson(body, timeoutMs, url) {
         var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
         var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, timeoutMs || cfg.sendTimeoutMs) : null;
         var opts = { method: 'POST', body: JSON.stringify(body), redirect: 'follow' };
         if (ctrl) opts.signal = ctrl.signal;
 
-        return fetch(cfg.url, opts).then(function (res) {
+        return fetch(url || cfg.url, opts).then(function (res) {
             if (!res.ok) { var e1 = new Error('HTTP ' + res.status); e1.kind = 'http'; throw e1; }
             return res.text();
         }).then(function (text) {
@@ -506,8 +506,11 @@
         return body;
     }
 
-    function sendRecord(payload) {
-        return postJson(withAuth(payload)).then(function (json) {
+    // url — адреса розгортання для цього запису. Записи з черги несуть
+    // свою: кожен розділ живе на своєму акаунті, а черга на пристрої одна
+    // на всі сторінки, і відправляти їх треба туди, куди їх писала сторінка.
+    function sendRecord(payload, url) {
+        return postJson(withAuth(payload), undefined, url).then(function (json) {
             if (json.result !== 'success') {
                 var err = new Error(json.error || 'Сервер відхилив запис');
                 err.code = json.code || '';
@@ -515,6 +518,8 @@
                     err.auth = true;         // сесії немає — запис лишається в черзі
                 } else if (json.code === 'BUSY') {
                     err.retry = true;        // сервер зайнятий — повторимо з черги
+                } else if (json.code === 'WRONG_DEPLOYMENT') {
+                    err.wrongDeployment = true;   // не той акаунт — запис чекає свою сторінку
                 } else {
                     err.permanent = true;    // проблема в даних — повтор не допоможе
                 }
@@ -539,11 +544,12 @@
                 return chain.then(function (stop) {
                     if (stop) return true;
                     if ((item.attempts || 0) >= cfg.maxAttempts) { stuck++; return false; }
-                    return sendRecord(item.payload).then(function () {
+                    return sendRecord(item.payload, item.url).then(function () {
                         sent++;
                         return outbox.del(item.recordId).then(function () { return false; });
                     }).catch(function (err) {
                         if (err.auth) { authStop = true; return true; }   // не рахуємо як спробу
+                        if (err.wrongDeployment) return false;            // старий запис без адреси — чекає свою сторінку
                         item.attempts  = err.permanent ? cfg.maxAttempts : (item.attempts || 0) + 1;
                         item.lastError = String(err.message || err);
                         return outbox.put(item).then(function () { return !!err.permanent; });
@@ -634,7 +640,8 @@
         }
         function enqueue(statusText) {
             return outbox.put({
-                recordId: payload.recordId, payload: payload, attempts: 0, createdAt: Date.now()
+                recordId: payload.recordId, payload: payload, attempts: 0, createdAt: Date.now(),
+                url: cfg.url
             }).then(function () {
                 setStatus(statusText, '#059669');
                 return finish('queued');

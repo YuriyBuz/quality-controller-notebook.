@@ -45,6 +45,7 @@
         }
         
         .card { background-color: var(--card-bg-color); transition: background-color 0.3s ease; }
+        #qcLogin input { background-color: #fff !important; color: #1e293b !important; border: 2px solid #cbd5e1 !important; }
         
         .spec-item { background-color: var(--card-bg-color); border: 1px solid var(--border-color); transition: all 0.2s ease; cursor: pointer; }
         .spec-item:hover { border-color: #10b981; transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
@@ -80,6 +81,12 @@
             
             <h1 class="text-2xl sm:text-3xl font-bold tracking-tight uppercase border-b-4 border-orange-500 inline-block pb-2 mb-2">Опис харчового продукту</h1>
             <p class="text-muted text-sm font-medium uppercase tracking-wider mt-2">Специфікації та стандарти</p>
+
+            <div class="mt-4 inline-flex items-center gap-3 card border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 shadow-sm">
+                <span class="text-xs font-bold text-muted uppercase tracking-wide">Контролер</span>
+                <span id="sessionName" class="text-base font-bold">— не увійшли —</span>
+                <button id="logoutBtn" type="button" class="text-xs font-bold text-muted hover:text-emerald-600 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg transition-colors" title="Вийти і передати планшет іншому">Вийти</button>
+            </div>
             
             <div class="absolute top-0 right-0 flex space-x-2">
                 <button id="themeToggle" class="p-2 rounded-full text-muted header-icon transition-colors focus:outline-none" title="Змінити тему">
@@ -188,6 +195,25 @@
         </div>
     </div>
 
+    <script src="qc-core.js"></script>
+    <script>
+        // Вхід за PIN — спільний із рештою блокнота (сесія qc_session_v1).
+        // Сторінка лише читає специфікації, тому довідники і значок черги їй не потрібні.
+        QC.configure({
+            url: "https://script.google.com/macros/s/AKfycbzP5qD5E6jS6SRb5grIP0j_FO0h2m_75bGefs5gabhrkIkfINHdRVlYKmqHNEXGaOEl5Q/exec",
+            section: 'specifications',
+            appName: 'Специфікації на продукт',
+            auth: true,
+            catalog: false,
+            showBadge: false
+        });
+        QC.auth.onChange(function (session) {
+            document.getElementById('sessionName').textContent = session
+                ? session.journalName + (session.offline ? ' · офлайн-режим' : '')
+                : '— не увійшли —';
+        });
+        document.getElementById('logoutBtn').addEventListener('click', function () { QC.auth.logout(); });
+    </script>
     <script>
         // Google Sheets Details
         const SHEET_ID = '1VKKlqzrzRsZzDU1kbYciXnJ7J1Kr9fl1GF2RBBwlUUo';
