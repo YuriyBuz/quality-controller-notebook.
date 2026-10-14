@@ -28,7 +28,7 @@
         url:              '',
         section:          'unknown',
         appName:          'Блокнот QC',  // заголовок на екрані входу
-        appVersion:       '3.1.1',
+        appVersion:       '3.1.2',
         sendTimeoutMs:    60000,         // Apps Script вміє «зависати»
         photoMaxWidth:    1600,
         photoQuality:     0.72,
@@ -39,7 +39,10 @@
         showBadge:        true,
         catalog:          true,          // false — вимкнути довідники на сторінці
         auth:             false,         // true — вхід за PIN обовʼязковий
-        idleLimitMs:      10 * 60 * 1000,
+        // Автовихід через простій. 0 — вимкнено: один контролер на зміні
+        // входить уранці і працює до вечора, сесія живе до терміну з
+        // сервера або до кнопки «Вийти». Сторінка може задати свій ліміт.
+        idleLimitMs:      0,
         // Що дозволено в офлайн-сесії (локальне розблокування, без токена).
         // Записи лягають у чергу і підуть після входу онлайн.
         offlinePermissions: ['writeJournal']
@@ -52,7 +55,7 @@
     var UNLOCK_KEY   = 'qc_unlock_v1';
     var UNLOCK_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
     var UNLOCK_ITERATIONS = 150000;
-    var OFFLINE_SESSION_MS = 12 * 60 * 60 * 1000;
+    var OFFLINE_SESSION_MS = 14 * 60 * 60 * 1000;   // як SESSION_TTL_MINUTES на сервері
 
     /* ---------------------------------------------------------------
        УТИЛІТИ
@@ -249,17 +252,26 @@
     function checkIdle() {
         if (!session) return;
         var last = Number(storageGet(ACTIVITY_KEY) || 0);
-        if (last && Date.now() - last > cfg.idleLimitMs) {
+        if (cfg.idleLimitMs > 0 && last && Date.now() - last > cfg.idleLimitMs) {
             logout('idle');
         } else if (session.expiresAt <= Date.now()) {
             logout('expired');
         }
     }
 
+    function idleLabel() {
+        var min = Math.round(cfg.idleLimitMs / 60000);
+        if (min >= 60 && min % 60 === 0) {
+            var h = min / 60;
+            return h + (h === 1 ? ' годину' : h < 5 ? ' години' : ' годин');
+        }
+        return min + ' хв';
+    }
+
     function logout(reason) {
         clearSession(reason === 'manual');
         if (cfg.auth) {
-            showLogin(reason === 'idle'    ? 'Сесію закрито через 10 хвилин без дій. Увійдіть знову.'
+            showLogin(reason === 'idle'    ? 'Сесію закрито через ' + idleLabel() + ' без дій. Увійдіть знову.'
                     : reason === 'expired' ? 'Сесія протермінована. Увійдіть за PIN.'
                     : '');
         }
@@ -579,11 +591,13 @@
        у черзі на пристрої. Будь-який інший результат лишає форму.
        --------------------------------------------------------------- */
     var busy = false;
+    var submitGen = 0;
 
     function submit(payload, ui) {
         ui = ui || {};
         if (busy || !payload) return Promise.resolve('busy');
         busy = true;
+        var gen = ++submitGen;
 
         var status  = el(ui.status),
             actions = el(ui.actions),
@@ -606,13 +620,24 @@
             if (actions) actions.style.display = 'flex';
             if (spinner) spinner.classList.add('hidden');
         }
+        // Успіх: статус висить 1,6 с, потім модалку повертаємо в початковий
+        // стан (кнопка знову активна) і лише тоді віддаємо сторінці onDone.
+        // Інакше після першого запису «Підтвердити» лишалась вимкненою до
+        // перезавантаження сторінки. Якщо за цей час стартувала наступна
+        // відправка (ланцюжок фасування → етикетування), її стан не чіпаємо.
+        function finish(result) {
+            setTimeout(function () {
+                if (submitGen === gen) showIdle();
+                if (ui.onDone) ui.onDone(result);
+            }, 1600);
+            return result;
+        }
         function enqueue(statusText) {
             return outbox.put({
                 recordId: payload.recordId, payload: payload, attempts: 0, createdAt: Date.now()
             }).then(function () {
                 setStatus(statusText, '#059669');
-                setTimeout(function () { if (ui.onDone) ui.onDone('queued'); }, 1600);
-                return 'queued';
+                return finish('queued');
             }).catch(function () {
                 setStatus('❌ НЕ ЗБЕРЕЖЕНО! Не закривайте сторінку.', '#ef4444');
                 showIdle();
@@ -631,8 +656,7 @@
 
         return attempt.then(function () {
             setStatus(ui.okText || '✅ Записано на сервері', '#059669');
-            setTimeout(function () { if (ui.onDone) ui.onDone('sent'); }, 1600);
-            return 'sent';
+            return finish('sent');
         }).catch(function (err) {
             if (err.permanent) {
                 // Сервер відповів, але відхилив дані — черга не допоможе.

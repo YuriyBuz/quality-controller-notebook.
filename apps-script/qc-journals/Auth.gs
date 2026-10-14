@@ -29,7 +29,7 @@ const EMP = { id: 0, fullName: 1, shortName: 2, posId: 4, status: 7, email: 14,
 const EMP_WIDTH = 19;                 // A..S
 const POS = { id: 0, roles: 3 };      // A..D
 
-const SESSION_TTL_MINUTES = 12 * 60;  // одна зміна
+const SESSION_TTL_MINUTES = 14 * 60;  // зміна 08:00–20:00 із запасом на ранній вхід
 const MAX_PIN_ATTEMPTS = 5;
 const ATTEMPT_WINDOW_SECONDS = 300;
 

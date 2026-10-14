@@ -203,17 +203,73 @@ const ui = (w) => {
     eq('B11 назавжди відхилений → attempts = max (застряг, видно в значку)', r.attempts, 5);
   }
 
+  {
+    // Другий запис із тієї ж модалки без перезавантаження сторінки.
+    // Було: після успіху «Підтвердити» лишалась вимкненою (showIdle не
+    // викликався), і наступна відправка не йшла до F5.
+    const w = makeBrowser({ responder: b => b.action === 'login' ? GOOD : { result: 'success' } });
+    w.QC.configure({ url: URL, section: 'sauce_boiling', auth: true, catalog: false });
+    await w.QC.auth.login('7777');
+    const u = ui(w); let done = 0;
+    const opts = Object.assign({ onDone: () => { done++; } }, u);
+    const r1 = await w.QC.submit({ type: 'sauce_boiling', product: 'Кетчуп' }, opts); await tick();
+    ok('B12 перший запис → sent, onDone', r1 === 'sent' && done === 1);
+    ok('B12 після успіху кнопку «Підтвердити» увімкнено знову', w.__el('doSendBtn').disabled === false);
+    eq('B12 кнопки дій показано, спінер сховано', [w.__el('sendActions').style.display, w.__el('sendSpinner').classList.contains('hidden')], ['flex', true]);
+    const r2 = await w.QC.submit({ type: 'sauce_boiling', product: 'Майонез' }, opts); await tick();
+    ok('B12 другий запис з тієї ж модалки → sent (не busy)', r2 === 'sent' && done === 2);
+    eq('B12 на сервер пішло два записи', w.__state.fetches.filter(b => b.type === 'sauce_boiling').length, 2);
+    w.__state.online = false;
+    const r3 = await w.QC.submit({ type: 'sauce_boiling', product: 'Гірчиця' }, opts); await tick();
+    ok('B12 і після queued кнопку увімкнено', r3 === 'queued' && w.__el('doSendBtn').disabled === false && done === 3);
+  }
+  {
+    // Ланцюжок фасування → етикетування: поки летить другий запис,
+    // «хвіст» першого не має вмикати кнопку
+    const w = makeBrowser({ responder: b => b.action === 'login' ? GOOD : { result: 'success' } });
+    w.QC.configure({ url: URL, section: 'packing', auth: true, catalog: false });
+    await w.QC.auth.login('7777');
+    const u = ui(w); let done = 0;
+    const realFetch = w.fetch; let slow = false;
+    w.fetch = (url, o) => slow ? new Promise(res => setTimeout(() => res(realFetch(url, o)), 80)) : realFetch(url, o);
+    const chain = w.QC.submit({ type: 'packing' }, Object.assign({}, u, { onDone: null })).then(r => {
+      slow = true;
+      return w.QC.submit({ type: 'labeling' }, Object.assign({}, u, { onDone: () => { done++; } }));
+    });
+    await tick(40);
+    ok('B13 поки летить другий запис ланцюжка — кнопка вимкнена, дій не видно', w.__el('doSendBtn').disabled === true && w.__el('sendActions').style.display === 'none');
+    const r2 = await chain; await tick();
+    ok('B13 після другого — кнопку увімкнено, onDone один раз', r2 === 'sent' && w.__el('doSendBtn').disabled === false && done === 1);
+  }
+
   // =====================================================================
   group('C. Простій і термін сесії');
   {
+    // Типово автовихід через простій вимкнено: один контролер на зміні
+    // входить уранці і працює до вечора, пауза між записами — години.
     const w = makeBrowser({ responder: b => b.action === 'login' ? GOOD : {} });
     w.QC.configure({ url: URL, auth: true, catalog: false });
     await w.QC.auth.login('7777');
+    w.__storage.set('qc_activity_v1', String(Date.now() - 11 * 60 * 60 * 1000));
+    const errBefore = w.__el('qcLoginError').textContent;
+    ok('C1 типово 11 годин без дій НЕ закривають сесію', w.QC.auth.require() === true && w.QC.auth.session() !== null && w.__el('qcLoginError').textContent === errBefore);
+  }
+  {
+    // Сторінка може ввімкнути ліміт сама — тоді пояснення бере число з нього
+    const w = makeBrowser({ responder: b => b.action === 'login' ? GOOD : {} });
+    w.QC.configure({ url: URL, auth: true, catalog: false, idleLimitMs: 10 * 60 * 1000 });
+    await w.QC.auth.login('7777');
     w.__storage.set('qc_activity_v1', String(Date.now() - 11 * 60 * 1000));
     w.QC.auth.require();
-    ok('C1 11 хвилин без дій → сесію закрито', w.QC.auth.session() === null);
-    ok('C1 показано вхід із поясненням', loginShown(w) && /10 хвилин/.test(w.__el('qcLoginError').textContent));
-    ok('C1 автовихід НЕ стирає перевірник офлайну', !!w.__storage.get('qc_unlock_v1') || true);
+    ok('C1b idleLimitMs 10 хв: 11 хвилин без дій → сесію закрито', w.QC.auth.session() === null);
+    ok('C1b показано вхід із поясненням «10 хв»', loginShown(w) && /10 хв/.test(w.__el('qcLoginError').textContent));
+    ok('C1b автовихід НЕ стирає перевірник офлайну', !!w.__storage.get('qc_unlock_v1') || true);
+    const w2 = makeBrowser({ responder: b => b.action === 'login' ? GOOD : {} });
+    w2.QC.configure({ url: URL, auth: true, catalog: false, idleLimitMs: 2 * 60 * 60 * 1000 });
+    await w2.QC.auth.login('7777');
+    w2.__storage.set('qc_activity_v1', String(Date.now() - 3 * 60 * 60 * 1000));
+    w2.QC.auth.require();
+    ok('C1c ліміт у годинах → «2 години» в поясненні', w2.QC.auth.session() === null && /2 години/.test(w2.__el('qcLoginError').textContent));
   }
   {
     const w = makeBrowser({ responder: b => b.action === 'login' ? GOOD : {} });
