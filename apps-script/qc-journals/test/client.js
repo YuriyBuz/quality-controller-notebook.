@@ -278,6 +278,51 @@ const ui = (w) => {
   }
 
   // =====================================================================
+  group('B2. Розклад оновлення довідників');
+  {
+    // Типово: 07:30, 13:30, 19:30 (з 07:30 по 20:30 кожні 6 годин). Тести йдуть у TZ=Europe/Kyiv.
+    const w = makeBrowser({ responder: () => ({}) });
+    w.QC.configure({ url: URL, auth: false, catalog: false });
+    const at = (h, m) => new Date(2026, 9, 30, h, m, 0, 0).getTime();   // 30.10.2026 — звичайний день
+    const hm = (ts) => { const d = new Date(ts); return `${d.getDate()}.${d.getMonth() + 1} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+    eq('B16 завантажено о 08:00 → свіжий до 13:30', hm(w.QC.catalog.nextRefreshAt(at(8, 0))), '30.10 13:30');
+    eq('B16 рівно о 13:30 → наступний 19:30 (межа — суворо після)', hm(w.QC.catalog.nextRefreshAt(at(13, 30))), '30.10 19:30');
+    eq('B16 о 19:40 → до 07:30 наступного дня', hm(w.QC.catalog.nextRefreshAt(at(19, 40))), '31.10 07:30');
+    eq('B16 о 06:00 → до 07:30 того ж дня', hm(w.QC.catalog.nextRefreshAt(at(6, 0))), '30.10 07:30');
+    const w2 = makeBrowser({ responder: () => ({}) });
+    w2.QC.configure({ url: URL, auth: false, catalog: false, catalogRefresh: { from: '08:00', to: '20:00', everyHours: 4 } });
+    eq('B16 власний розклад сторінки (08:00…20:00 кожні 4 год): 09:00 → 12:00', hm(w2.QC.catalog.nextRefreshAt(at(9, 0))), '30.10 12:00');
+    eq('B16 власний розклад: 20:00 → 08:00 завтра', hm(w2.QC.catalog.nextRefreshAt(at(20, 0))), '31.10 08:00');
+    const w3 = makeBrowser({ responder: () => ({}) });
+    w3.QC.configure({ url: URL, auth: false, catalog: false, catalogRefresh: { from: 'abc', to: '', everyHours: 0 } });
+    eq('B16 зіпсований розклад → типовий', hm(w3.QC.catalog.nextRefreshAt(at(9, 0))), '30.10 13:30');
+    // день переведення годинників (25.10.2026) — слот лишається 13:30 за місцевим часом
+    eq('B16 у день переведення годинників слот 13:30 не зʼїжджає', hm(w.QC.catalog.nextRefreshAt(new Date(2026, 9, 25, 8, 0).getTime())), '25.10 13:30');
+  }
+  {
+    // Підмінений час: кеш із 13:00 о 14:00 уже застарів (минуло 13:30) — довідники
+    // підтягуються після входу; кеш із 13:45 — свіжий, на сервер не ходимо.
+    const makeFakeDate = (nowTs) => { class FakeDate extends Date { constructor(...a) { a.length ? super(...a) : super(nowTs); } static now() { return nowTs; } } return FakeDate; };
+    const NOW = new Date(2026, 9, 30, 14, 0, 0, 0).getTime();
+    const CAT = { equipment: ['Лінія А'] };
+    const run = async (fetchedAt) => {
+      const w = makeBrowser({ responder: b => b.action === 'login' ? Object.assign({}, GOOD, { expiresAt: NOW + 3600e3 }) : b.action === 'getCatalog' ? { result: 'success', catalog: CAT } : {} });
+      w.Date = makeFakeDate(NOW);
+      w.__storage.set('qc_catalog_v2', JSON.stringify({ fetchedAt, data: { equipment: ['Стара лінія'] } }));
+      w.QC.configure({ url: URL, section: 'packing', auth: true, catalog: true });
+      await w.QC.auth.login('7777'); await tick(60);
+      return { info: w.QC.catalog.info(), eq: w.QC.catalog.get('equipment'), calls: w.__state.fetches.filter(b => b.action === 'getCatalog').length };
+    };
+    const stale = await run(new Date(2026, 9, 30, 13, 0).getTime());
+    ok('B17 кеш із 13:00 о 14:00 застарів → підтягнуто з сервера', stale.calls === 1 && stale.info.source === 'server' && stale.eq[0] === 'Лінія А');
+    const fresh = await run(new Date(2026, 9, 30, 13, 45).getTime());
+    ok('B17 кеш із 13:45 о 14:00 свіжий → сервер не чіпали, працюємо на кеші', fresh.calls === 0 && fresh.info.source === 'cache' && fresh.eq[0] === 'Стара лінія');
+    eq('B17 info.nextRefreshAt показує наступний момент розкладу', new Date(fresh.info.nextRefreshAt).getHours() + ':' + new Date(fresh.info.nextRefreshAt).getMinutes(), '19:30');
+    const night = await run(new Date(2026, 9, 29, 19, 35).getTime());
+    ok('B17 кеш із вечора (19:35) наступного дня о 14:00 застарів → оновлено', night.calls === 1 && night.info.source === 'server');
+  }
+
+  // =====================================================================
   group('C. Простій і термін сесії');
   {
     // Типово автовихід через простій вимкнено: один контролер на зміні

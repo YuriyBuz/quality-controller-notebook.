@@ -28,7 +28,7 @@
         url:              '',
         section:          'unknown',
         appName:          'Блокнот QC',  // заголовок на екрані входу
-        appVersion:       '3.1.3',
+        appVersion:       '3.1.4',
         sendTimeoutMs:    60000,         // Apps Script вміє «зависати»
         photoMaxWidth:    1600,
         photoQuality:     0.72,
@@ -38,6 +38,10 @@
         flushIntervalMs:  60000,
         showBadge:        true,
         catalog:          true,          // false — вимкнути довідники на сторінці
+        // Розклад оновлення довідників з таблиці: з from до to кожні everyHours
+        // годин. Типово 07:30, 13:30, 19:30 — кеш на пристрої чинний до
+        // найближчого з цих моментів, далі підтягується заново (у фоні).
+        catalogRefresh:   { from: '07:30', to: '20:30', everyHours: 6 },
         auth:             false,         // true — вхід за PIN обовʼязковий
         // Автовихід через простій. 0 — вимкнено: один контролер на зміні
         // входить уранці і працює до вечора, сесія живе до терміну з
@@ -808,7 +812,8 @@
        Стратегія cache-first:
          1. Кеш із localStorage віддається МИТТЄВО — форма готова одразу.
          2. Паралельно йде запит на сервер; якщо дані свіжіші — оновлюємо.
-         3. Кеш вважається чинним до найближчої 23:00 після завантаження.
+         3. Кеш вважається чинним до найближчого моменту з розкладу
+            cfg.catalogRefresh (типово 07:30, 13:30, 19:30) після завантаження.
          4. Немає мережі — працюємо на кеші, статус позначається як
             «застарілий», але додаток НЕ ламається.
          5. Немає ні мережі, ні кешу — сторінка бере свій вбудований
@@ -823,11 +828,34 @@
     var catBusy  = false;
     var catTimer = null;
 
+    function catParseTime(str, fallbackMin) {
+        var m = /^(\d{1,2}):(\d{2})$/.exec(String(str || '').trim());
+        if (!m || +m[1] > 23 || +m[2] > 59) return fallbackMin;
+        return (+m[1]) * 60 + (+m[2]);
+    }
+
+    // Моменти оновлення за добу, у хвилинах від півночі: from, from+step, … ≤ to.
+    function catSlots() {
+        var r    = cfg.catalogRefresh || {};
+        var from = catParseTime(r.from, 7 * 60 + 30),
+            to   = catParseTime(r.to,   20 * 60 + 30),
+            step = Math.round(Number(r.everyHours) * 60);
+        if (!(step > 0)) step = 6 * 60;
+        var slots = [];
+        for (var t = from; t <= to && slots.length < 48; t += step) slots.push(t);
+        return slots.length ? slots : [23 * 60];
+    }
+
+    // Найближчий момент розкладу СУВОРО після ts: сьогодні або перший завтра.
+    // Через new Date(y, m, d, h, mi), а не додаванням хвилин — щоб не
+    // зʼїхати на годину в день переведення годинників.
     function catNextBoundary(ts) {
-        var d = new Date(ts);
-        var b = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 0, 0, 0);
-        if (d.getTime() >= b.getTime()) b.setDate(b.getDate() + 1);
-        return b.getTime();
+        var d = new Date(ts), slots = catSlots(), i, b;
+        for (i = 0; i < slots.length; i++) {
+            b = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(slots[i] / 60), slots[i] % 60, 0, 0).getTime();
+            if (b > ts) return b;
+        }
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, Math.floor(slots[0] / 60), slots[0] % 60, 0, 0).getTime();
     }
 
     function catIsFresh() {
@@ -853,7 +881,9 @@
 
     function catInfo() {
         return { fetchedAt: catMeta.fetchedAt, stale: catMeta.stale, source: catMeta.source,
-                 loading: catBusy, error: catMeta.error || '' };
+                 loading: catBusy, error: catMeta.error || '',
+                 // коли кеш перестане вважатися свіжим (0 — довідників ще немає)
+                 nextRefreshAt: catMeta.fetchedAt > 0 ? catNextBoundary(catMeta.fetchedAt) : 0 };
     }
 
     function catFetch(manual) {
@@ -920,6 +950,8 @@
         },
         refresh: function (manual) { return catFetch(manual !== false); },
         info: catInfo,
+        // Наступний момент розкладу після ts (типово — після «зараз»)
+        nextRefreshAt: function (ts) { return catNextBoundary(ts == null ? Date.now() : ts); },
         // fn(data, info) викликається одразу після підписки і далі на кожне оновлення
         onUpdate: function (fn) {
             catSubs.push(fn);
@@ -931,8 +963,10 @@
         catLoadCache();
         catNotify();
         if (!catIsFresh()) catFetch(false);
-        // пристрій, залишений увімкненим на ніч, підхопить оновлення після 23:00
-        if (!catTimer) catTimer = setInterval(function () { if (!catIsFresh() && !catBusy) catFetch(false); }, 5 * 60 * 1000);
+        // раз на хвилину: настав момент розкладу — підтягнути довідники у фоні.
+        // Сторінка, відкрита цілий день, оновиться о 13:30 і 19:30 сама;
+        // планшет, увімкнений уранці, — одразу, бо кеш із вечора вже застарів.
+        if (!catTimer) catTimer = setInterval(function () { if (!catIsFresh() && !catBusy) catFetch(false); }, 60 * 1000);
     }
 
     /* ---------------------------------------------------------------
