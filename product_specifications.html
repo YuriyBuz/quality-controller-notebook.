@@ -122,17 +122,17 @@
                     <div class="ml-3 sm:ml-4">
                         <h3 class="text-sm sm:text-base font-bold text-red-800 dark:text-red-400 uppercase tracking-wider">Помилка завантаження даних</h3>
                         <div class="mt-2 text-sm text-red-700 dark:text-red-300">
-                            <p class="font-medium mb-2">Не вдалося отримати дані. Найчастіша причина — закритий доступ до таблиці.</p>
-                            <p class="font-bold">Як виправити:</p>
+                            <p class="font-medium mb-2">Список специфікацій віддає сервер блокнота після входу за PIN — з аркуша «Данні_для_додатку» таблиці QC Data 2.0.</p>
+                            <p class="font-bold">Що перевірити:</p>
                             <ul class="list-disc pl-5 mt-1 space-y-1">
-                                <li>Відкрийте вашу Google Таблицю.</li>
-                                <li>Натисніть кнопку <b>"Поділитися"</b> (Share).</li>
-                                <li>Змініть "Обмежений доступ" на <b>"Усі, хто має посилання"</b> (Anyone with the link).</li>
-                                <li>Натисніть "Готово" та спробуйте ще раз.</li>
+                                <li>На сервері розгорнуто бекенд не старіший за <b>3.0.6</b> — у ньому є довідник «specs».</li>
+                                <li>Аркуш «Данні_для_додатку» на місці, колонки «Назва ТМ», «Назва SKU», «Посилання на drive».</li>
+                                <li>Є звʼязок і ви увійшли за PIN.</li>
                             </ul>
+                            <p id="errorDetail" class="mt-3 text-xs opacity-80"></p>
                         </div>
                         <div class="mt-5">
-                            <button onclick="fetchData()" class="bg-red-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-red-700 transition-colors shadow-sm active:scale-95 flex items-center gap-2">
+                            <button onclick="retryLoad()" class="bg-red-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-red-700 transition-colors shadow-sm active:scale-95 flex items-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                 Спробувати ще раз
                             </button>
@@ -204,7 +204,7 @@
             section: 'specifications',
             appName: 'Специфікації на продукт',
             auth: true,
-            catalog: false,
+            catalog: true,         // список специфікацій іде довідником «specs» з бекенду
             showBadge: false
         });
         QC.auth.onChange(function (session) {
@@ -238,7 +238,9 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             initTheme();
-            fetchData();
+            // Дані приходять довідником «specs» з бекенду (після входу за PIN);
+            // fetchData() лишається запасним шляхом для старого сервера без нього.
+            QC.catalog.onUpdate(onCatalog);
 
             // Event Listeners
             document.getElementById('themeToggle').addEventListener('click', toggleTheme);
@@ -263,7 +265,52 @@
             localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
         }
 
-        // --- Data Fetching & Processing ---
+        // --- Дані з довідника бекенду ---
+        // Таблиця QC Data 2.0 закрита для сторонніх, тому напряму з браузера
+        // (gviz) вона не читається. Сервер віддає аркуш «Данні_для_додатку»
+        // довідником «specs» тим самим шляхом, що й решту довідників.
+        let fallbackTried = false;
+        function applyItems(items) {
+            parsedData = {};
+            allSkusFlat = [];
+            (items || []).forEach(it => {
+                const tm = (it.tm || '').toString().trim();
+                if (!tm) return;
+                const item = { tm, sku: (it.sku || '').toString().trim() || 'Без назви', link: (it.link || '').toString().trim() || '#' };
+                if (!parsedData[tm]) parsedData[tm] = [];
+                parsedData[tm].push(item);
+                allSkusFlat.push(item);
+            });
+            const sortedTMs = {};
+            Object.keys(parsedData).sort().forEach(key => { sortedTMs[key] = parsedData[key]; });
+            parsedData = sortedTMs;
+        }
+        function showError(detail) {
+            document.getElementById('errorDetail').textContent = detail || '';
+            loader.classList.add('hidden');
+            errorMessage.classList.remove('hidden');
+        }
+        function onCatalog(data, info) {
+            const specs = QC.catalog.get('specs');
+            if (specs) {
+                errorMessage.classList.add('hidden');
+                applyItems(specs);
+                loader.classList.add('hidden');
+                if (!searchInput.value.trim()) renderTmView();
+                return;
+            }
+            if (info.loading || (!data && !info.error)) return;      // ще вантажиться або чекаємо входу
+            if (data && !fallbackTried) { fallbackTried = true; fetchData(); return; }   // сервер без «specs» — пробуємо напряму
+            if (!data) showError('Довідники не завантажено: ' + (info.error || 'немає звʼязку'));
+        }
+        function retryLoad() {
+            fallbackTried = false;
+            errorMessage.classList.add('hidden');
+            loader.classList.remove('hidden');
+            QC.catalog.refresh(true);
+        }
+
+        // --- Запасний шлях: пряме читання таблиці (працює лише для відкритої таблиці) ---
         async function fetchData() {
             try {
                 errorMessage.classList.add('hidden');
@@ -296,39 +343,22 @@
 
             } catch (error) {
                 console.error("Error fetching data:", error);
-                loader.classList.add('hidden');
-                errorMessage.classList.remove('hidden');
+                showError('На сервері немає довідника «specs», а пряме читання таблиці не вдалося: ' + error.message);
             }
         }
 
         function processSheetData(rows) {
-            parsedData = {};
-            allSkusFlat = [];
-
+            const items = [];
             for (let i = 1; i < rows.length; i++) {
                 const row = rows[i].c;
                 if (!row) continue;
-
-                const tmName = (row[0] && row[0].v) ? row[0].v.toString().trim() : null;
-                if (!tmName) continue; 
-
-                const skuName = (row[1] && row[1].v) ? row[1].v.toString().trim() : 'Без назви';
-                const link = (row[2] && row[2].v) ? row[2].v.toString().trim() : '#';
-
-                if (!parsedData[tmName]) {
-                    parsedData[tmName] = [];
-                }
-
-                const item = { tm: tmName, sku: skuName, link: link };
-                parsedData[tmName].push(item);
-                allSkusFlat.push(item);
+                items.push({
+                    tm:   (row[0] && row[0].v) ? row[0].v : '',
+                    sku:  (row[1] && row[1].v) ? row[1].v : '',
+                    link: (row[2] && row[2].v) ? row[2].v : ''
+                });
             }
-            
-            const sortedTMs = {};
-            Object.keys(parsedData).sort().forEach(key => {
-                sortedTMs[key] = parsedData[key];
-            });
-            parsedData = sortedTMs;
+            applyItems(items);
         }
 
         // --- Safe View Logic (Iframe Modal) ---
