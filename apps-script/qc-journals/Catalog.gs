@@ -107,12 +107,13 @@ const CATALOG_CONFIG = {
   },
 
   // Специфікації на продукт для product_specifications.html: ТМ → SKU →
-  // посилання на PDF у теці SPEC на Drive. Таблиця QC Data 2.0 закрита,
-  // тому напряму з браузера (gviz) сторінка її прочитати не може — список
-  // віддає сервер після входу за PIN, як і решту довідників.
+  // непрозорий ключ. Посилання на Drive у браузер НЕ йде: PDF віддає сервер
+  // дією getSpec лише за чинною сесією і лише для файлів із цього аркуша
+  // (див. блок «Специфікації» нижче). Тека SPEC на Drive закрита.
   specs: {
-    sheet: 'Данні_для_додатку',
-    fields: { tm: 'Назва ТМ', sku: 'Назва SKU', link: 'Посилання на drive' }
+    sheet: SPEC_SHEET,
+    fields: { tm: 'Назва ТМ', sku: 'Назва SKU', link: 'Посилання на drive' },
+    map: specPublic_
   },
 
   // Відповідальні за мийку ліній — з кадрового довідника: оператори-
@@ -274,13 +275,96 @@ function buildCatalog_() {
   const result = {};
   Object.keys(CATALOG_CONFIG).forEach(function (key) {
     try {
-      const list = readCatalogList_(book, CATALOG_CONFIG[key]);
+      let list = readCatalogList_(book, CATALOG_CONFIG[key]);
+      // map — що з рядка показати клієнту (напр. ключ замість посилання)
+      if (list && CATALOG_CONFIG[key].map) list = list.map(CATALOG_CONFIG[key].map).filter(function (x) { return !!x; });
       if (list !== null) result[key] = list;
     } catch (error) {
       logEvent_('error', 'catalog.failed', { details: key + ': ' + error });
     }
   });
   return result;
+}
+
+// =========================================================================
+//  СПЕЦИФІКАЦІЇ НА ПРОДУКТ
+//
+//  Файли лежать у закритій теці SPEC. Сторінка отримує не посилання, а
+//  непрозорий ключ (HMAC від id файлу на AUTH_SECRET). PDF віддає сервер
+//  (getSpec) лише за чинною сесією і лише для файлів, перелічених в аркуші —
+//  тож через цю дію не витягти нічого іншого з Drive акаунта. Кожен
+//  перегляд пишеться в Журнал_подій: хто, коли, який SKU.
+// =========================================================================
+function driveFileId_(link) {
+  const s = String(link || '').trim();
+  const m = /\/d\/([A-Za-z0-9_-]{10,})/.exec(s) || /[?&]id=([A-Za-z0-9_-]{10,})/.exec(s);
+  if (m) return m[1];
+  return /^[A-Za-z0-9_-]{20,}$/.test(s) ? s : '';
+}
+
+function specKey_(fileId) {
+  if (!fileId) return '';
+  // computeHmacSha256Signature віддає байти зі знаком (-128..127)
+  return Utilities.computeHmacSha256Signature('spec:' + fileId, getAuthSecret_())
+    .slice(0, 10)
+    .map(function (b) { return ('0' + ((b + 256) % 256).toString(16)).slice(-2); })
+    .join('');
+}
+
+function specPublic_(item) {
+  const id = driveFileId_(item.link);
+  if (!id) return null;
+  return { tm: item.tm, sku: item.sku, key: specKey_(id) };
+}
+
+/** Усі рядки аркуша специфікацій за ключами — перелік дозволеного для getSpec. */
+function specIndex_() {
+  const list = readCatalogList_(dataSpreadsheet_(), {
+    sheet: SPEC_SHEET,
+    fields: { tm: 'Назва ТМ', sku: 'Назва SKU', link: 'Посилання на drive' }
+  }) || [];
+  const index = {};
+  list.forEach(function (item) {
+    const id = driveFileId_(item.link);
+    if (id) index[specKey_(id)] = { id: id, tm: item.tm, sku: item.sku };
+  });
+  return index;
+}
+
+function handleGetSpec_(data, session) {
+  const key = String(data.key || '').trim();
+  const entry = key ? specIndex_()[key] : null;
+  if (!entry) throw fail_('NOT_FOUND', 'Такої специфікації в переліку немає.');
+
+  let file;
+  try {
+    file = DriveApp.getFileById(entry.id);
+  } catch (error) {
+    logEvent_('error', 'spec.unavailable', {
+      actor: session.name, device: data.deviceId, section: 'specifications',
+      details: entry.sku + ': ' + error });
+    throw fail_('SPEC_UNAVAILABLE',
+      'Файл специфікації недоступний для сервера. Перевірте, що акаунт розгортання має доступ до теки SPEC.');
+  }
+
+  const blob = file.getBlob();
+  const bytes = blob.getBytes();
+  if (bytes.length > SPEC_MAX_BYTES) {
+    throw fail_('TOO_LARGE', 'Файл завеликий (' + Math.round(bytes.length / 1048576) + ' МБ). ' +
+      'Стисніть PDF до ' + Math.round(SPEC_MAX_BYTES / 1048576) + ' МБ.');
+  }
+
+  logEvent_('access', 'spec.view', {
+    actor: session.name, device: data.deviceId, section: 'specifications', details: entry.sku });
+
+  return {
+    result: 'success',
+    tm: entry.tm,
+    sku: entry.sku,
+    mimeType: blob.getContentType() || 'application/pdf',
+    size: bytes.length,
+    data: Utilities.base64Encode(bytes)
+  };
 }
 
 // =========================================================================

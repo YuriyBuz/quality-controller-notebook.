@@ -59,6 +59,7 @@ function makeEnv(opts) {
     cache: new Map(), props: new Map(opts.props || []), sent: [], files: [], logs: [],
     quota: opts.quota === undefined ? 100 : opts.quota,
     deniedFolders: new Set(opts.deniedFolders || []),
+    driveFiles: opts.driveFiles || {},          // id → { name, type, bytes } для DriveApp.getFileById
     lockOk: opts.lockOk === undefined ? true : opts.lockOk,
   };
   const toBytes = v => Array.isArray(v) ? Buffer.from(v.map(b => b & 0xff)) : Buffer.from(String(v), 'utf8');
@@ -97,10 +98,17 @@ function makeEnv(opts) {
     }) },
     LockService: { getScriptLock: () => ({ tryLock: () => state.lockOk, releaseLock: () => {} }) },
     MailApp: { getRemainingDailyQuota: () => state.quota, sendEmail: p => { state.sent.push(p); state.quota -= p.to.split(',').length; } },
-    DriveApp: { getFolderById: id => {
-      if (state.deniedFolders.has(id)) throw new Error('Access denied: DriveApp.');
-      return { createFile: blob => { const n = state.files.push({ folder: id, name: blob.getName(), type: blob.getContentType() }); return { getUrl: () => 'https://drive.google.com/file/d/mock_' + n + '/view' }; } };
-    } },
+    DriveApp: {
+      getFolderById: id => {
+        if (state.deniedFolders.has(id)) throw new Error('Access denied: DriveApp.');
+        return { createFile: blob => { const n = state.files.push({ folder: id, name: blob.getName(), type: blob.getContentType() }); return { getUrl: () => 'https://drive.google.com/file/d/mock_' + n + '/view' }; } };
+      },
+      getFileById: id => {
+        const f = state.driveFiles[id];
+        if (!f) throw new Error('Access denied: DriveApp.');
+        return { getName: () => f.name, getBlob: () => ({ getBytes: () => f.bytes, getContentType: () => f.type, getName: () => f.name }) };
+      },
+    },
     Session: { getEffectiveUser: () => ({ getEmail: () => 'test@example.com' }) },
     ContentService: {
       createTextOutput: s => ({ _s: s, setMimeType() { return this; }, getContent() { return this._s; } }),
@@ -114,6 +122,7 @@ function makeEnv(opts) {
     if (f === 'Util.gs') {
       if (opts.sections) src = src.replace(/^const SECTIONS = \[.*\];$/m, 'const SECTIONS = ' + JSON.stringify(opts.sections) + ';');
       if (opts.serveHistory !== undefined) src = src.replace(/^const SERVE_HISTORY = .*;$/m, 'const SERVE_HISTORY = ' + opts.serveHistory + ';');
+      if (opts.specMaxBytes) src = src.replace(/^const SPEC_MAX_BYTES = .*;$/m, 'const SPEC_MAX_BYTES = ' + opts.specMaxBytes + ';');
     }
     vm.runInContext(src, sandbox, { filename: f });
   }

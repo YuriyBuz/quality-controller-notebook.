@@ -81,7 +81,7 @@ function dataBook() {
       ['1101 Соєвий Bonsai', 1101, ' +', '', ' +', '', 12.8, 14.8, '-', '-', 4.5, 4.8], ['1108 Теріякі Bonsai', 1108, ' +', ' +', ' +', '', 17.5, 19.5, 9.5, 11.7, '-', '-']],
     'PRODUCT_DATABASE': [['Продукт (Код/Назва)', 'ТМ (Торгова Марка)', 'Артикул', 'Продукт (SKU)', 'Термін (міс)'], ['1101 Соєвий Bonsai', 'Bonsai', 3102, 'Bonsai соус соєвий 235 мл', 18], ['', '', '', '', '']],
     'Обладнання': [['Назва обладнаня '], ['Лінія А'], ['Лінія B'], ['Ручне фасування']],
-    'Данні_для_додатку': [['Назва ТМ', 'Назва SKU', 'Посилання на drive', '', ''], ['➡️ 01 BONSAI', '✅ 3101 Bonsai соус соєвий 1000 мл.', 'https://drive.google.com/file/d/1fo_st6q/view', '', ''], ['', '', '', '', '']],
+    'Данні_для_додатку': [['Назва ТМ', 'Назва SKU', 'Посилання на drive', '', ''], ['➡️ 01 BONSAI', '✅ 3101 Bonsai соус соєвий 1000 мл.', 'https://drive.google.com/file/d/1fo_st6qArmMBgrNg4W6dZzW4TbrwGFLp/view', '', ''], ['', '', '', '', '']],
     'itemsDatabase': [['Артикул (Сировина)', 'Назва (Сировина)', 'Артикул (Пакування)', 'Назва (Пакування)', 'Артикул (Етикетка)', 'Назва (Етикетка)'],
       ['ADD-D-001', 'Антиоксидант', 2013, 'Банка скло', 3052, 'Етикетка Bonsai'], ['ADD-D-002', 'Консервант', '', '', '', '']],
   });
@@ -347,8 +347,9 @@ group('E. Довідники');
   ok('E10 відповідальні за лінії — ключ є і це список', Array.isArray(c.lineStaff));
   eq('E11 контролери для фільтра історії — POS-012 і POS-013 у форматі журналу, без звільнених', c.controllers, ['Соботович Л.М.', 'Попадюк А.М.', 'Тест Т.Т.']);
   eq('E8 порожні пари у «широкій» вкладці пропущено', c.packaging, ['2013 Банка скло']);
-  eq('E12 специфікації: ТМ, SKU і посилання з аркуша «Данні_для_додатку», порожній рядок пропущено',
-     c.specs, [{ tm: '➡️ 01 BONSAI', sku: '✅ 3101 Bonsai соус соєвий 1000 мл.', link: 'https://drive.google.com/file/d/1fo_st6q/view' }]);
+  ok('E12 специфікації: ТМ і SKU з аркуша «Данні_для_додатку», замість посилання — ключ, порожній рядок пропущено',
+     c.specs.length === 1 && c.specs[0].tm === '➡️ 01 BONSAI' && c.specs[0].sku === '✅ 3101 Bonsai соус соєвий 1000 мл.'
+     && /^[0-9a-f]{20}$/.test(c.specs[0].key) && !('link' in c.specs[0]) && !JSON.stringify(c.specs).includes('drive.google'));
 }
 
 // =====================================================================
@@ -374,6 +375,31 @@ group('G. Старі назви типів');
   const h = env.__post({ type: 'hvo', token, deviceId: 'tab-1', recordId: 'rid-alias-2', status: 'Відповідає', report: 'ок', files: [] });
   eq('G2 type: «hvo» → hvo_control', [h.result, h.section], ['success', 'hvo_control']);
   eq('G3 невідомий тип → UNKNOWN_TYPE', env.__post({ type: 'nope', token, deviceId: 'tab-1', report: '' }).code, 'UNKNOWN_TYPE');
+}
+
+// =====================================================================
+group('H. Специфікації на продукт (getSpec)');
+{
+  const PDF = Array.from(Buffer.from('%PDF-1.4\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF', 'latin1'));
+  const FILE = '1fo_st6qArmMBgrNg4W6dZzW4TbrwGFLp';
+  const env = envAll({ driveFiles: { [FILE]: { name: 'Ф-01 3101.pdf', type: 'application/pdf', bytes: PDF } }, specMaxBytes: 1024 });
+  const token = login(env, '7777').token;
+  const c = env.__post({ action: 'getCatalog', token, deviceId: 'tab-1' }).catalog;
+  const key = c.specs[0].key;
+  ok('H1 у довіднику — ключ, id файлу Drive нікуди не витікає', /^[0-9a-f]{20}$/.test(key) && !JSON.stringify(c.specs).includes(FILE));
+  eq('H2 getSpec без сесії → AUTH', env.__post({ action: 'getSpec', key }).code, 'AUTH');
+  eq('H3 ключ не з переліку → NOT_FOUND (через getSpec не дістати інших файлів акаунта)', env.__post({ action: 'getSpec', key: 'ffffffffffffffffffff', token, deviceId: 'tab-1' }).code, 'NOT_FOUND');
+  const r = env.__post({ action: 'getSpec', key, token, deviceId: 'tab-1' });
+  ok('H4 свій ключ → PDF у base64, тип і розмір', r.result === 'success' && r.mimeType === 'application/pdf' && r.size === PDF.length && Buffer.from(r.data, 'base64').toString('latin1').startsWith('%PDF-1.4'));
+  eq('H4 назва ТМ і SKU з аркуша', [r.tm, r.sku], ['➡️ 01 BONSAI', '✅ 3101 Bonsai соус соєвий 1000 мл.']);
+  const view = env.SpreadsheetApp.openById(DATA_ID).getSheetByName('Журнал_подій').rows.find(x => x[2] === 'spec.view');
+  ok('H5 перегляд записано в Журнал_подій: хто, пристрій, який SKU', !!view && !!view[3] && view[4] === 'tab-1' && /3101/.test(view[6]));
+  const env2 = envAll({ driveFiles: {} });
+  const t2 = login(env2, '7777').token;
+  eq('H6 файл недоступний серверу → SPEC_UNAVAILABLE, а не збій', env2.__post({ action: 'getSpec', key, token: t2, deviceId: 'tab-1' }).code, 'SPEC_UNAVAILABLE');
+  const env3 = envAll({ driveFiles: { [FILE]: { name: 'big.pdf', type: 'application/pdf', bytes: new Array(2048).fill(37) } }, specMaxBytes: 1024 });
+  const t3 = login(env3, '7777').token;
+  eq('H7 файл понад межу → TOO_LARGE з порадою стиснути', env3.__post({ action: 'getSpec', key, token: t3, deviceId: 'tab-1' }).code, 'TOO_LARGE');
 }
 
 console.log(`\n${fail ? '✗' : '✓'} пройдено ${pass}, провалено ${fail}`);

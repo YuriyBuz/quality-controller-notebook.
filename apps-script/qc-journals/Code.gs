@@ -48,6 +48,12 @@ function doPost(e) {
       return json(handleGetCatalog_(data));
     }
 
+    // PDF специфікації — лише за сесією, лише з переліку аркуша (Catalog.gs)
+    if (data.action === 'getSpec') {
+      const session = requireSession_(data);
+      return json(handleGetSpec_(data, session));
+    }
+
     if (data.action === 'getData') {
       if (!SERVE_HISTORY) {
         throw fail_('WRONG_DEPLOYMENT',

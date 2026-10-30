@@ -28,7 +28,7 @@
         url:              '',
         section:          'unknown',
         appName:          'Блокнот QC',  // заголовок на екрані входу
-        appVersion:       '3.1.4',
+        appVersion:       '3.1.5',
         sendTimeoutMs:    60000,         // Apps Script вміє «зависати»
         photoMaxWidth:    1600,
         photoQuality:     0.72,
@@ -533,6 +533,32 @@
         });
     }
 
+    // Авторизований запит до бекенду поза журналом (наприклад getSpec).
+    // Повертає JSON відповіді; result != success → Error з code. AUTH від
+    // сервера знімає сесію і показує вхід, як і скрізь.
+    function request(action, params, timeoutMs) {
+        if (cfg.auth && !session) {
+            var e0 = new Error('Увійдіть за PIN'); e0.code = 'AUTH'; e0.auth = true;
+            showLogin('');
+            return Promise.reject(e0);
+        }
+        if (cfg.auth && !session.token) {
+            var e1 = new Error('Потрібен звʼязок і вхід онлайн'); e1.code = 'OFFLINE'; e1.offline = true;
+            return Promise.reject(e1);
+        }
+        var body = { action: action };
+        Object.keys(params || {}).forEach(function (k) { body[k] = params[k]; });
+        return postJson(withAuth(body), timeoutMs || cfg.sendTimeoutMs).then(function (j) {
+            if (!j || j.result !== 'success') {
+                var e = new Error((j && j.error) || 'Сервер не відповів');
+                e.code = (j && j.code) || '';
+                if (e.code === 'AUTH') { e.auth = true; handleAuthFailure(e); }
+                throw e;
+            }
+            return j;
+        });
+    }
+
     var flushing = false;
 
     function flush(silent) {
@@ -1021,6 +1047,7 @@
         stamp: stamp,
         checkSize: checkSize,
         flush: flush,
+        request: request,
         catalog: catalog,
         outbox: outbox,
         refreshBadge: refreshBadge,

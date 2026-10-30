@@ -277,6 +277,24 @@ const ui = (w) => {
     ok('B15 ...і не зупиняє чергу: другий теж спробували', w.__state.fetches.filter(b => b.type).length === 2 && rows.old2.attempts === 0);
   }
 
+  {
+    // QC.request: авторизований запит поза журналом (специфікації)
+    const w = makeBrowser({ responder: b => b.action === 'login' ? GOOD
+      : b.action === 'getSpec' ? (b.key === 'ok' ? { result: 'success', data: 'JVBERi0=' } : b.key === 'auth' ? { result: 'error', code: 'AUTH', error: 'Сесію завершено' } : { result: 'error', code: 'NOT_FOUND', error: 'немає' })
+      : {} });
+    w.QC.configure({ url: URL, section: 'specifications', auth: true, catalog: false });
+    let err = null; try { await w.QC.request('getSpec', { key: 'ok' }); } catch (e) { err = e; }
+    ok('B18 без сесії request відхиляє і показує вхід', err && err.auth && loginShown(w));
+    await w.QC.auth.login('7777');
+    const j = await w.QC.request('getSpec', { key: 'ok' });
+    const sent = w.__state.fetches.find(b => b.action === 'getSpec');
+    ok('B18 із сесією: токен і deviceId додано, відповідь повернуто', j.data === 'JVBERi0=' && sent.token === 'tok.sig' && !!sent.deviceId);
+    err = null; try { await w.QC.request('getSpec', { key: 'nope' }); } catch (e) { err = e; }
+    eq('B18 помилка сервера → Error з code', err && err.code, 'NOT_FOUND');
+    err = null; try { await w.QC.request('getSpec', { key: 'auth' }); } catch (e) { err = e; }
+    ok('B18 AUTH від сервера → сесію знято, показано вхід', err && err.auth && w.QC.auth.session() === null && loginShown(w));
+  }
+
   // =====================================================================
   group('B2. Розклад оновлення довідників');
   {

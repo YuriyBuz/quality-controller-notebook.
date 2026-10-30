@@ -55,14 +55,11 @@
         .spinner { border: 3px solid rgba(16, 185, 129, 0.1); width: 40px; height: 40px; border-radius: 50%; border-left-color: #10b981; animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         
-        /* Стилі для безпечного фрейму */
-        .iframe-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            border-radius: 0 0 0.75rem 0.75rem;
-        }
+        /* Перегляд PDF: сторінки намальовано на canvas, без вбудованого переглядача */
+        .spec-viewer canvas { max-width: 100%; height: auto; border-radius: .25rem; box-shadow: 0 2px 10px rgba(0,0,0,.45); pointer-events: none; -webkit-user-drag: none; }
+        .spec-viewer, .spec-viewer * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+        /* Друк сторінки нічого не дає */
+        @media print { body { display: none !important; } }
     </style>
 </head>
 <body class="font-sans antialiased selection:bg-emerald-100 selection:text-emerald-900" oncontextmenu="return false;">
@@ -125,7 +122,7 @@
                             <p class="font-medium mb-2">Список специфікацій віддає сервер блокнота після входу за PIN — з аркуша «Данні_для_додатку» таблиці QC Data 2.0.</p>
                             <p class="font-bold">Що перевірити:</p>
                             <ul class="list-disc pl-5 mt-1 space-y-1">
-                                <li>На сервері розгорнуто бекенд не старіший за <b>3.0.6</b> — у ньому є довідник «specs».</li>
+                                <li>На сервері розгорнуто бекенд не старіший за <b>3.0.7</b> — у ньому є довідник «specs» і дія getSpec.</li>
                                 <li>Аркуш «Данні_для_додатку» на місці, колонки «Назва ТМ», «Назва SKU», «Посилання на drive».</li>
                                 <li>Є звʼязок і ви увійшли за PIN.</li>
                             </ul>
@@ -186,15 +183,23 @@
                 </button>
             </div>
             
-            <!-- Iframe Container -->
-            <div class="iframe-container bg-slate-100 dark:bg-slate-800 flex items-center justify-center relative">
-                <div id="iframeLoader" class="absolute spinner"></div>
-                <!-- sandbox обмежує можливості сторінки всередині iframe -->
-                <iframe id="safeViewIframe" class="w-full h-full border-0 relative z-10" src="" onload="document.getElementById('iframeLoader').style.display='none'"></iframe>
+            <!-- Сторінки PDF малюються на canvas (pdf.js) із водяним знаком; посилання на файл сторінка не знає -->
+            <div id="specViewer" class="spec-viewer flex-1 min-h-0 overflow-auto bg-slate-800 relative">
+                <div id="specLoader" class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-slate-300 text-sm">
+                    <div class="spinner"></div>
+                    <span>Завантаження специфікації…</span>
+                </div>
+                <div id="specError" class="hidden m-6 p-4 rounded-lg bg-red-900/40 border border-red-700 text-red-200 text-sm"></div>
+                <div id="specPages" class="flex flex-col items-center gap-3 p-3"></div>
             </div>
         </div>
     </div>
 
+    <!-- pdf.js: малює PDF на canvas, щоб не віддавати файл вбудованому переглядачу браузера -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
     <script src="qc-core.js"></script>
     <script>
         // Вхід за PIN — спільний із рештою блокнота (сесія qc_session_v1).
@@ -215,10 +220,8 @@
         document.getElementById('logoutBtn').addEventListener('click', function () { QC.auth.logout(); });
     </script>
     <script>
-        // Google Sheets Details
-        const SHEET_ID = '1VKKlqzrzRsZzDU1kbYciXnJ7J1Kr9fl1GF2RBBwlUUo';
-        const GID = '543142774';
-        const API_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${GID}`;
+        // Дані: довідник «specs» (ТМ, SKU, ключ) і PDF за ключем — усе з бекенду
+        // блокнота після входу за PIN. Посилань на таблицю чи Drive тут немає.
 
         // Data Storage
         let parsedData = {}; 
@@ -238,8 +241,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             initTheme();
-            // Дані приходять довідником «specs» з бекенду (після входу за PIN);
-            // fetchData() лишається запасним шляхом для старого сервера без нього.
+            // Дані приходять довідником «specs» з бекенду після входу за PIN
             QC.catalog.onUpdate(onCatalog);
 
             // Event Listeners
@@ -266,17 +268,16 @@
         }
 
         // --- Дані з довідника бекенду ---
-        // Таблиця QC Data 2.0 закрита для сторонніх, тому напряму з браузера
-        // (gviz) вона не читається. Сервер віддає аркуш «Данні_для_додатку»
-        // довідником «specs» тим самим шляхом, що й решту довідників.
-        let fallbackTried = false;
+        // Таблиця QC Data 2.0 закрита для сторонніх і напряму з браузера не
+        // читається. Сервер віддає аркуш «Данні_для_додатку» довідником «specs»
+        // тим самим шляхом, що й решту довідників: ТМ, SKU і ключ файлу.
         function applyItems(items) {
             parsedData = {};
             allSkusFlat = [];
             (items || []).forEach(it => {
                 const tm = (it.tm || '').toString().trim();
                 if (!tm) return;
-                const item = { tm, sku: (it.sku || '').toString().trim() || 'Без назви', link: (it.link || '').toString().trim() || '#' };
+                const item = { tm, sku: (it.sku || '').toString().trim() || 'Без назви', key: (it.key || '').toString().trim() };
                 if (!parsedData[tm]) parsedData[tm] = [];
                 parsedData[tm].push(item);
                 allSkusFlat.push(item);
@@ -300,101 +301,119 @@
                 return;
             }
             if (info.loading || (!data && !info.error)) return;      // ще вантажиться або чекаємо входу
-            if (data && !fallbackTried) { fallbackTried = true; fetchData(); return; }   // сервер без «specs» — пробуємо напряму
-            if (!data) showError('Довідники не завантажено: ' + (info.error || 'немає звʼязку'));
+            if (data) showError('На сервері стара версія без довідника «specs» — потрібен бекенд 3.0.7.');
+            else showError('Довідники не завантажено: ' + (info.error || 'немає звʼязку'));
         }
         function retryLoad() {
-            fallbackTried = false;
             errorMessage.classList.add('hidden');
             loader.classList.remove('hidden');
             QC.catalog.refresh(true);
         }
 
-        // --- Запасний шлях: пряме читання таблиці (працює лише для відкритої таблиці) ---
-        async function fetchData() {
-            try {
-                errorMessage.classList.add('hidden');
-                loader.classList.remove('hidden');
-                tmView.classList.add('hidden');
-                skuView.classList.add('hidden');
-                searchView.classList.add('hidden');
 
-                const response = await fetch(API_URL);
-                const text = await response.text();
-                
-                const start = text.indexOf('{');
-                const end = text.lastIndexOf('}');
-                
-                if (start === -1 || end === -1) {
-                    throw new Error("Невірний формат відповіді. Ймовірно, таблиця має обмежений доступ.");
-                }
-                
-                const jsonString = text.substring(start, end + 1);
-                const jsonData = JSON.parse(jsonString);
-                
-                if (!jsonData.table || !jsonData.table.rows) {
-                    throw new Error("Структура таблиці не розпізнана.");
-                }
+        // --- Перегляд PDF ---
+        // Сторінка не знає посилань на файли: вона просить у бекенду PDF за
+        // непрозорим ключем (лише з чинною сесією), малює сторінки на canvas і
+        // кладе на кожну водяний знак з ім'ям контролера, датою і часом. Нема
+        // що завантажити, надрукувати чи скопіювати і нема куди перейти. Файл
+        // живе лише в пам'яті вкладки і зникає при виході.
+        const specCache = new Map();
+        let viewToken = 0;
+        QC.auth.onChange(function (s) { if (!s) specCache.clear(); });
 
-                processSheetData(jsonData.table.rows);
-                
-                loader.classList.add('hidden');
-                renderTmView();
+        function b64ToBytes(b64) {
+            const bin = atob(b64);
+            const out = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+            return out;
+        }
 
-            } catch (error) {
-                console.error("Error fetching data:", error);
-                showError('На сервері немає довідника «specs», а пряме читання таблиці не вдалося: ' + error.message);
+        async function loadSpec(key) {
+            if (specCache.has(key)) return specCache.get(key);
+            const j = await QC.request('getSpec', { key: key }, 90000);
+            const bytes = b64ToBytes(j.data);
+            specCache.set(key, bytes);
+            return bytes;
+        }
+
+        function watermark(ctx, w, h, text) {
+            ctx.save();
+            ctx.globalAlpha = 0.16;
+            ctx.fillStyle = '#b91c1c';
+            ctx.font = 'bold ' + Math.max(14, Math.round(w / 28)) + 'px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.translate(w / 2, h / 2);
+            ctx.rotate(-Math.PI / 6);
+            const step = Math.max(120, Math.round(h / 4));
+            for (let y = -h; y <= h; y += step) ctx.fillText(text, 0, y);
+            ctx.restore();
+        }
+
+        async function renderSpec(bytes, token) {
+            const pages = document.getElementById('specPages');
+            pages.innerHTML = '';
+            const session = QC.auth.session();
+            const stamp = (session ? session.journalName : '') + ' · ' + QC.fmtDateTime(new Date()) + ' · Foodline QC · конфіденційно';
+            const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+            const width = Math.max(280, Math.min(pages.clientWidth - 24, 1100));
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            for (let n = 1; n <= pdf.numPages; n++) {
+                if (token !== viewToken) return;                       // модалку закрили
+                const page = await pdf.getPage(n);
+                const base = page.getViewport({ scale: 1 });
+                const vp = page.getViewport({ scale: (width / base.width) * dpr });
+                const canvas = document.createElement('canvas');
+                canvas.width = vp.width; canvas.height = vp.height;
+                canvas.style.width = Math.round(vp.width / dpr) + 'px';
+                const ctx = canvas.getContext('2d');
+                await page.render({ canvasContext: ctx, viewport: vp }).promise;
+                watermark(ctx, canvas.width, canvas.height, stamp);
+                if (token !== viewToken) return;
+                pages.appendChild(canvas);
             }
         }
 
-        function processSheetData(rows) {
-            const items = [];
-            for (let i = 1; i < rows.length; i++) {
-                const row = rows[i].c;
-                if (!row) continue;
-                items.push({
-                    tm:   (row[0] && row[0].v) ? row[0].v : '',
-                    sku:  (row[1] && row[1].v) ? row[1].v : '',
-                    link: (row[2] && row[2].v) ? row[2].v : ''
-                });
-            }
-            applyItems(items);
-        }
-
-        // --- Safe View Logic (Iframe Modal) ---
-        function getSafeLink(url) {
-            if (!url) return '';
-            // Замінюємо /view на /preview для того щоб приховати інтерфейс Google Drive
-            if (url.includes('/view')) {
-                return url.replace('/view', '/preview');
-            }
-            return url;
-        }
-
-        function openSafeView(url, skuTitle) {
+        async function openSafeView(key, skuTitle) {
+            if (!QC.auth.require()) return;
             const modal = document.getElementById('safeViewModal');
-            const iframe = document.getElementById('safeViewIframe');
-            const titleEl = document.getElementById('safeViewTitle');
-            const loader = document.getElementById('iframeLoader');
-            
-            titleEl.textContent = skuTitle;
-            loader.style.display = 'block'; // Show loader before iframe loads
-            iframe.src = getSafeLink(url);
-            
+            document.getElementById('safeViewTitle').textContent = skuTitle;
+            document.getElementById('specPages').innerHTML = '';
+            document.getElementById('specError').classList.add('hidden');
+            document.getElementById('specLoader').classList.remove('hidden');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-            document.body.style.overflow = 'hidden'; // Забороняємо прокрутку сторінки на фоні
+            document.body.style.overflow = 'hidden';
+            const token = ++viewToken;
+            try {
+                if (!key) throw new Error('На сервері стара версія без getSpec — потрібен бекенд 3.0.7.');
+                if (typeof pdfjsLib === 'undefined') throw new Error('Переглядач PDF не завантажився. Перевірте звʼязок і оновіть сторінку.');
+                const bytes = await loadSpec(key);
+                if (token !== viewToken) return;
+                await renderSpec(bytes, token);
+            } catch (e) {
+                if (token !== viewToken) return;
+                const el = document.getElementById('specError');
+                el.textContent = e.auth ? 'Сесію завершено — увійдіть за PIN і відкрийте специфікацію знову.'
+                               : 'Не вдалося показати специфікацію: ' + (e.message || e);
+                el.classList.remove('hidden');
+            } finally {
+                if (token === viewToken) document.getElementById('specLoader').classList.add('hidden');
+            }
         }
 
         function closeSafeView() {
+            viewToken++;
             const modal = document.getElementById('safeViewModal');
-            const iframe = document.getElementById('safeViewIframe');
-            
             modal.classList.add('hidden');
             modal.classList.remove('flex');
-            iframe.src = ''; // Звільняємо пам'ять і зупиняємо відео/аудіо, якщо є
-            document.body.style.overflow = ''; // Повертаємо прокрутку
+            document.getElementById('specPages').innerHTML = '';
+            document.body.style.overflow = '';
         }
+
+        // Зберегти, надрукувати, переглянути код — не на цій сторінці
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && ['s', 'p', 'u'].includes(String(e.key).toLowerCase())) e.preventDefault();
+        });
 
         // --- Rendering Logic ---
         
@@ -442,7 +461,7 @@
         function createSkuElement(item) {
             const btn = document.createElement('button');
             btn.className = 'spec-item flex items-start p-4 rounded-xl shadow-sm hover:shadow-md hover:bg-slate-50 dark:hover:bg-slate-800/50 group w-full text-left';
-            btn.onclick = () => openSafeView(item.link, item.sku);
+            btn.onclick = () => openSafeView(item.key, item.sku);
             
             btn.innerHTML = `
                 <div class="mt-1 mr-4 flex-shrink-0">
