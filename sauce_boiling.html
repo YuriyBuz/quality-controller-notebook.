@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Варки соусу | QC Master</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -164,6 +166,7 @@
                 <label class="block text-sm font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Продукт (Код/Назва) *</label>
                 <input type="text" id="tst-product" list="products-list" placeholder="Введіть код або назву..." autocomplete="off" class="rounded-lg" required oninput="updateProductSpecs()">
                 <datalist id="products-list"></datalist>
+                <div id="specWarn" class="hidden mt-2 text-xs font-bold text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg px-3 py-2"></div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -270,11 +273,7 @@
                         <h4 class="font-bold text-sm mb-1 text-slate-700 dark:text-slate-200">Фото звіт</h4>
                         <p class="text-xs text-slate-500 dark:text-slate-400">Можна додати декілька фото</p>
                     </div>
-                    <label class="cursor-pointer bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg shadow flex items-center gap-2 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        <span>Обрати фото</span>
-                        <input type="file" id="photo-upload" accept="image/*" multiple class="hidden" onchange="handleFiles(this)">
-                    </label>
+                    <div class="flex flex-wrap gap-2 justify-end"><label class="cursor-pointer bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg shadow flex items-center gap-2 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg><span>Зробити фото</span><input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleFiles(this)"></label><label class="cursor-pointer bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg shadow flex items-center gap-2 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg><span>З галереї</span><input type="file" id="photo-upload" accept="image/*" multiple class="hidden" onchange="handleFiles(this)"></label></div>
                 </div>
                 <div id="gallery-container" class="grid grid-cols-3 gap-2 hidden"></div>
                 <p id="photo-counter" class="text-xs text-slate-500 dark:text-slate-400 mt-2"></p>
@@ -363,9 +362,13 @@
             const n = parseFloat(String(v === undefined || v === null ? '' : v).replace(',', '.'));
             return isNaN(n) ? null : n;
         }
+        // «1101», «11.01», «11 01 Соєвий Bonsai» → «1101»: планшетна клавіатура
+        // любить вставити крапку чи пробіл у код. Без коду — назва малими літерами.
         function specKey(text) {
-            const m = String(text || '').trim().match(/^\d+/);
-            return m ? m[0] : String(text || '').trim();
+            const s = String(text || '').trim();
+            const m = s.match(/^\d[\d.\s]*/);
+            if (m) { const digits = m[0].replace(/\D/g, ''); if (digits) return digits; }
+            return s.toLowerCase();
         }
         // Аркуш «Соуси» → { '1101': { dry:{req,min,max}, visc:{…}, ph:{…}, stab:{req} } }
         function buildSpecs(list) {
@@ -375,15 +378,20 @@
                 if (!key) return;
                 // У таблиці позначка може бути «+», «Перевіряти» чи будь-яке інше слово;
                 // порожня клітинка або «-» означає «не потрібно»
-                db[key] = {
+                const spec = {
                     dry:  { req: QC.isMark(s.dryReq),  min: numOrNull(s.dryMin), max: numOrNull(s.dryMax) },
                     visc: { req: QC.isMark(s.boReq),   min: numOrNull(s.boMin),  max: numOrNull(s.boMax) },
                     ph:   { req: QC.isMark(s.phReq),   min: numOrNull(s.phMin),  max: numOrNull(s.phMax) },
                     stab: { req: QC.isMark(s.stabReq) }
                 };
+                db[key] = spec;
+                // і за повною назвою, якщо продукт ввели словами без коду
+                const full = String(s.name || '').trim().toLowerCase();
+                if (full && !db[full]) db[full] = spec;
             });
             return db;
         }
+        let specCount = 0;   // скільки рядків норм прийшло з таблиці
 
         function applyCatalog() {
             fillSelect(cookSel, QC.catalog.get('cooks'), QC.catalog.has('cooks') ? 'Оберіть...' : 'Довідник не завантажено', true);
@@ -392,7 +400,9 @@
             (QC.catalog.get('sauces') || []).forEach(function (p) {
                 const opt = document.createElement('option'); opt.value = p; dl.appendChild(opt);
             });
-            PRODUCT_SPECS_DB = buildSpecs(QC.catalog.get('sauceSpecs'));
+            const specs = QC.catalog.get('sauceSpecs');
+            specCount = (specs || []).length;
+            PRODUCT_SPECS_DB = buildSpecs(specs);
             if (val('tst-product')) updateProductSpecs();
         }
 
@@ -403,7 +413,11 @@
             else if (!data) text = info.error ? 'не завантажено (' + info.error + ')' : 'ще не завантажено — потрібен вхід при мережі';
             else text = (info.source === 'server' ? 'з таблиці' : 'з кешу')
                       + (info.fetchedAt ? ', ' + QC.fmtDateTime(new Date(info.fetchedAt)) : '')
-                      + (info.stale ? ' · застарілі' : '');
+                      + (info.stale ? ' · застарілі' : '')
+                      + ' · норми соусів: ' + (specCount || 'немає!');
+            // версії видно одразу: коли планшет поводиться інакше, ніж телефон,
+            // саме тут видно, чи однакові в них ядро і бекенд
+            text += ' · v' + QC.cfg.appVersion + (info.serverVersion ? ' / сервер ' + info.serverVersion : '');
             document.getElementById('catalogStatus').textContent = 'Довідники: ' + text;
         });
         document.getElementById('catalogRefresh').addEventListener('click', function () { QC.catalog.refresh(true); });
@@ -417,11 +431,14 @@
         };
 
         function updateProductSpecs() {
-            const dbSpec = PRODUCT_SPECS_DB[specKey(val('tst-product'))];
+            const raw = val('tst-product');
+            const dbSpec = PRODUCT_SPECS_DB[specKey(raw)] || PRODUCT_SPECS_DB[raw.trim().toLowerCase()];
 
             if (dbSpec) {
                 currentSpecs = dbSpec;
             } else {
+                // Норм немає — вимагаємо все, але кажемо про це вголос, а не мовчки:
+                // інакше рідкий соус раптом «потребує» центрифугування
                 currentSpecs = {
                     dry: { min: null, max: null, req: true },
                     visc: { min: null, max: null, req: true },
@@ -431,6 +448,16 @@
             }
 
             applySpecsToUI();
+            showSpecWarn(raw, !!dbSpec);
+        }
+
+        function showSpecWarn(raw, found) {
+            const el = document.getElementById('specWarn');
+            if (!raw.trim() || found) { el.classList.add('hidden'); el.textContent = ''; return; }
+            el.textContent = specCount === 0
+                ? '⚠️ Норми соусів із таблиці не завантажено, тому вимагаються всі показники. Натисніть «Оновити» біля «Довідники» або перевірте звʼязок.'
+                : '⚠️ Для «' + raw.trim() + '» норм у таблиці «Соуси» немає, тому вимагаються всі показники. Оберіть продукт зі списку або перевірте код.';
+            el.classList.remove('hidden');
         }
 
         function applySpecsToUI() {

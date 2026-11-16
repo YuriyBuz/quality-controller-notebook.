@@ -8,7 +8,7 @@
 //  рівно те, через що чотири розділи півроку працювали на старому коді.
 // =========================================================================
 
-const CODE_VERSION = '3.0.7';
+const CODE_VERSION = '3.0.8';
 const TIMEZONE = 'Europe/Kyiv';
 
 // Таблиця з журналами. Звертаємось за ID, а не через getActiveSpreadsheet():
@@ -124,6 +124,13 @@ function logEvent_(kind, event, fields) {
     // Якщо не пишеться навіть журнал — лишається Cloud Logging
     console.error('logEvent_ не зміг записати: ' + error);
   }
+}
+
+// Рядок, що починається з «=» або «+», appendRow читає як формулу: «+» у колонці
+// «Стійкість» ставав #ERROR!. Апостроф на початку змушує зберегти як текст
+// і в клітинці не показується.
+function sheetText_(value) {
+  return (typeof value === 'string' && /^[=+]/.test(value)) ? "'" + value : value;
 }
 
 function ensureSheet_(book, name, headers) {

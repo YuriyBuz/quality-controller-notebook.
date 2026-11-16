@@ -402,5 +402,23 @@ group('H. Специфікації на продукт (getSpec)');
   eq('H7 файл понад межу → TOO_LARGE з порадою стиснути', env3.__post({ action: 'getSpec', key, token: t3, deviceId: 'tab-1' }).code, 'TOO_LARGE');
 }
 
+// =====================================================================
+group('I. «+» у клітинці та версія довідників');
+{
+  const env = envAll();
+  const token = login(env, '7777').token;
+  const sheet = env.SpreadsheetApp.openById(DATA_ID).getSheetByName('Варки соусу');
+  const h = sheet.rows[0];
+  const r = env.__post({ type: 'sauce_boiling', token, deviceId: 'tab-1', recordId: 'rid-plus', product: '1121 Соєвий (O)', cook: 'Загура', report: 'x', files: [],
+                         color: '✅', stability: '+', dry: '14.5', visc: '0', ph: '4.79', comment: '=SUM(A1)' });
+  const row = sheet.rows[sheet.getLastRow() - 1];
+  eq('I1 запис прийнято', r.result, 'success');
+  eq('I2 «+» у «Стійкість» екрановано апострофом (інакше Sheets робить з нього формулу і #ERROR!)', row[h.indexOf('Стійкість')], "'+");
+  eq('I2 те саме для рядка, що починається з «=»', row[h.indexOf('Коментар')], "'=SUM(A1)");
+  eq('I2 звичайні значення без змін', [row[h.indexOf('Колір')], row[h.indexOf('pH')]], ['✅', '4.79']);
+  const c = env.__post({ action: 'getCatalog', token, deviceId: 'tab-1' });
+  ok('I3 відповідь getCatalog несе версію бекенду', /^3\.\d+\.\d+$/.test(c.version));
+}
+
 console.log(`\n${fail ? '✗' : '✓'} пройдено ${pass}, провалено ${fail}`);
 process.exit(fail ? 1 : 0);

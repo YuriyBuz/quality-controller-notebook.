@@ -383,6 +383,7 @@ function handleGetCatalog_(data) {
   const payload = {
     result: 'success',
     updatedAt: new Date().toISOString(),
+    version: CODE_VERSION,          // сторінка показує, з якої версії бекенду довідники
     catalog: buildCatalog_()
   };
 

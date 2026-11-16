@@ -295,6 +295,27 @@ const ui = (w) => {
     ok('B18 AUTH від сервера → сесію знято, показано вхід', err && err.auth && w.QC.auth.session() === null && loginShown(w));
   }
 
+  {
+    // Кеш довідників — на кожне розгортання свій. На планшеті сторінка ХВО
+    // (акаунт 2, бекенд без норм соусів) не має затирати кеш «Варок».
+    const A = 'https://example.test/account-3/exec', B = 'https://example.test/account-2/exec';
+    const w = makeBrowser({ responder: b => b.action === 'login' ? GOOD : b.action === 'getCatalog' ? { result: 'success', version: '3.0.8', catalog: { sauces: ['1101 Соєвий Bonsai'], sauceSpecs: [{ name: '1101 Соєвий Bonsai', code: '1101', stabReq: '' }] } } : {} });
+    w.QC.configure({ url: A, section: 'sauce_boiling', auth: true, catalog: true });
+    await w.QC.auth.login('7777'); await tick(60);
+    ok('B20 варки: норми соусів є, версія бекенду видно', !!w.QC.catalog.get('sauceSpecs') && w.QC.catalog.info().serverVersion === '3.0.8');
+    const w2 = makeBrowser({ responder: b => b.action === 'login' ? GOOD : b.action === 'getCatalog' ? { result: 'success', catalog: { equipment: ['Лінія А'] } } : {} });
+    ['qc_session_v1', 'qc_device_v1', 'qc_unlock_v1'].forEach(k => { const v = w.__storage.get(k); if (v) w2.__storage.set(k, v); });
+    [...w.__storage.keys()].filter(k => k.startsWith('qc_catalog_')).forEach(k => w2.__storage.set(k, w.__storage.get(k)));
+    w2.QC.configure({ url: B, section: 'hvo_control', auth: true, catalog: true });
+    await w2.QC.auth.login('7777'); await tick(60);
+    ok('B20 ХВО з іншого розгортання: свій кеш, без норм соусів', w2.QC.catalog.get('equipment') && !w2.QC.catalog.get('sauceSpecs') && w2.QC.catalog.cacheKey() !== w.QC.catalog.cacheKey());
+    const w3 = makeBrowser({ responder: b => b.action === 'login' ? GOOD : {} });
+    [...w2.__storage.keys()].forEach(k => w3.__storage.set(k, w2.__storage.get(k)));
+    w3.QC.configure({ url: A, section: 'sauce_boiling', auth: true, catalog: true });
+    ok('B20 «Варки» після ХВО на тому ж планшеті: кеш норм цілий', !!w3.QC.catalog.get('sauceSpecs') && w3.QC.catalog.get('sauceSpecs')[0].code === '1101');
+    ok('B20 старий спільний кеш qc_catalog_v2 стерто', !w3.__storage.get('qc_catalog_v2'));
+  }
+
   // =====================================================================
   group('B2. Розклад оновлення довідників');
   {
@@ -326,8 +347,8 @@ const ui = (w) => {
     const run = async (fetchedAt) => {
       const w = makeBrowser({ responder: b => b.action === 'login' ? Object.assign({}, GOOD, { expiresAt: NOW + 3600e3 }) : b.action === 'getCatalog' ? { result: 'success', catalog: CAT } : {} });
       w.Date = makeFakeDate(NOW);
-      w.__storage.set('qc_catalog_v2', JSON.stringify({ fetchedAt, data: { equipment: ['Стара лінія'] } }));
       w.QC.configure({ url: URL, section: 'packing', auth: true, catalog: true });
+      w.__storage.set(w.QC.catalog.cacheKey(), JSON.stringify({ fetchedAt, data: { equipment: ['Стара лінія'] }, url: URL }));
       await w.QC.auth.login('7777'); await tick(60);
       return { info: w.QC.catalog.info(), eq: w.QC.catalog.get('equipment'), calls: w.__state.fetches.filter(b => b.action === 'getCatalog').length };
     };
@@ -457,7 +478,7 @@ const ui = (w) => {
     await w.QC.auth.login('2468'); await tick(80);
     ok('E1 після входу довідник products підтягнуто', !!w.QC.catalog.get('products'));
     eq('E1 equipment з аркуша «Обладнання»', w.QC.catalog.get('equipment'), ['Лінія А', 'Лінія B', 'Ручне фасування']);
-    ok('E1 довідник ліг у кеш пристрою', !!w.__storage.get('qc_catalog_v2'));
+    ok('E1 довідник ліг у кеш пристрою під ключем свого розгортання', !!w.__storage.get(w.QC.catalog.cacheKey()) && /^qc_catalog_v3:/.test(w.QC.catalog.cacheKey()));
     const g = w.QC.catalog.group('products', 'tm');
     eq('E2 group(): ТМ у порядку появи, без порожніх', g.keys, ['Bonsai', 'Peri Peri']);
     eq('E2 group(): позиції за ТМ з артикулом і терміном', g.byKey['Bonsai'].map(p => p.code + '/' + p.months), ['3102/18', '3103/18']);

@@ -330,7 +330,7 @@ function writeJournal_(data) {
       });
     }
 
-    sheet.appendRow(row);
+    sheet.appendRow(row.map(sheetText_));
     markWritten_(recordId);
 
     logEvent_('info', 'write.ok', {

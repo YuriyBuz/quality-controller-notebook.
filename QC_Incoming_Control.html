@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Вхідний контроль · Цифровий блокнот QC</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="theme-color" content="#04060D">
 <link rel="apple-touch-icon" href="https://foodline-production.com/wp-content/uploads/2021/10/3752781497_3752781497.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -573,8 +575,14 @@ label.shot.add{cursor:pointer}
     <div class="eyebrow">Фото</div>
     <div class="shots">
       <div id="gallery-container" class="hidden"></div>
+      <!-- Дві плитки: камера одразу (capture) і вибір із галереї (multiple).
+           З одним <input multiple> Android показує лише файловий вибір без камери. -->
+      <label class="shot add">
+        <span class="plus">📷</span>Камера
+        <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleFiles(this)">
+      </label>
       <label class="shot add" for="photo-upload">
-        <span class="plus">+</span>Фото
+        <span class="plus">+</span>Галерея
         <input type="file" id="photo-upload" accept="image/*" multiple class="hidden" onchange="handleFiles(this)">
       </label>
     </div>

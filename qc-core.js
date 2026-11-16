@@ -28,7 +28,7 @@
         url:              '',
         section:          'unknown',
         appName:          'Блокнот QC',  // заголовок на екрані входу
-        appVersion:       '3.1.5',
+        appVersion:       '3.1.6',
         sendTimeoutMs:    60000,         // Apps Script вміє «зависати»
         photoMaxWidth:    1600,
         photoQuality:     0.72,
@@ -847,9 +847,13 @@
        З увімкненим auth довідники запитуються лише після входу:
        сервер без сесії їх не віддає.
        --------------------------------------------------------------- */
-    var CAT_KEY  = 'qc_catalog_v2';
+    // Кеш — на кожне розгортання свій. Розділи живуть на трьох акаунтах, і в
+    // різних версіях бекенду різний набір довідників (у 3.0.0 немає норм
+    // соусів). Зі спільним ключем сторінка ХВО (акаунт 2) затирала кеш, і
+    // «Варки» лишались без норм — усі показники ставали обовʼязковими.
+    var CAT_KEY_BASE = 'qc_catalog_v3';
     var catData  = null;
-    var catMeta  = { fetchedAt: 0, stale: true, source: 'none', error: '' };
+    var catMeta  = { fetchedAt: 0, stale: true, source: 'none', error: '', serverVersion: '' };
     var catSubs  = [];
     var catBusy  = false;
     var catTimer = null;
@@ -888,17 +892,26 @@
         return catMeta.fetchedAt > 0 && Date.now() < catNextBoundary(catMeta.fetchedAt);
     }
 
+    function catKey() {
+        var u = String(cfg.url || ''), h = 0;
+        for (var i = 0; i < u.length; i++) h = (h * 31 + u.charCodeAt(i)) >>> 0;
+        return CAT_KEY_BASE + ':' + h.toString(36);
+    }
+
     function catLoadCache() {
         var raw = null;
-        try { raw = JSON.parse(storageGet(CAT_KEY) || 'null'); } catch (e) { return false; }
-        if (!raw || !raw.data) return false;
+        try { raw = JSON.parse(storageGet(catKey()) || 'null'); } catch (e) { return false; }
+        if (!raw || !raw.data || (raw.url && raw.url !== cfg.url)) return false;
         catData = raw.data;
-        catMeta = { fetchedAt: raw.fetchedAt || 0, stale: !catIsFresh(), source: 'cache' };
+        catMeta = { fetchedAt: raw.fetchedAt || 0, stale: !catIsFresh(), source: 'cache',
+                    error: '', serverVersion: raw.serverVersion || '' };
         return true;
     }
 
     function catSaveCache() {
-        storageSet(CAT_KEY, JSON.stringify({ fetchedAt: catMeta.fetchedAt, data: catData }));
+        storageSet(catKey(), JSON.stringify({
+            fetchedAt: catMeta.fetchedAt, data: catData, url: cfg.url, serverVersion: catMeta.serverVersion || ''
+        }));
     }
 
     function catNotify() {
@@ -908,6 +921,8 @@
     function catInfo() {
         return { fetchedAt: catMeta.fetchedAt, stale: catMeta.stale, source: catMeta.source,
                  loading: catBusy, error: catMeta.error || '',
+                 // версія бекенду, що віддав довідники (з 3.0.8), і адреса розгортання
+                 serverVersion: catMeta.serverVersion || '', url: cfg.url,
                  // коли кеш перестане вважатися свіжим (0 — довідників ще немає)
                  nextRefreshAt: catMeta.fetchedAt > 0 ? catNextBoundary(catMeta.fetchedAt) : 0 };
     }
@@ -932,7 +947,7 @@
                 e3.kind = 'stale-deploy'; throw e3;
             }
             catData = j.catalog;
-            catMeta = { fetchedAt: Date.now(), stale: false, source: 'server', error: '' };
+            catMeta = { fetchedAt: Date.now(), stale: false, source: 'server', error: '', serverVersion: j.version || '' };
             catSaveCache();
             if (manual) toast('Довідники оновлено');
             return catInfo();
@@ -976,6 +991,7 @@
         },
         refresh: function (manual) { return catFetch(manual !== false); },
         info: catInfo,
+        cacheKey: catKey,
         // Наступний момент розкладу після ts (типово — після «зараз»)
         nextRefreshAt: function (ts) { return catNextBoundary(ts == null ? Date.now() : ts); },
         // fn(data, info) викликається одразу після підписки і далі на кожне оновлення
@@ -986,6 +1002,7 @@
     };
 
     function catalogInit() {
+        storageDel('qc_catalog_v2');     // спільний кеш старих версій — більше не читаємо
         catLoadCache();
         catNotify();
         if (!catIsFresh()) catFetch(false);
